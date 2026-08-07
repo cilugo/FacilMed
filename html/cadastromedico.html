@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Cadastro de Médico</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Cadastro de Médico</h1>
+
+<form action="php/cadastroMedico.php" method="POST">
+
+<input
+type="text"
+name="nome"
+placeholder="Nome completo"
+required>
+
+<input
+type="text"
+name="cpf"
+placeholder="CPF"
+required>
+
+<input
+type="text"
+name="crm"
+placeholder="CRM"
+required>
+
+<select name="uf" required>
+
+<option value="">UF do CRM</option>
+
+<option>SP</option>
+<option>RJ</option>
+<option>MG</option>
+<option>PR</option>
+
+</select>
+
+<input
+type="email"
+name="email"
+placeholder="E-mail"
+required>
+
+<input
+type="text"
+name="telefone"
+placeholder="Telefone"
+required>
+
+<input
+type="password"
+name="senha"
+placeholder="Senha"
+required>
+
+<input
+type="password"
+name="confirmarSenha"
+placeholder="Confirmar senha"
+required>
+
+<button type="submit">
+
+Cadastrar
+
+</button>
+
+</form>
+
+</div>
+
+</body>
+
+</html>
