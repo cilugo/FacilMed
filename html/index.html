@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página inicial</title>
+    <link rel="stylesheet" href="..\css\login.css">
+</head>
+<body>
+    <form class="login" onsubmit="return login(event)">
+        <h2>Login</h2>
+        <h3>Insira seus dados</h3>
+        <p>Insira seu E-mail</p>
+        <input type="text" placeholder="endereço@gmail.com" id="Email" required>
+        <p>Senha</p>
+        <input type="password" placeholder="123abc" minlength="6" id="Senha" required>
+        <a href="esqueci-minha-senha\esqminsen.html">
+            <p>Esqueci minha senha</p>
+        </a>
+        <hr>
+        <button type="submit">Entrar</button>
+        <p class="Mensagem" id="Mensagem"></p>
+        
+    </form>
+
+    <script src="..\js\login.js"></script>
+    
+</body>
+</html>
