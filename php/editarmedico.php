@@ -1,0 +1,76 @@
+<!--conteúdo à ser revisado-->
+<?php
+require_once("conexao.php");
+require_once("validarsessao.php");
+
+if(!isset($_GET['id']) && $_SERVER['REQUEST_METHOD'] !== 'POST'){
+    die("Requisição inválida.");
+}
+
+if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    $medico_id = intval($_POST['medico_id']);
+    $nome = trim($_POST['nome']);
+    $cpf = trim($_POST['cpf']);
+    $email = trim($_POST['email']);
+    $telefone = trim($_POST['telefone']);
+    $crm = trim($_POST['crm']);
+    $uf = trim($_POST['uf']);
+
+    $stmt = $conexao->prepare("UPDATE usuarios u
+        INNER JOIN medicos m ON u.id = m.usuario_id
+        SET u.nome = ?, u.cpf = ?, u.email = ?, u.telefone = ?, m.crm = ?, m.uf = ?
+        WHERE m.id = ?");
+    $stmt->bind_param("ssssssi", $nome, $cpf, $email, $telefone, $crm, $uf, $medico_id);
+
+    if($stmt->execute()){
+        echo "<script>alert('Médico atualizado com sucesso!'); window.location='listarMedicos.php';</script>";
+        exit;
+    } else {
+        $erro = "Erro ao atualizar.";
+    }
+}
+
+$medico_id = intval($_GET['id']);
+$sql = $conexao->prepare(
+    "SELECT u.id AS usuario_id, m.id AS medico_id, u.nome, u.cpf, u.email, u.telefone, m.crm, m.uf
+     FROM usuarios u
+     INNER JOIN medicos m ON u.id = m.usuario_id
+     WHERE m.id = ?"
+);
+$sql->bind_param("i", $medico_id);
+$sql->execute();
+$result = $sql->get_result();
+if($result->num_rows === 0) die("Médico não encontrado.");
+$row = $result->fetch_assoc();
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Médico</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<main class="container">
+    <h1>Editar Médico</h1>
+    <?php if(!empty($erro)) echo "<p style='color:red;'>$erro</p>"; ?>
+    <form method="POST" action="editarMedico.php">
+        <input type="hidden" name="medico_id" value="<?= $row['medico_id'] ?>">
+        <label>Nome</label><br>
+        <input type="text" name="nome" value="<?= htmlspecialchars($row['nome']) ?>" required><br>
+        <label>CPF</label><br>
+        <input type="text" name="cpf" value="<?= htmlspecialchars($row['cpf']) ?>" required><br>
+        <label>Email</label><br>
+        <input type="email" name="email" value="<?= htmlspecialchars($row['email']) ?>" required><br>
+        <label>Telefone</label><br>
+        <input type="text" name="telefone" value="<?= htmlspecialchars($row['telefone']) ?>"><br>
+        <label>CRM</label><br>
+        <input type="text" name="crm" value="<?= htmlspecialchars($row['crm']) ?>" required><br>
+        <label>UF</label><br>
+        <input type="text" name="uf" value="<?= htmlspecialchars($row['uf']) ?>" required maxlength="2"><br><br>
+        <button type="submit">Salvar</button>
+        <a href="listarMedicos.php">Cancelar</a>
+    </form>
+</main>
+</body>
+</html>
