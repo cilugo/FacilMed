@@ -1,5 +1,6 @@
-<!--conteúdo à ser revisado-->
 -- Criação das tabelas (execute apenas se ainda não existirem)
+create database bd_facilmed;
+use bd_facilmed;
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -9,6 +10,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
     senha VARCHAR(255) NOT NULL,
     tipo ENUM('paciente','medico','admin') DEFAULT 'paciente'
 );
+
+
+insert into usuarios (nome,cpf,email,telefone,senha,tipo)
+values("Marcelo",123.456789-10,"marcelo@gmail.com","12 98041 3375","alca12","paciente");
 
 CREATE TABLE IF NOT EXISTS pacientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -39,3 +44,6 @@ CREATE TABLE IF NOT EXISTS consultas (
     FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE,
     FOREIGN KEY (medico_id) REFERENCES medicos(id) ON DELETE CASCADE
 );
+
+
+select * from usuarios;

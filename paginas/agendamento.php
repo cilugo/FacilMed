@@ -14,6 +14,10 @@ $sql = $conexao->query("SELECT m.id, u.nome FROM medicos m INNER JOIN usuarios u
     <main class="container">
         <h1>Agendar Consulta</h1>
         <form id="formAgendamento" action="../php/agendarconsulta.php" method="POST">
+
+            <label for="especialidade">Especialidade</label>
+            <input type="text" id="especialidade" name="especialidade" required>
+
             <label for="medico">Médico</label>
             <select id="medico" name="medico_id" required>
                 <option value="">Selecione</option>
@@ -23,9 +27,6 @@ $sql = $conexao->query("SELECT m.id, u.nome FROM medicos m INNER JOIN usuarios u
                     </option>
                 <?php endwhile; ?>
             </select>
-
-            <label for="especialidade">Especialidade</label>
-            <input type="text" id="especialidade" name="especialidade" required>
 
             <label for="dataConsulta">Data</label>
             <input type="date" id="dataConsulta" name="data_consulta" required>
