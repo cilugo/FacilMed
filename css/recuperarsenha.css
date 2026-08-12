@@ -1,0 +1,191 @@
+/* =====================================================
+   RECUPERAÇÃO DE SENHA
+===================================================== */
+
+.recuperacao{
+
+    max-width:550px;
+
+    margin:50px auto;
+
+    text-align:center;
+
+}
+
+
+/* =====================================================
+   CARTÃO DO E-MAIL
+===================================================== */
+
+.email-card{
+
+    max-width:650px;
+
+    margin:40px auto;
+
+    background:white;
+
+    padding:30px;
+
+    border-radius:15px;
+
+    box-shadow:
+        0 5px 20px
+        rgba(0,0,0,0.12);
+
+}
+
+
+.email-card h2{
+
+    font-family:'Rosario', serif;
+
+    color:#183e9f;
+
+    margin-bottom:25px;
+
+}
+
+
+/* =====================================================
+   E-MAIL
+===================================================== */
+
+.email{
+
+    border:1px solid #ddd;
+
+    border-radius:10px;
+
+    padding:25px;
+
+    text-align:left;
+
+    background:#fffdf8;
+
+}
+
+
+.email-topo{
+
+    margin-bottom:10px;
+
+    color:#333;
+
+}
+
+
+.email hr{
+
+    border:none;
+
+    border-top:1px solid #ddd;
+
+    margin:20px 0;
+
+}
+
+
+/* =====================================================
+   CÓDIGO
+===================================================== */
+
+.codigo{
+
+    font-size:32px;
+
+    font-weight:bold;
+
+    letter-spacing:6px;
+
+    text-align:center;
+
+    color:#183e9f;
+
+    background:#f1f7ff;
+
+    padding:20px;
+
+    margin:20px 0;
+
+    border-radius:10px;
+
+}
+
+
+/* =====================================================
+   CRONÔMETRO
+===================================================== */
+
+.cronometro{
+
+    text-align:center;
+
+    font-size:30px;
+
+    font-weight:bold;
+
+    color:#1b9ce4;
+
+    margin:15px 0;
+
+}
+
+
+/* =====================================================
+   MENSAGEM
+===================================================== */
+
+.mensagem-expiracao{
+
+    text-align:center;
+
+    font-size:14px;
+
+    color:#666;
+
+}
+
+
+/* =====================================================
+   NOVO CÓDIGO
+===================================================== */
+
+.novo-codigo{
+
+    margin-top:25px;
+
+    text-align:center;
+
+}
+
+
+.novo-codigo a{
+
+    color:#183e9f;
+
+    font-weight:bold;
+
+    text-decoration:none;
+
+}
+
+
+.novo-codigo a:hover{
+
+    text-decoration:underline;
+
+}
+
+
+/* =====================================================
+   BOTÃO DESABILITADO
+===================================================== */
+
+button:disabled{
+
+    opacity:0.5;
+
+    cursor:not-allowed;
+
+}
