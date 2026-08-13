@@ -109,3 +109,12 @@ CREATE TABLE consultas (
 
 );
 
+
+-- ==========================================
+-- Inserção de usuários --
+-- ==========================================
+
+insert into usuarios (nome,cpf,email,telefone,senha,tipo)
+values("Marcelo",123.456789-10,"marcelo@gmail.com","12 98041 3375","alca12","paciente");
+
+select * from usuarios;

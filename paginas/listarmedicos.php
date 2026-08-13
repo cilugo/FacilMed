@@ -1,7 +1,7 @@
 <!--conteúdo à ser revisado-->
 <?php
-require_once("conexao.php");
-require_once("validarsessao.php");
+require_once("../php/conexao.php");
+require_once("../php/verificarsessao.php");
 
 // Apenas admin e médicos podem ver lista de médicos; pacientes podem ver lista pública em outra página
 $sql = $conexao->prepare(
@@ -43,8 +43,8 @@ $result = $sql->get_result();
                 <td><?= htmlspecialchars($row['email']) ?></td>
                 <td><?= htmlspecialchars($row['telefone']) ?></td>
                 <td>
-                    <a href="editarMedico.php?id=<?= $row['medico_id'] ?>">Editar</a> |
-                    <a href="excluirMedico.php?id=<?= $row['medico_id'] ?>"
+                    <a href="editarmedico.php?id=<?= $row['medico_id'] ?>">Editar</a> |
+                    <a href="../php/excluirmedico.php?id=<?= $row['medico_id'] ?>"
                        onclick="return confirm('Deseja realmente excluir este médico?')">Excluir</a>
                 </td>
             </tr>

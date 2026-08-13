@@ -14,7 +14,7 @@ $_SESSION = [];
 session_destroy();
 
 // Redireciona para o login
-header("Location: ../login.html");
+header("Location: ../paginas/login.html");
 exit;
 
 ?>

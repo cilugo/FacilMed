@@ -1,7 +1,7 @@
 <!--conteúdo à ser revisado-->
 <?php
-require_once("conexao.php");
-require_once("validarsessao.php");
+require_once("../php/conexao.php");
+require_once("../php/verificarsessao.php");
 
 // Apenas admin
 if($tipoUsuario !== 'admin'){
@@ -43,14 +43,14 @@ $usuarios = $conexao->query(
                 <td><?= htmlspecialchars($u['telefone']) ?></td>
                 <td>
                     <?php if($u['paciente_id']): ?>
-                        <a href="editarPaciente.php?id=<?= $u['paciente_id'] ?>">Editar Paciente</a> |
-                        <a href="excluirPaciente.php?id=<?= $u['paciente_id'] ?>"
+                        <a href="editarpaciente.php?id=<?= $u['paciente_id'] ?>">Editar Paciente</a> |
+                        <a href="../php/excluirpaciente.php?id=<?= $u['paciente_id'] ?>"
                            onclick="return confirm('Excluir paciente?')">Excluir Paciente</a>
                     <?php endif; ?>
                     <?php if($u['medico_id']): ?>
                         <?php if($u['paciente_id']) echo "<br>"; ?>
-                        <a href="editarMedico.php?id=<?= $u['medico_id'] ?>">Editar Médico</a> |
-                        <a href="excluirMedico.php?id=<?= $u['medico_id'] ?>"
+                        <a href="editarmedico.php?id=<?= $u['medico_id'] ?>">Editar Médico</a> |
+                        <a href="../php/excluirmedico.php?id=<?= $u['medico_id'] ?>"
                            onclick="return confirm('Excluir médico?')">Excluir Médico</a>
                     <?php endif; ?>
                 </td>

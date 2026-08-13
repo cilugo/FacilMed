@@ -4,24 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" href="..\css\login.css">
+    <link rel="stylesheet" href="../css/login.css">
 </head>
 <body>
-    <form class="login" onsubmit="return login(event)">
+    <form class="login" method="POST" action="../php/login.php">
         <h2>Login</h2>
         <h3>Insira seus dados</h3>
         <p>Insira seu E-mail</p>
-        <input type="text" placeholder="endereço@gmail.com" id="Email" required>
+        <input type="email" placeholder="endereço@gmail.com" name="email" required>
         <p>Senha</p>
-        <input type="password" placeholder="123abc" minlength="6" id="Senha" required>
+        <input type="password" placeholder="123abc" name="senha" minlength="6" required>
         <a href="recuperarsenha.html">Esqueci minha senha</a>
-        </a>
         <hr>
         <button type="submit">Entrar</button>
         <p class="Mensagem" id="Mensagem"></p>
     </form>
-
-    <script src="..\js\login.js"></script>
+    <script src="../js/login.js"></script>
     
 </body>
 </html>

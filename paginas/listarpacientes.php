@@ -1,7 +1,7 @@
 <!--conteúdo à ser revisado-->
 <?php
-require_once("conexao.php");
-require_once("validarsessao.php"); // garante sessão ativa
+require_once("../php/conexao.php");
+require_once("../php/verificarsessao.php"); // garante sessão ativa
 
 // Apenas admins e médicos podem ver todos os pacientes; pacientes só veem seu próprio perfil
 if($tipoUsuario === 'paciente'){
@@ -57,10 +57,10 @@ $result = $sql->get_result();
                 <td><?= htmlspecialchars($row['telefone']) ?></td>
                 <td><?= htmlspecialchars($row['data_nascimento']) ?></td>
                 <td>
-                    <a href="editarPaciente.php?id=<?= $row['paciente_id'] ?>">Editar</a>
+                    <a href="editarpaciente.php?id=<?= $row['paciente_id'] ?>">Editar</a>
                     <?php if($tipoUsuario !== 'paciente'): ?>
                         |
-                        <a href="excluirPaciente.php?id=<?= $row['paciente_id'] ?>"
+                        <a href="../php/excluirpaciente.php?id=<?= $row['paciente_id'] ?>"
                            onclick="return confirm('Deseja realmente excluir este paciente?')">Excluir</a>
                     <?php endif; ?>
                 </td>

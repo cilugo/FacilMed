@@ -29,6 +29,6 @@ function login(event) {
         mensagem.textContent = '';
     }
 
-    window.location.assign('../html/homepaciente.html');
+    window.location.assign('../paginas/homepaciente.html');
     return false;
 }

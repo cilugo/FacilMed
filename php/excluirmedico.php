@@ -35,6 +35,6 @@ $stmt2->bind_param("i", $usuario_id);
 $stmt2->execute();
 $stmt2->close();
 
-header("Location: listarMedicos.php");
+header("Location: ../paginas/listarmedicos.php");
 exit;
 ?>

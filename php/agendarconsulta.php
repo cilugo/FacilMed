@@ -41,7 +41,7 @@ $ins = $conexao->prepare("INSERT INTO consultas (paciente_id, medico_id, especia
 $ins->bind_param("iisssss", $paciente_id, $medico_id, $especialidade, $data_consulta, $horario, $tipo_consulta, $observacoes);
 
 if($ins->execute()){
-    echo "<script>alert('Consulta agendada com sucesso!'); window.location='../html/homepaciente.html';</script>";
+    echo "<script>alert('Consulta agendada com sucesso!'); window.location='../paginas/agendamento.php';</script>";
     exit;
 } else {
     echo "Erro ao agendar consulta.";

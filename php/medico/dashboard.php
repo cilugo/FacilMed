@@ -12,7 +12,7 @@ require_once("../conexao.php");
 if (!isset($_SESSION["usuario_id"])) {
 
     header(
-        "Location: ../../login.html"
+        "Location: ../../paginas/login.html"
     );
 
     exit;
