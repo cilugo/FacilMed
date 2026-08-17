@@ -28,6 +28,12 @@ $usuarios = $conexao->query(
 <body>
 <main class="container">
     <h1>Painel Administrativo</h1>
+    <nav class="admin-nav">
+        <a href="admin/especialidades.php">Especialidades</a>
+        <a href="admin/locais.php">Locais</a>
+        <a href="admin/convenios.php">Convênios</a>
+        <a href="admin/planos.php">Planos</a>
+    </nav>
     <h2>Usuários</h2>
     <table border="1" cellpadding="8" cellspacing="0">
         <thead>
@@ -44,14 +50,22 @@ $usuarios = $conexao->query(
                 <td>
                     <?php if($u['paciente_id']): ?>
                         <a href="editarpaciente.php?id=<?= $u['paciente_id'] ?>">Editar Paciente</a> |
-                        <a href="../php/excluirpaciente.php?id=<?= $u['paciente_id'] ?>"
-                           onclick="return confirm('Excluir paciente?')">Excluir Paciente</a>
+                        <form action="../php/excluirpaciente.php" method="POST" class="form-inline"
+                              onsubmit="return confirm('Excluir paciente?')">
+                            <input type="hidden" name="id" value="<?= $u['paciente_id'] ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                            <button type="submit" class="link-botao">Excluir Paciente</button>
+                        </form>
                     <?php endif; ?>
                     <?php if($u['medico_id']): ?>
                         <?php if($u['paciente_id']) echo "<br>"; ?>
                         <a href="editarmedico.php?id=<?= $u['medico_id'] ?>">Editar Médico</a> |
-                        <a href="../php/excluirmedico.php?id=<?= $u['medico_id'] ?>"
-                           onclick="return confirm('Excluir médico?')">Excluir Médico</a>
+                        <form action="../php/excluirmedico.php" method="POST" class="form-inline"
+                              onsubmit="return confirm('Excluir médico?')">
+                            <input type="hidden" name="id" value="<?= $u['medico_id'] ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                            <button type="submit" class="link-botao">Excluir Médico</button>
+                        </form>
                     <?php endif; ?>
                 </td>
             </tr>

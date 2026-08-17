@@ -1,18 +1,26 @@
 <!--conteúdo à ser revisado-->
 <?php
 require_once("conexao.php");
-require_once("validarsessao.php");
+require_once("verificarsessao.php");
 
 // Somente admin pode excluir (ajuste conforme sua regra)
 if($tipoUsuario !== 'admin'){
     die("Acesso negado.");
 }
 
-if(!isset($_GET['id'])){
+if($_SERVER['REQUEST_METHOD'] !== 'POST'){
+    die("Requisição inválida.");
+}
+
+if(!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])){
+    die("Token de segurança inválido. Recarregue a página e tente novamente.");
+}
+
+if(!isset($_POST['id'])){
     die("ID não informado.");
 }
 
-$paciente_id = intval($_GET['id']);
+$paciente_id = intval($_POST['id']);
 
 // Busca usuario_id correspondente
 $sql = $conexao->prepare("SELECT usuario_id FROM pacientes WHERE id = ?");

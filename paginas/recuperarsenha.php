@@ -1,5 +1,7 @@
 <?php
 require_once("../php/conexao.php");
+require_once("../php/env.php");
+require_once("../php/lib/SimpleMailer.php");
 
 // Verifica o método
 if($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -32,10 +34,15 @@ $codigo = str_pad(random_int(0, 999999), 6, "0", STR_PAD_LEFT);
 // Código expira em 15 minutos
 $expiracao = date("Y-m-d H:i:s", time() + (15 * 60));
 
-// Salva código no banco
-$atualizar = $conexao->prepare("UPDATE usuarios SET codigo_recuperacao = ?, codigo_expira = ? WHERE id = ?");
-$atualizar->bind_param("ssi", $codigo, $expiracao, $usuario["id"]);
-$atualizar->execute();
+// Invalida códigos anteriores ainda não usados desse usuário
+$invalidar = $conexao->prepare("UPDATE recuperacao_senha SET utilizado = 1 WHERE usuario_id = ? AND utilizado = 0");
+$invalidar->bind_param("i", $usuario["id"]);
+$invalidar->execute();
+
+// Salva o novo código na tabela própria de recuperação de senha
+$inserir = $conexao->prepare("INSERT INTO recuperacao_senha (usuario_id, codigo, expiracao) VALUES (?, ?, ?)");
+$inserir->bind_param("iss", $usuario["id"], $codigo, $expiracao);
+$inserir->execute();
 
 // Mascara o e-mail
 function mascararEmail($email) {
@@ -51,6 +58,45 @@ function mascararEmail($email) {
 }
 
 $emailMascarado = mascararEmail($email);
+
+// ==========================================
+// ENVIO DO E-MAIL
+//
+// Se SMTP_HOST/SMTP_USER/SMTP_PASS/SMTP_FROM_EMAIL estiverem
+// preenchidos (via .env ou variáveis de ambiente reais do
+// servidor), manda o e-mail de verdade e NÃO mostra o código
+// na tela. Se não estiverem configurados, cai em modo de
+// desenvolvimento e mostra o código na tela (só para testar
+// localmente sem precisar configurar SMTP).
+// ==========================================
+
+$mailer = SimpleMailer::fromEnv();
+$modoDesenvolvimento = ($mailer === null);
+$erroEnvio = null;
+
+if(!$modoDesenvolvimento) {
+    $corpoHtml = "
+        <p>Olá, " . htmlspecialchars($usuario['nome']) . "!</p>
+        <p>Recebemos uma solicitação de recuperação de senha para sua conta no FacilMed.</p>
+        <p>Seu código de recuperação é:</p>
+        <p style='font-size:28px; font-weight:bold; letter-spacing:4px;'>" . htmlspecialchars($codigo) . "</p>
+        <p>Este código expira em 15 minutos. Não compartilhe este código com outras pessoas.</p>
+        <p>Se você não solicitou essa recuperação, ignore este e-mail.</p>
+    ";
+
+    try {
+        $mailer->send($usuario["email"], $usuario["nome"], "Recuperação de senha - FacilMed", $corpoHtml);
+    } catch (SimpleMailerException $e) {
+        // Não expõe o código nem detalhes internos do erro ao usuário;
+        // registra no log do servidor para o admin investigar.
+        error_log("Falha ao enviar e-mail de recuperação: " . $e->getMessage());
+        $erroEnvio = "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos.";
+    }
+}
+
+if($erroEnvio) {
+    die(htmlspecialchars($erroEnvio));
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -68,7 +114,13 @@ $emailMascarado = mascararEmail($email);
 <main class="container">
 <section class="email-card">
     <h2>Recuperação de senha</h2>
-    <!-- Simulação do e-mail -->
+
+    <?php if($modoDesenvolvimento): ?>
+    <!-- Modo de desenvolvimento: SMTP não configurado, mostra o código aqui só para teste -->
+    <p style="background:#fff3cd; color:#856404; padding:10px 15px; border-radius:6px; font-size:13px;">
+        ⚠️ Modo de desenvolvimento: SMTP não configurado (veja o arquivo <code>.env.example</code>).
+        O código está sendo exibido aqui só para teste local — em produção ele vai por e-mail.
+    </p>
     <div class="email">
         <div class="email-topo">
             <strong>Para:</strong>
@@ -83,10 +135,20 @@ $emailMascarado = mascararEmail($email);
         <p>Seu código de recuperação é:</p>
         <div class="codigo"><?php echo $codigo; ?></div>
         <p>Este código expira em:</p>
-        <!-- Cronômetro -->
         <div id="cronometro" class="cronometro">15:00</div>
         <p id="mensagemExpiracao" class="mensagem-expiracao">Não compartilhe este código com outras pessoas.</p>
     </div>
+    <?php else: ?>
+    <!-- Produção: e-mail já foi enviado de verdade, não mostramos o código -->
+    <div class="email">
+        <p>Enviamos um código de verificação para <strong><?php echo htmlspecialchars($emailMascarado); ?></strong>.</p>
+        <p>Confira sua caixa de entrada (e o spam, por garantia).</p>
+        <p>Este código expira em:</p>
+        <div id="cronometro" class="cronometro">15:00</div>
+        <p id="mensagemExpiracao" class="mensagem-expiracao">Não compartilhe este código com outras pessoas.</p>
+    </div>
+    <?php endif; ?>
+
     <!-- Formulário do código -->
     <form action="../paginas/verificarcodigo.php" method="POST" id="formCodigo">
         <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
@@ -106,7 +168,7 @@ $emailMascarado = mascararEmail($email);
     © 2026 FacilMed
 </footer>
 <!-- JavaScript -->
-<script src="../js/recuperarSenha.js"></script>
+<script src="../js/recuperarsenha.js"></script>
 <script>
     /* Passa o horário de expiração do PHP para o JavaScript. */
     const dataExpiracao = new Date("<?php echo $expiracao; ?>");

@@ -410,3 +410,23 @@ button{
 }
 
 }
+/* Formulário inline de exclusão (usado nas listagens) — mantém aparência de link */
+.form-inline {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+.link-botao {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #0645ad;
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+}
+
+.link-botao:hover {
+    color: #b30000;
+}

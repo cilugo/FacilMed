@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Usuário | FacilMed (Preview)</title>
+    <link rel="stylesheet" href="pacientedash.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="logo">FacilMed</div>
+    <nav>
+        <a href="#" class="ativo">🏠 Início</a>
+        <a href="#historico"> 📅 Histórico de consultas</a>
+        <a href="#">🔍 Buscar médicos</a>
+        <a href="#">📄 Documentos</a>
+        <a href="#">💳 Pagamentos</a>
+        <a href="#">👤 Meu perfil</a>
+    </nav>
+    <div class="menu-final">
+        <a href="#">🚪 Sair</a>
+    </div>
+</aside>
+
+<main class="conteudo">
+    <!--parte de cima, onde fica o greeting-->
+    <header class="topo">
+        <div>
+            <h1>Olá, João</h1>
+            <p>O que você precisa hoje?</p>
+        </div>
+        <div class="acoes">João Pedro 👤</div>
+    </header>
+
+    <section class="kpis">
+        <div class="kpi-card">
+            <h3>📅Agendar consulta</h3>
+        </div>
+        <div class="kpi-card">
+            <h3>🔍Pesquisar médico</h3>
+        </div>
+    </section>
+
+    <!--parte onde a consulta mais próxima é exibida-->
+    <section class="painel">
+        <div class="painel-titulo">
+            <h2>Próxima consulta</h2>
+        </div>
+        <div class="container-procon">
+            <section class="dashboard-grid">
+                <div class="painel">
+                    <h2>Dr. Carlos Silva - Cardiologia</h2>
+                    <div class="pendencia-item">
+                        <strong>15/12/2026</strong>
+                        <span>Às 14:30</span>
+                    </div>
+                    <div class="pendencia-item">
+                        <strong>📍</strong>
+                        <span>Consulta online</span>
+                    </div>
+                    <a href="#" class="botao">Entrar na consulta</a>
+                    <br>
+                    <a href="#" class="botao">Ver detalhes</a>
+                </div>    
+            </section>
+        </div>
+    </section>
+  
+<!---aqui eu coloquei a parte de histórico, ainda tem que ser programada (puramente visual)-->
+    <section class="painel" id="historico">
+        <h2>Histórico</h2>
+        <table>
+            <thead>
+                <tr><th>Data</th><th>Tipo</th><th>Andamento</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>12/07</td><td>Cardiologia</td><td>Concluída</td>
+                </tr>
+                <tr>
+                    <td>20/06</td><td>Clínica Geral</td><td>Concluída</td>
+                </tr>
+                <tr>
+                    <td>05/04</td><td>Clínica Geral</td><td>Concluída</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+</main>
+</body>
+</html>

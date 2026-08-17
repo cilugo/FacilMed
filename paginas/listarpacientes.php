@@ -34,7 +34,6 @@ $result = $sql->get_result();
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-<?php include_once("../html/partials/header.php"); ?>
 <main class="container">
     <h1>Pacientes</h1>
     <table border="1" cellpadding="8" cellspacing="0">
@@ -60,8 +59,12 @@ $result = $sql->get_result();
                     <a href="editarpaciente.php?id=<?= $row['paciente_id'] ?>">Editar</a>
                     <?php if($tipoUsuario !== 'paciente'): ?>
                         |
-                        <a href="../php/excluirpaciente.php?id=<?= $row['paciente_id'] ?>"
-                           onclick="return confirm('Deseja realmente excluir este paciente?')">Excluir</a>
+                        <form action="../php/excluirpaciente.php" method="POST" class="form-inline"
+                              onsubmit="return confirm('Deseja realmente excluir este paciente?')">
+                            <input type="hidden" name="id" value="<?= $row['paciente_id'] ?>">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                            <button type="submit" class="link-botao">Excluir</button>
+                        </form>
                     <?php endif; ?>
                 </td>
             </tr>

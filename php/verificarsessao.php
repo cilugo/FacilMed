@@ -28,4 +28,10 @@ $emailUsuario = $_SESSION["email"];
 
 $tipoUsuario = $_SESSION["tipo"];
 
+// Token CSRF reutilizável durante a sessão (protege ações destrutivas como exclusões)
+if(!isset($_SESSION["csrf_token"])){
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION["csrf_token"];
+
 ?>

@@ -1,3 +1,9 @@
+<?php
+// Convertido de .html para .php só para popular o <select> de
+// especialidade dinamicamente a partir da tabela especialidades.
+require_once("../php/conexao.php");
+$especialidades = $conexao->query("SELECT id, nome FROM especialidades ORDER BY nome ASC");
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -18,6 +24,12 @@
 				<option>RJ</option>
 				<option>MG</option>
 				<option>PR</option>
+			</select>
+			<select name="especialidade_id" required>
+				<option value="">Especialidade</option>
+				<?php while($esp = $especialidades->fetch_assoc()): ?>
+					<option value="<?= (int) $esp['id'] ?>"><?= htmlspecialchars($esp['nome']) ?></option>
+				<?php endwhile; ?>
 			</select>
 			<input type="email" name="email" placeholder="E-mail" required>
 			<input type="text" name="telefone" placeholder="Telefone" required>
