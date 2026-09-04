@@ -1,33 +1,9 @@
--- =========================================================
--- BANCO DE DADOS DO FACILMED
--- Schema completo (v2): especialidades, locais, convênios,
--- planos e recuperação de senha em tabelas próprias.
---
--- Observações sobre adaptações feitas em cima do modelo
--- original (ver "BANCO DE DADOS DO FACILMED - MySQL
--- COMPUTADOR 27.docx"), para não quebrar o código já
--- existente:
---   - tipo do usuário continua ENUM('paciente','medico','admin')
---     (o código inteiro já checa a string 'admin', não
---     'administrador').
---   - medicos.anos_atuacao foi mantido (já usado no dashboard
---     do médico) e não existia no modelo original.
---   - consultas.tipo_consulta (Presencial/Teleconsulta) foi
---     mantido junto com o novo tipo_atendimento (SUS/convênio/
---     particular) — são conceitos diferentes (modalidade x
---     forma de pagamento) e a tela de agendamento já usava
---     tipo_consulta.
---   - consultas.status manteve os valores em português com
---     inicial maiúscula ('Agendada','Realizada','Cancelada'),
---     que é o que o painel do médico já compara.
--- =========================================================
-
 CREATE DATABASE IF NOT EXISTS facilmed CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE facilmed;
 
 -- ==========================================
--- USUÁRIOS
+-- usuários
 -- ==========================================
 
 CREATE TABLE usuarios (
@@ -43,7 +19,7 @@ CREATE TABLE usuarios (
 );
 
 -- ==========================================
--- ESPECIALIDADES
+-- especialidades
 -- ==========================================
 
 CREATE TABLE especialidades (
@@ -52,7 +28,7 @@ CREATE TABLE especialidades (
 );
 
 -- ==========================================
--- MÉDICOS
+-- médicos
 -- ==========================================
 
 CREATE TABLE medicos (
@@ -69,7 +45,7 @@ CREATE TABLE medicos (
 );
 
 -- ==========================================
--- PACIENTES
+-- pacientes
 -- ==========================================
 
 CREATE TABLE pacientes (
@@ -80,7 +56,7 @@ CREATE TABLE pacientes (
 );
 
 -- ==========================================
--- LOCAIS (hospitais e clínicas)
+-- locais (hospitais e clínicas)
 -- ==========================================
 
 CREATE TABLE locais (
@@ -97,7 +73,7 @@ CREATE TABLE locais (
 );
 
 -- ==========================================
--- CONVÊNIOS
+-- convênios
 -- ==========================================
 
 CREATE TABLE convenios (
@@ -108,7 +84,7 @@ CREATE TABLE convenios (
 );
 
 -- ==========================================
--- PLANOS (vinculados a um convênio)
+-- planos (vinculados a um convênio)
 -- ==========================================
 
 CREATE TABLE planos (
@@ -122,7 +98,7 @@ CREATE TABLE planos (
 );
 
 -- ==========================================
--- CONSULTAS
+-- consultas
 -- ==========================================
 
 CREATE TABLE consultas (
@@ -164,27 +140,9 @@ CREATE TABLE recuperacao_senha (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
--- ==========================================
--- MIGRAÇÃO (rode isto apenas se o banco "facilmed" já
--- existia ANTES desta versão v2 do schema; se você recriar
--- o banco do zero com o script acima, NÃO precisa rodar
--- as linhas abaixo)
--- ==========================================
-
--- ALTER TABLE usuarios ADD COLUMN status ENUM('ativo','inativo','ferias','bloqueado') NOT NULL DEFAULT 'ativo';
--- ALTER TABLE usuarios DROP COLUMN codigo_recuperacao, DROP COLUMN codigo_expira;
--- ALTER TABLE medicos ADD COLUMN especialidade_id INT, ADD FOREIGN KEY (especialidade_id) REFERENCES especialidades(id) ON DELETE SET NULL;
--- ALTER TABLE medicos ADD UNIQUE (crm, uf);
--- ALTER TABLE medicos DROP COLUMN especialidade; -- (coluna antiga em texto livre)
--- ALTER TABLE consultas ADD COLUMN local_id INT, ADD COLUMN convenio_id INT, ADD COLUMN plano_id INT,
---     ADD COLUMN tipo_atendimento ENUM('SUS','convenio','particular') NOT NULL DEFAULT 'particular',
---     ADD FOREIGN KEY (local_id) REFERENCES locais(id) ON DELETE SET NULL,
---     ADD FOREIGN KEY (convenio_id) REFERENCES convenios(id) ON DELETE SET NULL,
---     ADD FOREIGN KEY (plano_id) REFERENCES planos(id) ON DELETE SET NULL;
--- ALTER TABLE consultas DROP COLUMN especialidade, DROP COLUMN local; -- (colunas antigas em texto livre)
 
 -- ==========================================
--- ESPECIALIDADES INICIAIS
+-- especialidades
 -- ==========================================
 
 INSERT INTO especialidades (nome) VALUES
@@ -228,6 +186,6 @@ INSERT INTO locais (nome, tipo, categoria, endereco, cidade, bairro, estado, tel
 
 -- Senha de teste: "alca12" (hash bcrypt válido, compatível com password_verify do PHP)
 INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
-('Marcelo', '123.456.789-10', 'marcelo@gmail.com', '12 98041 3375', '$2b$12$X5wW1dD2MuYF7yUKwws71u.5Cq7FDKPdnEElUKGGyP1Lk91SARX4.', 'paciente');
+('Marcelo', '123.456.789-10', 'marcelo@gmail.com', '12 98041 3375', 'alca12', 'paciente');
 
 SELECT * FROM usuarios;
