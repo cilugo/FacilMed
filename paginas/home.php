@@ -9,12 +9,18 @@ $ano = date("Y");
 <html lang="pt-BR">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title><?php echo $nomeSistema; ?></title>
 
     <style>
+
+        /* =========================================
+           CONFIGURAÇÕES GERAIS
+        ========================================= */
 
         * {
             margin: 0;
@@ -22,248 +28,411 @@ $ano = date("Y");
             box-sizing: border-box;
         }
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #23479f;
+        html {
+            scroll-behavior: smooth;
         }
 
-        /* CABEÇALHO */
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #ffffff;
+            color: #23479f;
+            min-height: 100vh;
+        }
+
+
+        /* =========================================
+           CABEÇALHO
+        ========================================= */
 
         header {
+            width: 100%;
             height: 70px;
-            border-bottom: 1px solid #ddd;
+
+            border-bottom: 1px solid #e1e1e1;
 
             display: flex;
             align-items: center;
             justify-content: space-between;
 
-            padding: 0 20px;
+            padding: 0 30px;
+
+            background-color: #ffffff;
         }
 
-        header h1 {
-            font-size: 20px;
+
+        /* =========================================
+           LOGO
+        ========================================= */
+
+        .logo {
+            display: flex;
+            align-items: center;
+
+            text-decoration: none;
+
             color: #2850ad;
         }
 
-        /* BOTÃO ENTRAR */
+        .logo img {
+            width: 55px;
+            height: 55px;
 
-        .entrar {
-            background-color: white;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            color: #2850ad;
+
+            font-size: 21px;
+
+            font-weight: bold;
+        }
+
+
+        /* =========================================
+           PARTE DIREITA
+        ========================================= */
+
+        .header-direita {
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+        }
+
+
+        /* =========================================
+           BOTÕES DO CABEÇALHO
+        ========================================= */
+
+        .entrar,
+        .cadastre-se {
+            background-color: #ffffff;
+
             border: 1px solid #2850ad;
+
             color: #2850ad;
 
-            border-radius: 15px;
+            border-radius: 18px;
 
-            padding: 5px 12px;
+            padding: 7px 16px;
 
-            cursor: pointer;
-        }
+            font-size: 13px;
 
-        /* MENU */
+            font-family: Arial, Helvetica, sans-serif;
 
-        .menu {
-            border: none;
-            background-color: transparent;
-
-            font-size: 30px;
-            color: #2850ad;
+            text-decoration: none;
 
             cursor: pointer;
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            transition: 0.2s;
         }
 
-        /* CONTEÚDO */
+
+        /* Efeito ao passar o mouse */
+
+        .entrar:hover,
+        .cadastre-se:hover {
+            background-color: #2850ad;
+
+            color: #ffffff;
+        }
+
+
+        /* =========================================
+           CONTEÚDO PRINCIPAL
+        ========================================= */
 
         main {
-            padding: 30px 20px;
+            width: 100%;
+
+            max-width: 1100px;
+
+            margin: 0 auto;
+
+            padding: 50px 30px 40px;
         }
 
-        /* INÍCIO */
+
+        /* =========================================
+           APRESENTAÇÃO
+        ========================================= */
 
         .inicio {
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
 
-            gap: 20px;
+            gap: 60px;
+
+            min-height: 330px;
         }
+
+
+        /* =========================================
+           TEXTO
+        ========================================= */
 
         .texto {
             flex: 1;
+
+            max-width: 600px;
         }
 
+
         .texto h2 {
-            font-size: 27px;
-            line-height: 1.05;
+            color: #23479f;
+
+            font-size: 42px;
+
+            line-height: 1.12;
 
             margin-bottom: 25px;
         }
 
+
         .texto p {
             color: #30405e;
 
-            font-size: 14px;
-            line-height: 1.4;
+            font-size: 16px;
 
-            margin-bottom: 15px;
+            line-height: 1.5;
+
+            max-width: 500px;
+
+            margin-bottom: 25px;
         }
 
-        /* BOTÕES */
+
+        /* =========================================
+           BOTÕES PRINCIPAIS
+        ========================================= */
 
         .botoes {
             display: flex;
+
+            align-items: center;
+
             gap: 12px;
+
+            flex-wrap: wrap;
         }
+
 
         .botoes button {
             background-color: #2c52b5;
 
-            color: white;
+            color: #ffffff;
 
             border: none;
 
-            border-radius: 20px;
+            border-radius: 22px;
 
-            padding: 9px 14px;
+            padding: 11px 18px;
+
+            font-size: 13px;
 
             cursor: pointer;
+
+            transition: 0.2s;
         }
+
 
         .botoes button:hover {
             background-color: #1f3f91;
+
+            transform: translateY(-1px);
         }
 
-        /* IMAGEM */
+
+        /* =========================================
+           IMAGEM
+        ========================================= */
 
         .imagem {
-            width: 110px;
+            width: 300px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
         }
 
+
+        .imagem img {
+            width: 100%;
+
+            max-width: 300px;
+
+            height: auto;
+
+            object-fit: contain;
+        }
+
+
+        /* =========================================
+           PLACEHOLDER DA IMAGEM
+        ========================================= */
+
         .placeholder {
-            width: 110px;
-            height: 110px;
+            width: 250px;
+
+            height: 250px;
 
             background-color: #cbd5e3;
 
-            border-radius: 35px;
+            border-radius: 60px;
 
             position: relative;
+
+            overflow: hidden;
         }
 
-        /* LINHAS DA IMAGEM */
 
         .placeholder::before {
             content: "";
 
             position: absolute;
 
-            width: 100%;
-            height: 1px;
+            width: 140%;
 
-            background-color: white;
+            height: 2px;
+
+            background-color: #ffffff;
 
             top: 50%;
-            left: 0;
+
+            left: -20%;
 
             transform: rotate(45deg);
         }
+
 
         .placeholder::after {
             content: "";
 
             position: absolute;
 
-            width: 100%;
-            height: 1px;
+            width: 140%;
 
-            background-color: white;
+            height: 2px;
+
+            background-color: #ffffff;
 
             top: 50%;
-            left: 0;
+
+            left: -20%;
 
             transform: rotate(-45deg);
         }
 
-        /* COMO FUNCIONA */
+
+        /* =========================================
+           COMO FUNCIONA
+        ========================================= */
 
         .como-funciona {
-            margin-top: 40px;
+            margin-top: 70px;
         }
+
 
         .como-funciona > h2 {
-            font-size: 22px;
+            color: #23479f;
 
-            margin-bottom: 22px;
+            font-size: 28px;
+
+            margin-bottom: 35px;
         }
+
+
+        /* =========================================
+           ETAPAS
+        ========================================= */
+
+        .etapas {
+            display: grid;
+
+            grid-template-columns: repeat(3, 1fr);
+
+            gap: 35px;
+        }
+
 
         .etapa {
             display: flex;
 
-            align-items: center;
+            align-items: flex-start;
 
             gap: 15px;
-
-            margin-bottom: 25px;
         }
 
+
+        /* =========================================
+           ÍCONES
+        ========================================= */
+
         .icone {
-            min-width: 45px;
-            height: 45px;
+            min-width: 50px;
+
+            width: 50px;
+
+            height: 50px;
 
             background-color: #d3ddea;
 
             border-radius: 50%;
 
             display: flex;
+
             align-items: center;
+
             justify-content: center;
 
-            font-size: 25px;
+            font-size: 23px;
 
             color: #2850ad;
         }
+
+
+        /* =========================================
+           TEXTO DAS ETAPAS
+        ========================================= */
 
         .etapa h3 {
-            font-size: 14px;
+            color: #23479f;
 
-            margin-bottom: 2px;
+            font-size: 15px;
+
+            margin-bottom: 7px;
         }
+
 
         .etapa p {
-            font-size: 11px;
-
             color: #303b4f;
 
-            max-width: 210px;
+            font-size: 12px;
+
+            line-height: 1.5;
         }
 
-        /* NAVEGAÇÃO */
 
-        nav {
-            margin: 20px;
-        }
-
-        nav ul {
-            list-style: none;
-
-            display: flex;
-
-            justify-content: center;
-
-            gap: 20px;
-        }
-
-        nav a {
-            text-decoration: none;
-
-            color: #2850ad;
-
-            font-size: 14px;
-        }
-
-        /* RODAPÉ */
+        /* =========================================
+           RODAPÉ
+        ========================================= */
 
         footer {
+            width: 100%;
+
             background-color: #25489f;
 
             color: #b8c5e5;
@@ -274,29 +443,236 @@ $ano = date("Y");
 
             font-size: 11px;
 
-            margin-top: 30px;
+            margin-top: 50px;
         }
 
-        /* RESPONSIVIDADE */
 
-        @media (max-width: 500px) {
+        /* =========================================
+           TABLET
+        ========================================= */
+
+        @media (max-width: 800px) {
+
+            header {
+                padding: 0 20px;
+            }
+
+            main {
+                padding: 40px 25px;
+            }
 
             .inicio {
-                gap: 10px;
+                gap: 30px;
             }
 
             .texto h2 {
-                font-size: 24px;
+                font-size: 34px;
             }
 
-            .imagem,
-            .placeholder {
-                width: 100px;
-                height: 100px;
+            .imagem {
+                width: 220px;
             }
+
+            .placeholder {
+                width: 190px;
+
+                height: 190px;
+
+                border-radius: 45px;
+            }
+
+            .etapas {
+                grid-template-columns: 1fr;
+            }
+
+            .etapa {
+                max-width: 500px;
+            }
+
+        }
+
+
+        /* =========================================
+           CELULAR
+        ========================================= */
+
+        @media (max-width: 600px) {
+
+            header {
+                height: 65px;
+
+                padding: 0 16px;
+            }
+
+
+            .logo-text {
+                font-size: 19px;
+            }
+
+
+            .header-direita {
+                gap: 8px;
+            }
+
+
+            .entrar,
+            .cadastre-se {
+                padding: 6px 11px;
+
+                font-size: 11px;
+            }
+
+
+            main {
+                padding: 35px 20px;
+            }
+
+
+            .inicio {
+                flex-direction: column;
+
+                align-items: flex-start;
+
+                gap: 30px;
+            }
+
+
+            .texto {
+                width: 100%;
+            }
+
+
+            .texto h2 {
+                font-size: 30px;
+
+                line-height: 1.1;
+
+                margin-bottom: 20px;
+            }
+
+
+            .texto p {
+                font-size: 14px;
+
+                margin-bottom: 22px;
+            }
+
 
             .botoes {
-                flex-wrap: wrap;
+                width: 100%;
+
+                flex-direction: column;
+
+                align-items: stretch;
+            }
+
+
+            .botoes button {
+                width: 100%;
+
+                padding: 11px;
+            }
+
+
+            .imagem {
+                width: 100%;
+
+                display: flex;
+
+                justify-content: center;
+            }
+
+
+            .placeholder {
+                width: 160px;
+
+                height: 160px;
+
+                border-radius: 40px;
+            }
+
+
+            .como-funciona {
+                margin-top: 45px;
+            }
+
+
+            .como-funciona > h2 {
+                font-size: 24px;
+
+                margin-bottom: 25px;
+            }
+
+
+            .etapas {
+                gap: 25px;
+            }
+
+
+            .etapa {
+                gap: 12px;
+            }
+
+
+            .icone {
+                min-width: 45px;
+
+                width: 45px;
+
+                height: 45px;
+            }
+
+
+            .etapa h3 {
+                font-size: 14px;
+            }
+
+
+            .etapa p {
+                font-size: 11px;
+            }
+
+        }
+
+
+        /* =========================================
+           CELULAR PEQUENO
+        ========================================= */
+
+        @media (max-width: 380px) {
+
+            header {
+                padding: 0 12px;
+            }
+
+
+            .logo-text {
+                font-size: 17px;
+            }
+
+
+            .header-direita {
+                gap: 5px;
+            }
+
+
+            .entrar,
+            .cadastre-se {
+                padding: 5px 9px;
+
+                font-size: 10px;
+            }
+
+
+            .texto h2 {
+                font-size: 27px;
+            }
+
+
+            .placeholder {
+                width: 140px;
+
+                height: 140px;
             }
 
         }
@@ -308,66 +684,117 @@ $ano = date("Y");
 
 <body>
 
-    <!-- CABEÇALHO -->
+
+    <!-- =========================================
+         CABEÇALHO
+    ========================================== -->
 
     <header>
 
-        <button
-            class="entrar"
-            onclick="window.location.href='login.html'">
-            Entrar
-        </button>
 
-        <h1>
-            <?php echo $nomeSistema; ?>
-        </h1>
+        <!-- LOGO À ESQUERDA -->
 
-        <button class="menu">
-            ☰
-        </button>
+        <a
+            href="index.php"
+            class="logo"
+        >
+
+            <span class="logo-text">
+                <?php echo $nomeSistema; ?>
+            </span>
+
+        </a>
+
+
+        <!-- BOTÕES À DIREITA -->
+
+        <div class="header-direita">
+
+
+            <!-- BOTÃO ENTRAR -->
+
+            <button
+                class="entrar"
+                onclick="window.location.href='login.php'"
+            >
+                Entrar
+            </button>
+
+
+            <!-- BOTÃO CADASTRE-SE -->
+
+            <a
+                href="cadastro.php"
+                class="cadastre-se"
+            >
+                Cadastre-se
+            </a>
+
+
+        </div>
+
 
     </header>
 
 
-    <!-- CONTEÚDO PRINCIPAL -->
+
+    <!-- =========================================
+         CONTEÚDO
+    ========================================== -->
 
     <main>
+
 
         <!-- APRESENTAÇÃO -->
 
         <section class="inicio">
 
+
             <div class="texto">
 
+
                 <h2>
+
                     Cuidado que<br>
                     você merece,<br>
                     sempre que<br>
                     precisar.
+
                 </h2>
 
+
                 <p>
-                    Agende consultas com facilidade de forma
-                    rápida e segura.
+
+                    Agende consultas com facilidade
+                    de forma rápida e segura.
+
                 </p>
 
 
                 <div class="botoes">
 
+
                     <button
-                        onclick="window.location.href='agendamento.php'">
+                        onclick="window.location.href='agendamento.php'"
+                    >
                         Agendar agora
                     </button>
 
+
                     <button
-                        onclick="window.location.href='historico.html'">
+                        onclick="window.location.href='historico.php'"
+                    >
                         Consultas agendadas
                     </button>
 
+
                 </div>
+
 
             </div>
 
+
+            <!-- IMAGEM -->
 
             <div class="imagem">
 
@@ -375,116 +802,117 @@ $ano = date("Y");
 
             </div>
 
+
         </section>
 
 
-        <!-- COMO FUNCIONA -->
+
+        <!-- =========================================
+             COMO FUNCIONA
+        ========================================== -->
 
         <section class="como-funciona">
+
 
             <h2>
                 Como funciona
             </h2>
 
 
-            <div class="etapa">
+            <div class="etapas">
 
-                <div class="icone">
-                    ♙
+
+                <!-- ETAPA 1 -->
+
+                <div class="etapa">
+
+                    <div class="icone">
+                        ♙
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Encontre um médico
+                        </h3>
+
+                        <p>
+                            Pesquise por especialidade,
+                            localização ou nome.
+                        </p>
+
+                    </div>
+
                 </div>
 
-                <div>
 
-                    <h3>
-                        Encontre um médico
-                    </h3>
+                <!-- ETAPA 2 -->
 
-                    <p>
-                        Pesquise por especialidade,
-                        localização ou nome.
-                    </p>
+                <div class="etapa">
+
+                    <div class="icone">
+                        ☑
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Agende sua consulta
+                        </h3>
+
+                        <p>
+                            Escolha a data e horário que
+                            melhor lhe atende.
+                        </p>
+
+                    </div>
 
                 </div>
+
+
+                <!-- ETAPA 3 -->
+
+                <div class="etapa">
+
+                    <div class="icone">
+                        ▣
+                    </div>
+
+                    <div>
+
+                        <h3>
+                            Pronto
+                        </h3>
+
+                        <p>
+                            Receba confirmação e lembretes
+                            da consulta.
+                        </p>
+
+                    </div>
+
+                </div>
+
 
             </div>
 
-
-            <div class="etapa">
-
-                <div class="icone">
-                    ☑
-                </div>
-
-                <div>
-
-                    <h3>
-                        Agende sua consulta
-                    </h3>
-
-                    <p>
-                        Escolha a data e horário que
-                        melhor lhe atende.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="etapa">
-
-                <div class="icone">
-                    ▣
-                </div>
-
-                <div>
-
-                    <h3>
-                        Pronto
-                    </h3>
-
-                    <p>
-                        Receba confirmação e lembretes
-                        da consulta.
-                    </p>
-
-                </div>
-
-            </div>
 
         </section>
+
 
     </main>
 
 
-    <!-- MENU DE NAVEGAÇÃO -->
 
-    <nav>
-
-        <ul>
-
-            <li>
-                <a href="login.html">
-                    Login
-                </a>
-            </li>
-
-            <li>
-                <a href="cadastro.html">
-                    Cadastre-se
-                </a>
-            </li>
-
-        </ul>
-
-    </nav>
-
-
-    <!-- RODAPÉ -->
+    <!-- =========================================
+         RODAPÉ
+    ========================================== -->
 
     <footer>
 
-        <?php echo $ano; ?> © <?php echo $nomeSistema; ?>
+        <?php echo $ano; ?>
+        ©
+        <?php echo $nomeSistema; ?>
 
     </footer>
 
@@ -492,3 +920,5 @@ $ano = date("Y");
 </body>
 
 </html>
+
+
