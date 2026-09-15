@@ -1,3 +1,20 @@
+<?php
+// Página inicial do sistema Facilmed
+
+$nomeSistema = "Facilmed";
+$ano = date("Y");
+?>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title><?php echo $nomeSistema; ?></title>
+
+    <style>
 
         * {
             margin: 0;
@@ -284,3 +301,194 @@
 
         }
 
+    </style>
+
+</head>
+
+
+<body>
+
+    <!-- CABEÇALHO -->
+
+    <header>
+
+        <button
+            class="entrar"
+            onclick="window.location.href='login.html'">
+            Entrar
+        </button>
+
+        <h1>
+            <?php echo $nomeSistema; ?>
+        </h1>
+
+        <button class="menu">
+            ☰
+        </button>
+
+    </header>
+
+
+    <!-- CONTEÚDO PRINCIPAL -->
+
+    <main>
+
+        <!-- APRESENTAÇÃO -->
+
+        <section class="inicio">
+
+            <div class="texto">
+
+                <h2>
+                    Cuidado que<br>
+                    você merece,<br>
+                    sempre que<br>
+                    precisar.
+                </h2>
+
+                <p>
+                    Agende consultas com facilidade de forma
+                    rápida e segura.
+                </p>
+
+
+                <div class="botoes">
+
+                    <button
+                        onclick="window.location.href='agendamento.php'">
+                        Agendar agora
+                    </button>
+
+                    <button
+                        onclick="window.location.href='historico.html'">
+                        Consultas agendadas
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="imagem">
+
+                <div class="placeholder"></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- COMO FUNCIONA -->
+
+        <section class="como-funciona">
+
+            <h2>
+                Como funciona
+            </h2>
+
+
+            <div class="etapa">
+
+                <div class="icone">
+                    ♙
+                </div>
+
+                <div>
+
+                    <h3>
+                        Encontre um médico
+                    </h3>
+
+                    <p>
+                        Pesquise por especialidade,
+                        localização ou nome.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="etapa">
+
+                <div class="icone">
+                    ☑
+                </div>
+
+                <div>
+
+                    <h3>
+                        Agende sua consulta
+                    </h3>
+
+                    <p>
+                        Escolha a data e horário que
+                        melhor lhe atende.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="etapa">
+
+                <div class="icone">
+                    ▣
+                </div>
+
+                <div>
+
+                    <h3>
+                        Pronto
+                    </h3>
+
+                    <p>
+                        Receba confirmação e lembretes
+                        da consulta.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- MENU DE NAVEGAÇÃO -->
+
+    <nav>
+
+        <ul>
+
+            <li>
+                <a href="login.html">
+                    Login
+                </a>
+            </li>
+
+            <li>
+                <a href="cadastro.html">
+                    Cadastre-se
+                </a>
+            </li>
+
+        </ul>
+
+    </nav>
+
+
+    <!-- RODAPÉ -->
+
+    <footer>
+
+        <?php echo $ano; ?> © <?php echo $nomeSistema; ?>
+
+    </footer>
+
+
+</body>
+
+</html>
