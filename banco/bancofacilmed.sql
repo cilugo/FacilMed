@@ -188,4 +188,7 @@ INSERT INTO locais (nome, tipo, categoria, endereco, cidade, bairro, estado, tel
 INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
 ('Marcelo', '123.456.789-10', 'marcelo@gmail.com', '12 98041 3375', 'alca12', 'paciente');
 
+INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
+('Henrique', '111.456.789-10', '00001126066849sp@al.educacao.sp.gov.br', '12 98133 6183', 'Mav2024@', 'medico');
+
 SELECT * FROM usuarios;

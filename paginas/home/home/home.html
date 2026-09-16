@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FacilMed - Agende sua consulta</title>
+    <link rel="stylesheet" href="/home/css/home.css">
+</head>
+<body>
+    <!-- =========================
+         CABEÇALHO
+    ========================== -->
+    <header class="header">
+        <div class="container header-content">
+            <!-- LOGO -->
+            <a href="/home/index.html" class="logo">FacilMed</a>
+
+            <!-- MENU -->
+            <nav class="menu">
+                <a href="/home/index.html" class="menu-link active">Início</a>
+                <a href="/home/especialidades.html" class="menu-link">Especialidades</a>
+                <a href="/home/estabelecimentos.html" class="menu-link">Hospitais e Clínicas</a>
+                <a href="/home/convenios.html" class="menu-link">Planos</a>
+                <a href="/home/sobre.html" class="menu-link">Sobre</a>
+            </nav>
+
+            <!-- LOCALIZAÇÃO E BOTÕES -->
+            <div class="header-actions">
+                <button class="location-button" type="button">📍</button>
+                <a href="/home/login.html" class="btn btn-outline">Entrar</a>
+                <a href="/home/cadastro.html" class="btn btn-primary">Cadastrar</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- =========================
+         CONTEÚDO PRINCIPAL
+    ========================== -->
+    <main>
+        <!-- =========================
+             SEÇÃO HERO
+        ========================== -->
+        <section class="hero">
+            <div class="container hero-content">
+                <!-- TEXTO -->
+                <div class="hero-text">
+                    <h1>
+                        Agende sua consulta
+                        <br>
+                        de forma rápida e fácil
+                    </h1>
+                    <p>
+                        Encontre médicos, hospitais e clínicas
+                        <br>
+                        perto de você.
+                    </p>
+                </div>
+
+                <!-- IMAGEM -->
+                <div class="hero-image">
+                    <img src="/home/img/teste.jpg" alt="Ilustração de atendimento médico">
+                </div>
+            </div>
+
+            <!-- =========================
+                 BARRA DE PESQUISA
+            ========================== -->
+            <div class="container search-container">
+                <form id="searchForm" class="search-form">
+                    <!-- CAMPO DE PESQUISA -->
+                    <div class="search-field">
+                        <span class="search-icon">⌕</span>
+                        <input type="text" id="search" name="search" placeholder="Buscar por especialidade, médico ou clínica...">
+                    </div>
+
+                    <!-- LOCALIZAÇÃO -->
+                    <div class="search-field location-field">
+                        <span class="location-icon">📍</span>
+                        <input type="text" id="location" name="location" placeholder="Sua localização">
+                    </div>
+
+                    <!-- BOTÃO -->
+                    <button type="submit" class="search-button">Buscar</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- =========================
+             ESPECIALIDADES
+        ========================== -->
+        <section class="specialties">
+            <div class="container">
+                <!-- TÍTULO -->
+                <div class="section-header">
+                    <h2>Especialidades em destaque</h2>
+                    <a href="/home/especialidades.html" class="view-all">Ver todas</a>
+                </div>
+
+                <!-- CARDS -->
+                <div class="specialties-wrapper">
+                    <button class="arrow-button left" id="prevSpecialty" type="button">‹</button>
+
+                    <div class="specialties-list" id="specialtiesList">
+                        <!-- CARD 1 -->
+                        <a href="/home/especialidade.html?especialidade=cardiologia" class="specialty-card">
+                            <div class="specialty-icon">♡</div>
+                            <span>Cardiologia</span>
+                        </a>
+
+                        <!-- CARD 2 -->
+                        <a href="/home/especialidade.html?especialidade=dermatologia" class="specialty-card">
+                            <div class="specialty-icon">♡</div>
+                            <span>Dermatologia</span>
+                        </a>
+
+                        <!-- CARD 3 -->
+                        <a href="/home/especialidade.html?especialidade=pediatria" class="specialty-card">
+                            <div class="specialty-icon">♡</div>
+                            <span>Pediatria</span>
+                        </a>
+
+                        <!-- CARD 4 -->
+                        <a href="/home/especialidade.html?especialidade=ortopedia" class="specialty-card">
+                            <div class="specialty-icon">♡</div>
+                            <span>Ortopedia</span>
+                        </a>
+
+                        <!-- CARD 5 -->
+                        <a href="/home/especialidade.html?especialidade=ginecologia" class="specialty-card">
+                            <div class="specialty-icon">♡</div>
+                            <span>Ginecologia</span>
+                        </a>
+
+                        <!-- CARD 6 -->
+                        <a href="/home/especialidade.html?especialidade=neurologia" class="specialty-card">
+                            <div class="specialty-icon">♡</div>
+                            <span>Neurologia</span>
+                        </a>
+                    </div>
+
+                    <button class="arrow-button right" id="nextSpecialty" type="button">›</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- =========================
+             COMO FUNCIONA
+        ========================== -->
+        <section class="how-it-works">
+            <div class="container">
+                <div class="section-header center">
+                    <h2>Como funciona?</h2>
+                    <p>Agendar sua consulta pelo FacilMed é simples.</p>
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Encontre um médico</h3>
+                        <p>Pesquise por especialidade, médico ou localização.</p>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Escolha o horário</h3>
+                        <p>Confira os horários disponíveis para atendimento.</p>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Agende sua consulta</h3>
+                        <p>Escolha o melhor horário e confirme seu agendamento.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =========================
+         RODAPÉ
+    ========================== -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div>
+                <strong>FacilMed</strong>
+                <p>Facilitando o acesso à saúde.</p>
+            </div>
+
+            <div class="footer-links">
+                <a href="/home/sobre.html">Sobre</a>
+                <a href="/home/contato.html">Contato</a>
+                <a href="/home/politica.html">Política de Privacidade</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/home/js/home.js"></script>
+</body>
+</html>
