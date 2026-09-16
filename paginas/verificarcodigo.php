@@ -58,5 +58,8 @@ $usuario = $resultado->fetch_assoc();
         </form>
     </section>
 </main>
+<footer>
+    &copy; <?= date("Y") ?> FacilMed - Todos os direitos reservados.
+</footer>
 </body>
 </html>

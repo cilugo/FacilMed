@@ -68,19 +68,30 @@ if(isset($_GET['editar'])){
 }
 
 $lista = $conexao->query("SELECT id, nome FROM especialidades ORDER BY nome ASC");
+
+$base = "../";
+$paginaAtiva = "especialidades.php";
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Especialidades | Admin FacilMed</title>
     <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/admin.css">
+    <link rel="stylesheet" href="../../css/admin-painel.css">
 </head>
 <body>
-<main class="container">
-    <p><a href="../paineladmin.php">&larr; Voltar ao painel</a></p>
-    <h1>Especialidades</h1>
+
+<?php include("../_sidebar_admin.php"); ?>
+
+<main class="conteudo">
+    <header class="topo">
+        <div>
+            <h1>Especialidades</h1>
+            <p>Especialidades médicas disponíveis para os médicos escolherem no cadastro.</p>
+        </div>
+    </header>
 
     <?php if($erro): ?><p class="mensagem-erro"><?= htmlspecialchars($erro) ?></p><?php endif; ?>
     <?php if($sucesso): ?><p class="mensagem-sucesso"><?= htmlspecialchars($sucesso) ?></p><?php endif; ?>
@@ -121,5 +132,8 @@ $lista = $conexao->query("SELECT id, nome FROM especialidades ORDER BY nome ASC"
         </tbody>
     </table>
 </main>
+
+<footer class="rodape-painel">&copy; <?= date("Y") ?> FacilMed — Painel administrativo.</footer>
+
 </body>
 </html>

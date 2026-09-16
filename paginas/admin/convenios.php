@@ -58,19 +58,30 @@ $lista = $conexao->query(
     "SELECT c.*, (SELECT COUNT(*) FROM planos p WHERE p.convenio_id = c.id) AS total_planos
      FROM convenios c ORDER BY c.nome ASC"
 );
+
+$base = "../";
+$paginaAtiva = "convenios.php";
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convênios | Admin FacilMed</title>
     <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/admin.css">
+    <link rel="stylesheet" href="../../css/admin-painel.css">
 </head>
 <body>
-<main class="container">
-    <p><a href="../paineladmin.php">&larr; Voltar ao painel</a></p>
-    <h1>Convênios</h1>
+
+<?php include("../_sidebar_admin.php"); ?>
+
+<main class="conteudo">
+    <header class="topo">
+        <div>
+            <h1>Convênios</h1>
+            <p>Convênios simulados no sistema — cada um pode ter vários planos com valores próprios.</p>
+        </div>
+    </header>
 
     <?php if($erro): ?><p class="mensagem-erro"><?= htmlspecialchars($erro) ?></p><?php endif; ?>
     <?php if($sucesso): ?><p class="mensagem-sucesso"><?= htmlspecialchars($sucesso) ?></p><?php endif; ?>
@@ -124,5 +135,8 @@ $lista = $conexao->query(
         </tbody>
     </table>
 </main>
+
+<footer class="rodape-painel">&copy; <?= date("Y") ?> FacilMed — Painel administrativo.</footer>
+
 </body>
 </html>

@@ -5,6 +5,7 @@
 //=========================================
 
 require_once("conexao.php");
+require_once("validarCRM.php");
 
 if($_SERVER["REQUEST_METHOD"] != "POST") {
     die("Acesso inválido.");
@@ -64,8 +65,9 @@ if($sql->num_rows > 0) {
 // Validação do CRM
 //=========================================
 
-// Aqui será chamado o validarCRM.php
-// if(!validarCRM($crm,$uf)){}
+if(!validarCRM($crm, $uf)) {
+    die("CRM inválido. Informe apenas números (mínimo 4 dígitos) e uma UF válida.");
+}
 
 if($especialidadeId <= 0) {
     die("Selecione uma especialidade.");
@@ -88,6 +90,10 @@ if($sqlCrm->num_rows > 0) {
 // Cadastra Usuário
 //=========================================
 
+// Transação: se o INSERT em `medicos` falhar depois do INSERT em
+// `usuarios`, desfaz os dois em vez de deixar uma conta sem perfil.
+$conexao->begin_transaction();
+
 $stmt = $conexao->prepare("INSERT INTO usuarios (nome,cpf,email,telefone,senha,tipo) VALUES (?,?,?,?,?,'medico')");
 $stmt->bind_param("sssss", $nome, $cpf, $email, $telefone, $senhaCriptografada);
 
@@ -95,12 +101,19 @@ if($stmt->execute()) {
     $usuarioID = $stmt->insert_id;
     $medico = $conexao->prepare("INSERT INTO medicos (usuario_id,crm,uf,especialidade_id) VALUES (?,?,?,?)");
     $medico->bind_param("issi", $usuarioID, $crm, $uf, $especialidadeId);
-    $medico->execute();
-    echo "<script>
-        alert('Médico cadastrado com sucesso!');
-        window.location='../paginas/login.html';
-    </script>";
+
+    if($medico->execute()) {
+        $conexao->commit();
+        echo "<script>
+            alert('Médico cadastrado com sucesso!');
+            window.location='../paginas/login.html';
+        </script>";
+    } else {
+        $conexao->rollback();
+        echo "Erro ao cadastrar o perfil de médico. Tente novamente.";
+    }
 } else {
+    $conexao->rollback();
     echo "Erro ao cadastrar.";
 }
 ?>

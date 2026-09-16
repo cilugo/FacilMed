@@ -42,5 +42,7 @@ $paginaAtiva = "perfil.php";
     </section>
 </main>
 
+<footer class="rodape-painel">&copy; <?= date("Y") ?> FacilMed — Painel do médico.</footer>
+
 </body>
 </html>

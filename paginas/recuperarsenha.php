@@ -118,7 +118,7 @@ if($erroEnvio) {
     <?php if($modoDesenvolvimento): ?>
     <!-- Modo de desenvolvimento: SMTP não configurado, mostra o código aqui só para teste -->
     <p style="background:#fff3cd; color:#856404; padding:10px 15px; border-radius:6px; font-size:13px;">
-        ⚠️ Modo de desenvolvimento: SMTP não configurado (veja o arquivo <code>.env.example</code>).
+        Modo de desenvolvimento: SMTP não configurado (veja o arquivo <code>.env.example</code>).
         O código está sendo exibido aqui só para teste local — em produção ele vai por e-mail.
     </p>
     <div class="email">

@@ -1,6 +1,7 @@
 <?php
 require_once("conexao.php");
 require_once("verificarsessao.php");
+require_once("lib/helpers.php");
 
 // Recebe dados
 if($_SERVER['REQUEST_METHOD'] !== 'POST'){
@@ -31,6 +32,28 @@ if($medico_id <= 0 || empty($data_consulta) || empty($horario) || empty($tipo_co
 if(!in_array($tipo_atendimento, ['SUS', 'convenio', 'particular'], true)){
     die("Forma de atendimento inválida.");
 }
+
+// Verifica se o horário escolhido está dentro de algum bloco de
+// disponibilidade do médico para o dia da semana da consulta
+// (evita agendar fora do horário de atendimento configurado,
+// caso alguém tente burlar o calendário do formulário).
+if(strtotime($data_consulta) === false){
+    die("Data inválida.");
+}
+$diaSemana = diaSemanaEnum($data_consulta);
+
+$sqlDisp = $conexao->prepare(
+    "SELECT id FROM disponibilidades
+     WHERE medico_id = ? AND dia_semana = ? AND ativo = 1
+       AND ? >= hora_inicio AND ? < hora_fim"
+);
+$sqlDisp->bind_param("isss", $medico_id, $diaSemana, $horario, $horario);
+$sqlDisp->execute();
+$sqlDisp->store_result();
+if($sqlDisp->num_rows === 0){
+    die("Esse médico não atende nesse dia/horário. Escolha um horário disponível no calendário.");
+}
+$sqlDisp->close();
 
 // Se for por convênio, valida se o plano de fato pertence ao convênio escolhido
 if($tipo_atendimento === 'convenio'){

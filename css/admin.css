@@ -78,3 +78,27 @@
     border-radius: 6px;
     margin-bottom: 15px;
 }
+
+/*=========================================================
+                    RESPONSIVIDADE
+=========================================================*/
+
+@media(max-width: 900px) {
+    .card-admin {
+        max-width: 100%;
+    }
+}
+
+@media(max-width: 600px) {
+    .admin-nav {
+        flex-direction: column;
+    }
+
+    .admin-nav a {
+        text-align: center;
+    }
+
+    .card-admin {
+        padding: 15px 18px;
+    }
+}

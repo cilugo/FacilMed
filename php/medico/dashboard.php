@@ -122,8 +122,8 @@ $consultas->data_seek(0);
             <p><?= date("l, d \\d\\e F") ?></p>
         </div>
         <div class="acoes">
-            <span title="Notificações">🔔</span>
-            <span title="Perfil">👤</span>
+            <span title="Notificações">Notificações</span>
+            <span title="Perfil">Perfil</span>
         </div>
     </header>
 
@@ -203,6 +203,8 @@ $consultas->data_seek(0);
     </section>
 
 </main>
+
+<footer class="rodape-painel">&copy; <?= date("Y") ?> FacilMed — Painel do médico.</footer>
 
 </body>
 </html>

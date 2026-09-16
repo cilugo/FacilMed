@@ -70,19 +70,29 @@ if($filtroConvenio > 0){
 } else {
     $lista = $conexao->query($sqlLista . " ORDER BY c.nome, p.nome ASC");
 }
+$base = "../";
+$paginaAtiva = "planos.php";
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planos | Admin FacilMed</title>
     <link rel="stylesheet" href="../../css/style.css">
-    <link rel="stylesheet" href="../../css/admin.css">
+    <link rel="stylesheet" href="../../css/admin-painel.css">
 </head>
 <body>
-<main class="container">
-    <p><a href="../paineladmin.php">&larr; Voltar ao painel</a> | <a href="convenios.php">Convênios</a></p>
-    <h1>Planos<?php if($filtroConvenio): $convenios->data_seek(0); foreach($convenios as $c){ if($c['id'] == $filtroConvenio) echo " — " . htmlspecialchars($c['nome']); } endif; ?></h1>
+
+<?php include("../_sidebar_admin.php"); ?>
+
+<main class="conteudo">
+    <header class="topo">
+        <div>
+            <h1>Planos<?php if($filtroConvenio): $convenios->data_seek(0); foreach($convenios as $c){ if($c['id'] == $filtroConvenio) echo " — " . htmlspecialchars($c['nome']); } endif; ?></h1>
+            <p>Planos vinculados a cada convênio — são as "opções" que o paciente escolhe ao agendar uma consulta por convênio.</p>
+        </div>
+    </header>
 
     <?php if($erro): ?><p class="mensagem-erro"><?= htmlspecialchars($erro) ?></p><?php endif; ?>
     <?php if($sucesso): ?><p class="mensagem-sucesso"><?= htmlspecialchars($sucesso) ?></p><?php endif; ?>
@@ -149,5 +159,8 @@ if($filtroConvenio > 0){
         </tbody>
     </table>
 </main>
+
+<footer class="rodape-painel">&copy; <?= date("Y") ?> FacilMed — Painel administrativo.</footer>
+
 </body>
 </html>

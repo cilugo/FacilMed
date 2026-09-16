@@ -47,7 +47,7 @@ $_SESSION["tipo"] = $usuario["tipo"];
 
 // Redireciona baseado no tipo de usuário
 if($usuario["tipo"] === "paciente") {
-    echo "<script>alert('Login realizado com sucesso!'); window.location='../paginas/homepaciente.html';</script>";
+    echo "<script>alert('Login realizado com sucesso!'); window.location='../paginas/pacientedash.php';</script>";
 } elseif($usuario["tipo"] === "medico") {
     echo "<script>alert('Login realizado com sucesso!'); window.location='../php/medico/dashboard.php';</script>";
 } elseif($usuario["tipo"] === "admin") {

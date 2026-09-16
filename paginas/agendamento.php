@@ -19,17 +19,30 @@ $planosPorConvenio = [];
 while($p = $planos->fetch_assoc()){
     $planosPorConvenio[$p['convenio_id']][] = $p;
 }
+
+// Dias da semana em que cada médico tem algum bloco de disponibilidade
+// cadastrado, para o calendário já mostrar esses dias como clicáveis
+// sem precisar de uma requisição extra ao trocar de médico.
+$disponibilidades = $conexao->query("SELECT DISTINCT medico_id, dia_semana FROM disponibilidades WHERE ativo = 1");
+$diasDisponiveisPorMedico = [];
+while($d = $disponibilidades->fetch_assoc()){
+    $diasDisponiveisPorMedico[$d['medico_id']][] = $d['dia_semana'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendar Consulta</title>
+    <title>Agendar Consulta | FacilMed</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <main class="container">
+<header>
+    <h1>FacilMed</h1>
+</header>
+<main class="container">
+    <section class="card">
         <h1>Agendar Consulta</h1>
         <form id="formAgendamento" action="../php/agendarconsulta.php" method="POST">
 
@@ -56,11 +69,32 @@ while($p = $planos->fetch_assoc()){
                 <?php endwhile; ?>
             </select>
 
-            <label for="dataConsulta">Data</label>
-            <input type="date" id="dataConsulta" name="data_consulta" required>
+            <div id="avisoSelecioneMedico" class="aviso-calendario">
+                Selecione um médico para ver os dias e horários disponíveis.
+            </div>
 
-            <label for="horario">Horário</label>
-            <select id="horario" name="horario" required></select>
+            <div id="blocoCalendario" style="display:none;">
+                <label>Escolha o dia</label>
+                <div class="calendario">
+                    <div class="calendario-cabecalho">
+                        <button type="button" id="mesAnterior" class="calendario-nav" aria-label="Mês anterior">&laquo;</button>
+                        <span id="calendarioMesAno"></span>
+                        <button type="button" id="mesProximo" class="calendario-nav" aria-label="Próximo mês">&raquo;</button>
+                    </div>
+                    <div class="calendario-dias-semana">
+                        <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                    </div>
+                    <div class="calendario-grade" id="calendarioGrade"></div>
+                </div>
+
+                <label>Horários disponíveis</label>
+                <div class="horarios-grade" id="horariosGrade">
+                    <p class="aviso-calendario">Escolha um dia no calendário acima.</p>
+                </div>
+            </div>
+
+            <input type="hidden" id="dataConsulta" name="data_consulta" required>
+            <input type="hidden" id="horario" name="horario" required>
 
             <label for="tipoConsulta">Modalidade</label>
             <select id="tipoConsulta" name="tipo_consulta" required>
@@ -102,12 +136,20 @@ while($p = $planos->fetch_assoc()){
         </form>
 
         <div id="resumo"></div>
-    </main>
+    </section>
+</main>
+<footer>
+    © 2026 FacilMed
+</footer>
 
     <script>
         // Planos de cada convênio, gerados pelo PHP, para o JS popular o <select> de plano
         // e sugerir o valor sem precisar de outra requisição ao servidor.
         const planosPorConvenio = <?= json_encode($planosPorConvenio, JSON_UNESCAPED_UNICODE) ?>;
+
+        // Dias da semana (segunda, terca...) em que cada médico tem disponibilidade
+        // cadastrada, para o calendário saber quais dias são clicáveis.
+        const diasDisponiveisPorMedico = <?= json_encode($diasDisponiveisPorMedico, JSON_UNESCAPED_UNICODE) ?>;
     </script>
     <script src="../js/agendamento.js"></script>
 </body>

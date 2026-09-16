@@ -2,9 +2,9 @@ body{
     background-color: lightblue;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 .login{
@@ -13,7 +13,20 @@ body{
     border-radius: 10px;
     box-shadow: 0 0 15px #000000;
     width: 40%;
+    max-width: 420px;
+    min-width: 280px;
     text-align: center;
+    margin: auto 20px;
+}
+
+.rodape-login{
+    width: 100%;
+    background-color: #183e9f;
+    color: #fff;
+    text-align: center;
+    padding: 18px;
+    font-size: 13px;
+    box-sizing: border-box;
 }
 
 .login h2{
@@ -66,4 +79,34 @@ body{
     margin-top: 15px;
     color: red;
     font-size: 14px;
+}
+
+.cadastro-link {
+    text-align: center;
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+.cadastro-link a {
+    color: rgb(65, 65, 246);
+    font-weight: bold;
+}
+
+/*=========================================================
+                    RESPONSIVIDADE
+=========================================================*/
+
+@media(max-width: 600px){
+    .login{
+        width: 100%;
+        padding: 22px;
+    }
+
+    .login h2{
+        font-size: 26px;
+    }
+
+    .login button{
+        width: 100%;
+    }
 }

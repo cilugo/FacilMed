@@ -69,6 +69,25 @@ CREATE TABLE medicos (
 );
 
 -- ==========================================
+-- DISPONIBILIDADE (horário de trabalho do médico)
+-- ==========================================
+-- Cada linha é um bloco recorrente semanal (ex: toda segunda,
+-- das 08:00 às 12:00, consultas de 30 em 30 minutos). O sistema
+-- gera os horários exatos a partir daqui e subtrai o que já
+-- está ocupado em 'consultas' para saber o que está livre.
+
+CREATE TABLE disponibilidades (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    medico_id INT NOT NULL,
+    dia_semana ENUM('domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado') NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fim TIME NOT NULL,
+    duracao_consulta_minutos SMALLINT NOT NULL DEFAULT 30,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    FOREIGN KEY (medico_id) REFERENCES medicos(id) ON DELETE CASCADE
+);
+
+-- ==========================================
 -- PACIENTES
 -- ==========================================
 
@@ -76,6 +95,7 @@ CREATE TABLE pacientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL UNIQUE,
     data_nascimento DATE,
+    sexo ENUM('Masculino', 'Feminino', 'Prefiro não informar'),
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
@@ -229,5 +249,11 @@ INSERT INTO locais (nome, tipo, categoria, endereco, cidade, bairro, estado, tel
 -- Senha de teste: "alca12" (hash bcrypt válido, compatível com password_verify do PHP)
 INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
 ('Marcelo', '123.456.789-10', 'marcelo@gmail.com', '12 98041 3375', '$2b$12$X5wW1dD2MuYF7yUKwws71u.5Cq7FDKPdnEElUKGGyP1Lk91SARX4.', 'paciente');
+
+-- O usuário de teste é do tipo 'paciente', então também precisa de uma
+-- linha em 'pacientes' (perfil específico) — sem isso, telas como o
+-- dashboard e o agendamento de consulta não encontram o paciente.
+INSERT INTO pacientes (usuario_id, data_nascimento, sexo)
+SELECT id, '1990-01-01', 'Prefiro não informar' FROM usuarios WHERE email = 'marcelo@gmail.com';
 
 SELECT * FROM usuarios;

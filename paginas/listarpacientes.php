@@ -1,4 +1,3 @@
-<!--conteúdo à ser revisado-->
 <?php
 require_once("../php/conexao.php");
 require_once("../php/verificarsessao.php"); // garante sessão ativa
@@ -30,47 +29,64 @@ $result = $sql->get_result();
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Listar Pacientes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacientes | FacilMed</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
-<main class="container">
-    <h1>Pacientes</h1>
-    <table border="1" cellpadding="8" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Email</th>
-                <th>Telefone</th>
-                <th>Data Nascimento</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php while($row = $result->fetch_assoc()): ?>
-            <tr>
-                <td><?= htmlspecialchars($row['nome']) ?></td>
-                <td><?= htmlspecialchars($row['cpf']) ?></td>
-                <td><?= htmlspecialchars($row['email']) ?></td>
-                <td><?= htmlspecialchars($row['telefone']) ?></td>
-                <td><?= htmlspecialchars($row['data_nascimento']) ?></td>
-                <td>
-                    <a href="editarpaciente.php?id=<?= $row['paciente_id'] ?>">Editar</a>
-                    <?php if($tipoUsuario !== 'paciente'): ?>
-                        |
-                        <form action="../php/excluirpaciente.php" method="POST" class="form-inline"
-                              onsubmit="return confirm('Deseja realmente excluir este paciente?')">
-                            <input type="hidden" name="id" value="<?= $row['paciente_id'] ?>">
-                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-                            <button type="submit" class="link-botao">Excluir</button>
-                        </form>
-                    <?php endif; ?>
-                </td>
-            </tr>
-        <?php endwhile; ?>
-        </tbody>
-    </table>
-</main>
+    <header>
+        <h1>FacilMed</h1>
+    </header>
+    <main class="container">
+        <?php if($tipoUsuario === 'admin'): ?>
+            <p><a href="paineladmin.php">&larr; Voltar ao painel</a></p>
+        <?php endif; ?>
+
+        <section class="card-admin" style="max-width:none;">
+            <h2>Pacientes</h2>
+            <table border="1" cellpadding="8" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>CPF</th>
+                        <th>Email</th>
+                        <th>Telefone</th>
+                        <th>Data Nascimento</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php if($result->num_rows === 0): ?>
+                    <tr><td colspan="6">Nenhum paciente encontrado.</td></tr>
+                <?php endif; ?>
+                <?php while($row = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($row['nome']) ?></td>
+                        <td><?= htmlspecialchars($row['cpf']) ?></td>
+                        <td><?= htmlspecialchars($row['email']) ?></td>
+                        <td><?= htmlspecialchars($row['telefone']) ?></td>
+                        <td><?= $row['data_nascimento'] ? date("d/m/Y", strtotime($row['data_nascimento'])) : '—' ?></td>
+                        <td>
+                            <a href="editarpaciente.php?id=<?= $row['paciente_id'] ?>">Editar</a>
+                            <?php if($tipoUsuario !== 'paciente'): ?>
+                                |
+                                <form action="../php/excluirpaciente.php" method="POST" class="form-inline"
+                                      onsubmit="return confirm('Deseja realmente excluir este paciente?')">
+                                    <input type="hidden" name="id" value="<?= $row['paciente_id'] ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                    <button type="submit" class="link-botao">Excluir</button>
+                                </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <footer>
+        &copy; <?= date("Y") ?> FacilMed - Todos os direitos reservados.
+    </footer>
 </body>
 </html>

@@ -1,0 +1,25 @@
+/* ==========================================
+   PAINEL ADMINISTRATIVO
+   Usa a base compartilhada de painel (sidebar, topo,
+   painel, botão, tabela) em painel-base.css + os estilos
+   de formulário/CRUD já existentes em admin.css.
+========================================== */
+
+@import url("painel-base.css");
+@import url("admin.css");
+
+/* Dentro do painel (sidebar), os cartões de formulário/CRUD
+   usam o mesmo fundo branco elevado dos outros painéis. */
+.conteudo .card-admin {
+    max-width: 700px;
+}
+
+.conteudo table {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.conteudo th {
+    background: rgb(65, 65, 246);
+}

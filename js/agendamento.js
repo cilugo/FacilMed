@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const formulario = document.getElementById("formAgendamento");
     const medico = document.getElementById("medico");
     const local = document.getElementById("local");
-    const data = document.getElementById("dataConsulta");
+    const dataConsulta = document.getElementById("dataConsulta");
     const horario = document.getElementById("horario");
     const tipoConsulta = document.getElementById("tipoConsulta");
     const tipoAtendimento = document.getElementById("tipoAtendimento");
@@ -23,43 +23,184 @@ document.addEventListener("DOMContentLoaded", function () {
     const observacoes = document.getElementById("observacoes");
     const resumo = document.getElementById("resumo");
 
-    // planosPorConvenio vem de um <script> inline gerado pelo PHP na página
-    const planos = (typeof planosPorConvenio !== "undefined") ? planosPorConvenio : {};
+    const avisoSelecioneMedico = document.getElementById("avisoSelecioneMedico");
+    const blocoCalendario = document.getElementById("blocoCalendario");
+    const calendarioMesAno = document.getElementById("calendarioMesAno");
+    const calendarioGrade = document.getElementById("calendarioGrade");
+    const horariosGrade = document.getElementById("horariosGrade");
+    const botaoMesAnterior = document.getElementById("mesAnterior");
+    const botaoMesProximo = document.getElementById("mesProximo");
 
-    //===========================
-    // NÃO PERMITIR DATAS PASSADAS
-    //===========================
+    // planosPorConvenio e diasDisponiveisPorMedico vêm de um <script> inline
+    // gerado pelo PHP na página.
+    const planos = (typeof planosPorConvenio !== "undefined") ? planosPorConvenio : {};
+    const diasPorMedico = (typeof diasDisponiveisPorMedico !== "undefined") ? diasDisponiveisPorMedico : {};
+
+    const NOMES_DIA_SEMANA = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+    const NOMES_MES = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    ];
+    const MESES_A_FRENTE_LIMITE = 3;
 
     const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-    const dia = String(hoje.getDate()).padStart(2, "0");
-    data.min = `${ano}-${mes}-${dia}`;
+    hoje.setHours(0, 0, 0, 0);
+
+    let mesExibido = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    let diaSelecionado = null; // string "YYYY-MM-DD"
 
     //===========================
-    // HORÁRIOS DISPONÍVEIS
+    // FORMATA DATA COMO YYYY-MM-DD (sem depender de fuso horário)
     //===========================
 
-    const horariosDisponiveis = [
-        "08:00", "09:00", "10:00", "11:00",
-        "13:00", "14:00", "15:00", "16:00", "17:00"
-    ];
-
-    preencherHorarios();
-
-    function preencherHorarios(){
-        horario.innerHTML = "";
-        let opcaoPadrao = document.createElement("option");
-        opcaoPadrao.text = "Selecione";
-        opcaoPadrao.value = "";
-        horario.appendChild(opcaoPadrao);
-        horariosDisponiveis.forEach(function(hora){
-            let option = document.createElement("option");
-            option.value = hora;
-            option.text = hora;
-            horario.appendChild(option);
-        });
+    function formatarData(d) {
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, "0");
+        const dia = String(d.getDate()).padStart(2, "0");
+        return `${ano}-${mes}-${dia}`;
     }
+
+    //===========================
+    // CALENDÁRIO
+    //===========================
+
+    function medicoTemDiaDisponivel(diaSemanaIndex) {
+        const medicoId = medico.value;
+        if (!medicoId) return false;
+        const dias = diasPorMedico[medicoId] || [];
+        return dias.includes(NOMES_DIA_SEMANA[diaSemanaIndex]);
+    }
+
+    function renderizarCalendario() {
+        calendarioMesAno.textContent = `${NOMES_MES[mesExibido.getMonth()]} de ${mesExibido.getFullYear()}`;
+        calendarioGrade.innerHTML = "";
+
+        const primeiroDiaSemana = new Date(mesExibido.getFullYear(), mesExibido.getMonth(), 1).getDay();
+        const totalDiasMes = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 0).getDate();
+
+        for (let i = 0; i < primeiroDiaSemana; i++) {
+            const vazio = document.createElement("span");
+            vazio.className = "calendario-dia calendario-dia-vazio";
+            calendarioGrade.appendChild(vazio);
+        }
+
+        for (let dia = 1; dia <= totalDiasMes; dia++) {
+            const dataDia = new Date(mesExibido.getFullYear(), mesExibido.getMonth(), dia);
+            const dataStr = formatarData(dataDia);
+            const ehPassado = dataDia < hoje;
+            const disponivel = !ehPassado && medicoTemDiaDisponivel(dataDia.getDay());
+
+            const botaoDia = document.createElement("button");
+            botaoDia.type = "button";
+            botaoDia.textContent = String(dia);
+            botaoDia.className = "calendario-dia";
+
+            if (!disponivel) {
+                botaoDia.classList.add("calendario-dia-desabilitado");
+                botaoDia.disabled = true;
+            } else {
+                botaoDia.addEventListener("click", function () {
+                    selecionarDia(dataStr, botaoDia);
+                });
+            }
+
+            if (dataStr === diaSelecionado) {
+                botaoDia.classList.add("calendario-dia-selecionado");
+            }
+
+            calendarioGrade.appendChild(botaoDia);
+        }
+
+        // Não deixa navegar para meses anteriores ao atual
+        const primeiroMesPermitido = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        botaoMesAnterior.disabled = mesExibido <= primeiroMesPermitido;
+
+        const ultimoMesPermitido = new Date(hoje.getFullYear(), hoje.getMonth() + MESES_A_FRENTE_LIMITE, 1);
+        botaoMesProximo.disabled = mesExibido >= ultimoMesPermitido;
+    }
+
+    function selecionarDia(dataStr, botaoClicado) {
+        diaSelecionado = dataStr;
+        dataConsulta.value = dataStr;
+        horario.value = "";
+
+        document.querySelectorAll(".calendario-dia-selecionado").forEach(function (el) {
+            el.classList.remove("calendario-dia-selecionado");
+        });
+        botaoClicado.classList.add("calendario-dia-selecionado");
+
+        carregarHorarios(dataStr);
+        atualizarResumo();
+    }
+
+    function carregarHorarios(dataStr) {
+        horariosGrade.innerHTML = '<p class="aviso-calendario">Carregando horários...</p>';
+
+        const url = `../php/horariosdisponiveis.php?medico_id=${encodeURIComponent(medico.value)}&data=${encodeURIComponent(dataStr)}`;
+
+        fetch(url)
+            .then(function (resposta) { return resposta.json(); })
+            .then(function (dados) {
+                horariosGrade.innerHTML = "";
+
+                if (!dados.horarios || dados.horarios.length === 0) {
+                    horariosGrade.innerHTML = '<p class="aviso-calendario">Nenhum horário disponível nesse dia.</p>';
+                    return;
+                }
+
+                dados.horarios.forEach(function (h) {
+                    const botaoHorario = document.createElement("button");
+                    botaoHorario.type = "button";
+                    botaoHorario.textContent = h;
+                    botaoHorario.className = "horario-slot";
+                    botaoHorario.addEventListener("click", function () {
+                        horario.value = h;
+                        document.querySelectorAll(".horario-slot-selecionado").forEach(function (el) {
+                            el.classList.remove("horario-slot-selecionado");
+                        });
+                        botaoHorario.classList.add("horario-slot-selecionado");
+                        atualizarResumo();
+                    });
+                    horariosGrade.appendChild(botaoHorario);
+                });
+            })
+            .catch(function () {
+                horariosGrade.innerHTML = '<p class="aviso-calendario">Não foi possível carregar os horários. Tente novamente.</p>';
+            });
+    }
+
+    function reiniciarCalendario() {
+        diaSelecionado = null;
+        dataConsulta.value = "";
+        horario.value = "";
+        mesExibido = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        horariosGrade.innerHTML = '<p class="aviso-calendario">Escolha um dia no calendário acima.</p>';
+        renderizarCalendario();
+    }
+
+    medico.addEventListener("change", function () {
+        if (medico.value) {
+            avisoSelecioneMedico.style.display = "none";
+            blocoCalendario.style.display = "";
+        } else {
+            avisoSelecioneMedico.style.display = "";
+            blocoCalendario.style.display = "none";
+        }
+        reiniciarCalendario();
+        atualizarResumo();
+    });
+
+    botaoMesAnterior.addEventListener("click", function () {
+        mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() - 1, 1);
+        renderizarCalendario();
+    });
+
+    botaoMesProximo.addEventListener("click", function () {
+        mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 1);
+        renderizarCalendario();
+    });
+
+    renderizarCalendario();
 
     //===========================
     // FORMA DE ATENDIMENTO
@@ -144,17 +285,14 @@ document.addEventListener("DOMContentLoaded", function () {
         resumo.innerHTML =
             "<strong>Médico:</strong> " + nomeMedico +
             "<br><strong>Local:</strong> " + nomeLocal +
-            "<br><strong>Data:</strong> " + data.value +
-            "<br><strong>Horário:</strong> " + horario.value +
+            "<br><strong>Data:</strong> " + (dataConsulta.value || "—") +
+            "<br><strong>Horário:</strong> " + (horario.value || "—") +
             "<br><strong>Modalidade:</strong> " + tipoConsulta.value +
             "<br><strong>Forma de atendimento:</strong> " + tipoAtendimento.value +
             "<br><strong>Valor:</strong> R$ " + (valor.value || "0.00");
     }
 
-    medico.addEventListener("change", atualizarResumo);
     local.addEventListener("change", atualizarResumo);
-    data.addEventListener("change", atualizarResumo);
-    horario.addEventListener("change", atualizarResumo);
     tipoConsulta.addEventListener("change", atualizarResumo);
     valor.addEventListener("input", atualizarResumo);
 
@@ -171,16 +309,14 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if(data.value === ""){
-            alert("Selecione uma data.");
-            data.focus();
+        if(dataConsulta.value === ""){
+            alert("Selecione um dia no calendário.");
             e.preventDefault();
             return;
         }
 
         if(horario.value === ""){
             alert("Selecione um horário.");
-            horario.focus();
             e.preventDefault();
             return;
         }

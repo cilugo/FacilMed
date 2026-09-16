@@ -1,108 +1,14 @@
 /* ==========================================
    PAINEL MÉDICO
-   Paleta alinhada ao restante do site
-   (login.css / dashboard-preview: rgb(65,65,246))
+   Usa a base compartilhada de painel (sidebar, topo,
+   painel, botão, tabela) em painel-base.css e só define
+   aqui o que é específico do médico.
 ========================================== */
 
-body {
-    margin: 0;
-    background: #eef1fb;
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    color: #222;
-}
+@import url("painel-base.css");
 
 /* ==========================================
-   MENU LATERAL
-========================================== */
-
-.sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 220px;
-    height: 100vh;
-    background: rgb(65, 65, 246);
-    color: white;
-    padding: 25px 15px;
-    box-sizing: border-box;
-}
-
-.logo {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 40px;
-    text-align: center;
-}
-
-.sidebar nav {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.sidebar a {
-    color: white;
-    text-decoration: none;
-    padding: 12px;
-    border-radius: 5px;
-    transition: 0.2s;
-    display: block;
-    font-size: 14px;
-}
-
-.sidebar a:hover,
-.sidebar a.ativo {
-    background: rgba(255, 255, 255, 0.18);
-}
-
-.menu-final {
-    position: absolute;
-    bottom: 30px;
-    left: 15px;
-    right: 15px;
-}
-
-/* ==========================================
-   CONTEÚDO
-========================================== */
-
-.conteudo {
-    margin-left: 220px;
-    padding: 35px;
-}
-
-/* ==========================================
-   TOPO
-========================================== */
-
-.topo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.topo h1 {
-    margin: 0;
-    font-size: 26px;
-    color: #222;
-}
-
-.topo p {
-    color: #333;
-    text-transform: capitalize;
-    font-size: 14px;
-    margin-top: 4px;
-}
-
-.acoes {
-    font-size: 22px;
-    display: flex;
-    gap: 18px;
-}
-
-/* ==========================================
-   CARDS
+   CARDS DO DASHBOARD (3 colunas)
 ========================================== */
 
 .cards {
@@ -135,26 +41,6 @@ body {
 /* ==========================================
    PAINÉIS / GRID
 ========================================== */
-
-.painel {
-    background-color: #f5f5f5;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, .15);
-    margin-bottom: 20px;
-}
-
-.painel h2 {
-    margin-top: 0;
-    font-size: 19px;
-    color: #222;
-}
-
-.painel-titulo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
 
 .dashboard-grid {
     display: grid;
@@ -228,28 +114,6 @@ body {
 }
 
 /* ==========================================
-   BOTÃO (idêntico ao button do login.css)
-========================================== */
-
-.botao {
-    display: inline-block;
-    background-color: rgb(65, 65, 246);
-    color: #f5f5f5;
-    padding: 10px 22px;
-    border-radius: 5px;
-    text-decoration: none;
-    border: 1px solid rgb(65, 65, 246);
-    cursor: pointer;
-    font-size: 14px;
-    transition: .3s;
-}
-
-.botao:hover {
-    background-color: #f5f5f5;
-    color: rgb(65, 65, 246);
-}
-
-/* ==========================================
    STATUS PROFISSIONAL
 ========================================== */
 
@@ -288,23 +152,15 @@ body {
 }
 
 /* ==========================================
-   RESPONSIVIDADE
+   RESPONSIVIDADE (específica do médico)
 ========================================== */
 
 @media(max-width: 900px) {
-    .sidebar { width: 65px; }
-    .sidebar .logo { font-size: 0; }
-    .sidebar .logo::before { content: "FM"; font-size: 18px; }
-    .sidebar a { font-size: 0; text-align: center; }
-    .sidebar a::first-letter { font-size: 18px; }
-    .conteudo { margin-left: 65px; }
     .dashboard-grid { grid-template-columns: 1fr; }
     .status-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media(max-width: 600px) {
-    .conteudo { padding: 20px; }
     .cards { grid-template-columns: 1fr; }
     .status-grid { grid-template-columns: 1fr; }
-    .topo { flex-direction: column; align-items: flex-start; gap: 15px; }
 }

@@ -116,9 +116,9 @@ document.addEventListener("DOMContentLoaded", function(){
 
         }
 
-        if(senha.value.length < 8 || senha.value.length > 9){
+        if(senha.value.length < 8 || senha.value.length > 32){
 
-            alert("A senha deve possuir entre 8 e 9 caracteres.");
+            alert("A senha deve possuir entre 8 e 32 caracteres.");
 
             e.preventDefault();
 

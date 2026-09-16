@@ -1,4 +1,3 @@
-<!--conteúdo à ser revisado-->
 <?php
 require_once("conexao.php");
 require_once("verificarsessao.php");
@@ -35,7 +34,12 @@ $sql->close();
 // Exclui paciente (cascade deve remover usuario se configurado; para segurança removemos explicitamente)
 $stmt = $conexao->prepare("DELETE FROM pacientes WHERE id = ?");
 $stmt->bind_param("i", $paciente_id);
-$stmt->execute();
+
+if(!$stmt->execute()){
+    // Bloqueado pela FK de consultas (ON DELETE RESTRICT): paciente com
+    // histórico de consultas não pode ser excluído, para preservar o histórico.
+    die("Não é possível excluir: este paciente possui consultas registradas no sistema.");
+}
 $stmt->close();
 
 $stmt2 = $conexao->prepare("DELETE FROM usuarios WHERE id = ?");

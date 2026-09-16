@@ -189,3 +189,25 @@ button:disabled{
     cursor:not-allowed;
 
 }
+
+/* =====================================================
+   RESPONSIVIDADE
+===================================================== */
+
+@media(max-width:600px){
+
+    .email-card{
+        padding:20px;
+        margin:20px auto;
+    }
+
+    .codigo{
+        font-size:24px;
+        letter-spacing:3px;
+        padding:15px;
+    }
+
+    .cronometro{
+        font-size:24px;
+    }
+}

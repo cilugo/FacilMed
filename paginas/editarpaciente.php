@@ -1,4 +1,3 @@
-<!--conteúdo à ser revisado-->
 <?php
 require_once("../php/conexao.php");
 require_once("../php/verificarsessao.php");
@@ -7,6 +6,8 @@ require_once("../php/verificarsessao.php");
 if(!isset($_GET['id']) && $_SERVER['REQUEST_METHOD'] !== 'POST'){
     die("Requisição inválida.");
 }
+
+$erro = null;
 
 if($_SERVER['REQUEST_METHOD'] === 'POST'){
     if(!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])){
@@ -44,7 +45,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     $stmt->bind_param("sssssi", $nome, $cpf, $email, $telefone, $dataNascimento, $paciente_id);
 
     if($stmt->execute()){
-        echo "<script>alert('Paciente atualizado com sucesso!'); window.location='listarpacientes.php';</script>";
+        $destino = $tipoUsuario === 'paciente' ? 'pacientedash.php' : 'listarpacientes.php';
+        echo "<script>alert('Paciente atualizado com sucesso!'); window.location='$destino';</script>";
         exit;
     } else {
         $erro = "Erro ao atualizar.";
@@ -71,34 +73,54 @@ $row = $result->fetch_assoc();
 if($tipoUsuario === 'paciente' && $row['usuario_id'] != $idUsuario){
     die("Acesso negado.");
 }
+
+$voltar = $tipoUsuario === 'paciente' ? 'pacientedash.php' : 'listarpacientes.php';
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Editar Paciente</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Paciente | FacilMed</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
-<main class="container">
-    <h1>Editar Paciente</h1>
-    <?php if(!empty($erro)) echo "<p style='color:red;'>$erro</p>"; ?>
-    <form method="POST" action="editarpaciente.php">
-        <input type="hidden" name="paciente_id" value="<?= $row['paciente_id'] ?>">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-        <label>Nome</label><br>
-        <input type="text" name="nome" value="<?= htmlspecialchars($row['nome']) ?>" required><br>
-        <label>CPF</label><br>
-        <input type="text" name="cpf" value="<?= htmlspecialchars($row['cpf']) ?>" required><br>
-        <label>Email</label><br>
-        <input type="email" name="email" value="<?= htmlspecialchars($row['email']) ?>" required><br>
-        <label>Telefone</label><br>
-        <input type="text" name="telefone" value="<?= htmlspecialchars($row['telefone']) ?>"><br>
-        <label>Data de Nascimento</label><br>
-        <input type="date" name="data_nascimento" value="<?= htmlspecialchars($row['data_nascimento']) ?>"><br><br>
-        <button type="submit">Salvar</button>
-        <a href="listarpacientes.php">Cancelar</a>
-    </form>
-</main>
+    <header>
+        <h1>FacilMed</h1>
+    </header>
+    <main class="container">
+        <p><a href="<?= $voltar ?>">&larr; Voltar</a></p>
+
+        <section class="card-admin">
+            <h2>Editar dados do paciente</h2>
+            <?php if($erro): ?><p class="mensagem-erro"><?= htmlspecialchars($erro) ?></p><?php endif; ?>
+            <form method="POST" action="editarpaciente.php" class="form-admin">
+                <input type="hidden" name="paciente_id" value="<?= $row['paciente_id'] ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+
+                <label>Nome</label>
+                <input type="text" name="nome" value="<?= htmlspecialchars($row['nome']) ?>" required>
+
+                <label>CPF</label>
+                <input type="text" name="cpf" value="<?= htmlspecialchars($row['cpf']) ?>" required>
+
+                <label>Email</label>
+                <input type="email" name="email" value="<?= htmlspecialchars($row['email']) ?>" required>
+
+                <label>Telefone</label>
+                <input type="text" name="telefone" value="<?= htmlspecialchars($row['telefone']) ?>">
+
+                <label>Data de Nascimento</label>
+                <input type="date" name="data_nascimento" value="<?= htmlspecialchars($row['data_nascimento']) ?>">
+
+                <button type="submit">Salvar</button>
+                <a href="<?= $voltar ?>" class="botao-secundario">Cancelar</a>
+            </form>
+        </section>
+    </main>
+    <footer>
+        &copy; <?= date("Y") ?> FacilMed - Todos os direitos reservados.
+    </footer>
 </body>
 </html>
