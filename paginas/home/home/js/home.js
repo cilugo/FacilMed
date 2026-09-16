@@ -1,37 +1,44 @@
 // ==========================================
-// BUSCA
+// CARROSSEL DE FOTOS DO HERO
 // ==========================================
 
-const searchForm = document.getElementById("searchForm");
+const carouselTrack = document.getElementById("carouselTrack");
+const carouselDotsContainer = document.getElementById("carouselDots");
 
-searchForm.addEventListener("submit", function (event) {
+if (carouselTrack && carouselDotsContainer) {
 
-    event.preventDefault();
+    const slides = carouselTrack.querySelectorAll(".carousel-slide");
+    let indiceAtual = 0;
 
-    const search = document.getElementById("search").value.trim();
-    const location = document.getElementById("location").value.trim();
+    // Cria um botão de bolinha para cada slide
+    slides.forEach(function (slide, indice) {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "carousel-dot" + (indice === 0 ? " active" : "");
+        dot.addEventListener("click", function () {
+            irParaSlide(indice);
+        });
+        carouselDotsContainer.appendChild(dot);
+    });
 
-    if (search === "" && location === "") {
+    const dots = carouselDotsContainer.querySelectorAll(".carousel-dot");
 
-        alert("Digite uma especialidade, médico, clínica ou localização.");
+    function irParaSlide(indice) {
+        indiceAtual = indice;
+        carouselTrack.style.transform = "translateX(-" + (indiceAtual * 100) + "%)";
 
-        return;
+        dots.forEach(function (dot, i) {
+            dot.classList.toggle("active", i === indiceAtual);
+        });
     }
 
-    // Futuramente:
-    // Aqui podemos enviar os dados para uma página
-    // de resultados ou para o backend/PHP.
+    function proximoSlide() {
+        irParaSlide((indiceAtual + 1) % slides.length);
+    }
 
-    console.log("Pesquisa:", search);
-    console.log("Localização:", location);
-
-    window.location.href =
-        "resultados.html?busca=" +
-        encodeURIComponent(search) +
-        "&localizacao=" +
-        encodeURIComponent(location);
-
-});
+    // Avança automaticamente a cada 5 segundos
+    setInterval(proximoSlide, 5000);
+}
 
 
 // ==========================================
