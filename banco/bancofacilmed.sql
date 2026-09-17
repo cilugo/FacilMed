@@ -167,6 +167,18 @@ CREATE TABLE consultas (
     FOREIGN KEY (plano_id) REFERENCES planos(id) ON DELETE SET NULL
 );
 
+-- Impede duas consultas no mesmo médico/dia/horário em nível de banco
+-- (corrige a condição de corrida entre o SELECT de checagem e o INSERT
+-- em php/agendarconsulta.php). Usa uma coluna virtual em vez de um
+-- UNIQUE direto em (medico_id, data_consulta, horario) porque consultas
+-- 'Cancelada' precisam continuar liberando o horário para reagendamento;
+-- a coluna vira NULL quando cancelada, e o MySQL não considera NULLs
+-- duplicados entre si.
+ALTER TABLE consultas
+    ADD COLUMN horario_ativo TIME
+        GENERATED ALWAYS AS (CASE WHEN status <> 'Cancelada' THEN horario ELSE NULL END) VIRTUAL,
+    ADD UNIQUE KEY uq_consulta_horario_ativo (medico_id, data_consulta, horario_ativo);
+
 -- ==========================================
 -- RECUPERAÇÃO DE SENHA
 -- (antes eram 2 colunas soltas em usuarios; agora fica
@@ -180,6 +192,7 @@ CREATE TABLE recuperacao_senha (
     codigo VARCHAR(6) NOT NULL,
     expiracao DATETIME NOT NULL,
     utilizado BOOLEAN NOT NULL DEFAULT FALSE,
+    tentativas INT NOT NULL DEFAULT 0,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
@@ -202,6 +215,7 @@ CREATE TABLE recuperacao_senha (
 --     ADD FOREIGN KEY (convenio_id) REFERENCES convenios(id) ON DELETE SET NULL,
 --     ADD FOREIGN KEY (plano_id) REFERENCES planos(id) ON DELETE SET NULL;
 -- ALTER TABLE consultas DROP COLUMN especialidade, DROP COLUMN local; -- (colunas antigas em texto livre)
+-- ALTER TABLE recuperacao_senha ADD COLUMN tentativas INT NOT NULL DEFAULT 0; -- limite de tentativas do código
 
 -- ==========================================
 -- ESPECIALIDADES INICIAIS

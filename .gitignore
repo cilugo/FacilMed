@@ -1,0 +1,13 @@
+# Segredos / configuração local
+.env
+
+# Dependências
+vendor/
+node_modules/
+
+# Cache / IDE / SO
+.idea/
+.vscode/
+*.log
+.DS_Store
+Thumbs.db

@@ -12,21 +12,41 @@ if(empty($email) || empty($codigo)) {
     die("Preencha todos os campos.");
 }
 
-$stmt = $conexao->prepare(
-    "SELECT u.id FROM usuarios u
+const MAX_TENTATIVAS_CODIGO = 5;
+
+// Busca a solicitação de recuperação mais recente e ainda válida (não usada,
+// não expirada) para esse e-mail, seja o código informado certo ou errado.
+// Isso permite contar tentativas erradas contra ELA, e bloquear o código
+// (mesmo o correto) depois de várias tentativas, travando a força bruta.
+$stmtSolicitacao = $conexao->prepare(
+    "SELECT r.id, r.codigo, r.tentativas, u.id AS usuario_id FROM usuarios u
      INNER JOIN recuperacao_senha r ON r.usuario_id = u.id
-     WHERE u.email = ? AND r.codigo = ? AND r.utilizado = 0 AND r.expiracao > NOW()
+     WHERE u.email = ? AND r.utilizado = 0 AND r.expiracao > NOW()
      ORDER BY r.id DESC LIMIT 1"
 );
-$stmt->bind_param("ss", $email, $codigo);
-$stmt->execute();
-$resultado = $stmt->get_result();
+$stmtSolicitacao->bind_param("s", $email);
+$stmtSolicitacao->execute();
+$solicitacao = $stmtSolicitacao->get_result()->fetch_assoc();
 
-if($resultado->num_rows === 0) {
+if(!$solicitacao) {
     die("Código inválido ou expirado.");
 }
 
-$usuario = $resultado->fetch_assoc();
+if($solicitacao["tentativas"] >= MAX_TENTATIVAS_CODIGO) {
+    $bloquear = $conexao->prepare("UPDATE recuperacao_senha SET utilizado = 1 WHERE id = ?");
+    $bloquear->bind_param("i", $solicitacao["id"]);
+    $bloquear->execute();
+    die("Muitas tentativas incorretas. Solicite um novo código.");
+}
+
+if(!hash_equals($solicitacao["codigo"], $codigo)) {
+    $incrementar = $conexao->prepare("UPDATE recuperacao_senha SET tentativas = tentativas + 1 WHERE id = ?");
+    $incrementar->bind_param("i", $solicitacao["id"]);
+    $incrementar->execute();
+    die("Código inválido ou expirado.");
+}
+
+$usuario = ["id" => $solicitacao["usuario_id"]];
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
