@@ -3,9 +3,7 @@ require_once("conexao.php");
 require_once("verificarsessao.php");
 
 // Somente admin pode excluir (ajuste conforme sua regra)
-if($tipoUsuario !== 'admin'){
-    die("Acesso negado.");
-}
+exigirPerfil("admin");
 
 if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     die("Requisição inválida.");

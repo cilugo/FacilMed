@@ -1,7 +1,10 @@
 <?php
-require_once("conexao.php");
-require_once("env.php");
-require_once("lib/SimpleMailer.php");
+// Este arquivo é uma PÁGINA e mora em paginas/, então todo require aponta
+// para ../php/. (Antes apontava para "conexao.php" direto, como se estivesse
+// dentro de php/, e o fluxo inteiro de recuperação quebrava com fatal error.)
+require_once("../php/conexao.php");
+require_once("../php/env.php");
+require_once("../php/lib/SimpleMailer.php");
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     die("Acesso inválido.");
@@ -129,7 +132,7 @@ if ($erroEnvio) {
                 </div>
             <?php endif; ?>
 
-            <form action="../paginas/verificarcodigo.php" method="POST" id="formCodigo">
+            <form action="verificarcodigo.php" method="POST" id="formCodigo">
                 <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
                 <div class="campo">
                     <label for="codigo">Digite o código recebido</label>
@@ -140,7 +143,7 @@ if ($erroEnvio) {
 
             <p class="novo-codigo">
                 Não recebeu o código?
-                <a href="../paginas/recuperarsenha.html">Solicitar novo código</a>
+                <a href="recuperarsenha.html">Solicitar novo código</a>
             </p>
         </section>
     </main>
@@ -149,9 +152,19 @@ if ($erroEnvio) {
         © 2026 FacilMed
     </footer>
 
-    <script src="../js/recuperarsenha.js"></script>
+    <!--
+        A constante precisa ser declarada ANTES do recuperarsenha.js: o script
+        chama atualizarCronometro() assim que carrega, e do jeito antigo (src
+        primeiro, const depois) dava ReferenceError e o cronômetro nunca rodava.
+
+        Em vez de mandar a data como texto, mandamos quantos segundos faltam e
+        somamos ao relógio do navegador. Assim o cronômetro não erra se o
+        relógio do PC do usuário estiver diferente do relógio do servidor.
+    -->
     <script>
-        const dataExpiracao = new Date("<?php echo $expiracao; ?>");
+        const segundosRestantes = <?php echo max(0, strtotime($expiracao) - time()); ?>;
+        const dataExpiracao = new Date(Date.now() + segundosRestantes * 1000);
     </script>
+    <script src="../js/recuperarsenha.js"></script>
 </body>
 </html>

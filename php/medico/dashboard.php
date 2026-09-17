@@ -1,22 +1,15 @@
 <?php
 
-session_start();
+require_once(__DIR__ . "/../conexao.php");
+require_once(__DIR__ . "/../verificarsessao.php");
+require_once(__DIR__ . "/../lib/helpers.php");
 
-require_once("../conexao.php");
-
-// ==========================================
-// VERIFICAR LOGIN E TIPO
-// ==========================================
-
-if (!isset($_SESSION["id"])) {
-    header("Location: ../../paginas/login.html");
-    exit;
-}
-
-if (!isset($_SESSION["tipo"]) || $_SESSION["tipo"] !== "medico") {
-    die("Acesso permitido apenas para médicos.");
-}
-
+// Esta área é exclusiva do médico. verificarsessao.php já abre a sessão com
+// cookie protegido, derruba sessão parada há muito tempo, manda quem não
+// está logado para a tela de login (com o caminho certo, que antes dava 404
+// no XAMPP) e prepara o token CSRF. Antes cada arquivo daqui repetia esse
+// controle à mão, cada um de um jeito.
+exigirPerfil("medico");
 $usuario_id = $_SESSION["id"];
 $paginaAtiva = "dashboard.php";
 

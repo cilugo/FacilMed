@@ -187,6 +187,10 @@ document.addEventListener("DOMContentLoaded", function () {
             blocoCalendario.style.display = "none";
         }
         reiniciarCalendario();
+        // Trocar de médico muda o preço do atendimento particular
+        if (tipoAtendimento.value === "particular") {
+            valor.value = valorParticularDoMedico();
+        }
         atualizarResumo();
     });
 
@@ -207,12 +211,20 @@ document.addEventListener("DOMContentLoaded", function () {
     // (mostra/esconde convênio+plano e ajusta o valor)
     //===========================
 
+    // O campo de valor é sempre somente-leitura: quem decide o preço é o
+    // servidor (agendarconsulta.php). Aqui só mostramos ao paciente qual
+    // vai ser o valor antes dele confirmar.
+    function valorParticularDoMedico(){
+        const opcao = medico.options[medico.selectedIndex];
+        const preco = opcao && opcao.dataset ? opcao.dataset.valorConsulta : null;
+        return preco ? parseFloat(preco).toFixed(2) : "0.00";
+    }
+
     tipoAtendimento.addEventListener("change", function(){
         if(tipoAtendimento.value === "convenio"){
             blocoConvenio.style.display = "";
             convenio.required = true;
             plano.required = true;
-            valor.readOnly = true;
         } else {
             blocoConvenio.style.display = "none";
             convenio.required = false;
@@ -221,10 +233,9 @@ document.addEventListener("DOMContentLoaded", function () {
             preencherPlanos();
             if(tipoAtendimento.value === "SUS"){
                 valor.value = "0.00";
-                valor.readOnly = true;
             } else {
-                // particular: usuário digita o valor livremente
-                valor.readOnly = false;
+                // particular: preço cadastrado pelo próprio médico
+                valor.value = valorParticularDoMedico();
             }
         }
         atualizarResumo();

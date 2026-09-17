@@ -1,6 +1,8 @@
 <?php
 // Popula o <select> de especialidade dinamicamente a partir da tabela especialidades.
 require_once("../php/conexao.php");
+// Traz a constante UFS_BRASIL, usada para montar o <select> de UF do CRM
+require_once("../php/validarCRM.php");
 $especialidades = $conexao->query("SELECT id, nome FROM especialidades ORDER BY nome ASC");
 ?>
 <!DOCTYPE html>
@@ -44,10 +46,9 @@ $especialidades = $conexao->query("SELECT id, nome FROM especialidades ORDER BY 
                     <label for="uf">UF do CRM</label>
                     <select id="uf" name="uf" required>
                         <option value="">Selecione</option>
-                        <option>SP</option>
-                        <option>RJ</option>
-                        <option>MG</option>
-                        <option>PR</option>
+                        <?php foreach(UFS_BRASIL as $sigla): ?>
+                            <option><?= $sigla ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="campo">

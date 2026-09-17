@@ -3,9 +3,7 @@ require_once("../php/conexao.php");
 require_once("../php/verificarsessao.php");
 
 // Apenas admin
-if($tipoUsuario !== 'admin'){
-    die("Acesso negado.");
-}
+exigirPerfil("admin");
 
 // Busca usuários (pacientes e médicos)
 $usuarios = $conexao->query(
@@ -61,6 +59,15 @@ $paginaAtiva = "paineladmin.php";
         <div class="kpi-card">
             <h3>Administradores</h3>
             <strong><?= $totalPorTipo['admin'] ?></strong>
+        </div>
+        <div class="kpi-card">
+            <h3>Médicos aguardando aprovação</h3>
+            <strong style="color:<?= $medicosPendentes > 0 ? '#c0392b' : 'inherit' ?>"><?= $medicosPendentes ?></strong>
+            <?php if($medicosPendentes > 0): ?>
+                <p style="margin:6px 0 0; font-size:12px;">
+                    <a href="listarmedicos.php">Revisar agora &rarr;</a>
+                </p>
+            <?php endif; ?>
         </div>
     </section>
 
