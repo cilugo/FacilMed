@@ -6,6 +6,7 @@ $medicos = $conexao->query(
      FROM medicos m
      INNER JOIN usuarios u ON m.usuario_id = u.id
      LEFT JOIN especialidades e ON e.id = m.especialidade_id
+     WHERE m.status_profissional = 'ativo'
      ORDER BY u.nome"
 );
 

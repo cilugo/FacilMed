@@ -13,26 +13,30 @@ if (empty($email)) {
     die("Informe o e-mail.");
 }
 
+// Nota de segurança: a busca abaixo pode não encontrar nenhuma conta com
+// esse e-mail, mas a resposta segue idêntica em qualquer um dos dois casos
+// (mesma tela, mesma mensagem) para não permitir descobrir por tentativa
+// e erro quais e-mails têm conta no sistema (user enumeration). Só gravamos
+// e enviamos um código de verdade quando a conta existe de fato.
 $stmt = $conexao->prepare("SELECT id, nome, email FROM usuarios WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $resultado = $stmt->get_result();
+$usuario = $resultado->fetch_assoc() ?: null;
 
-if ($resultado->num_rows === 0) {
-    die("Não encontramos uma conta com esse e-mail.");
-}
-
-$usuario = $resultado->fetch_assoc();
 $codigo = str_pad(random_int(0, 999999), 6, "0", STR_PAD_LEFT);
 $expiracao = date("Y-m-d H:i:s", time() + (15 * 60));
+$nomeExibicao = $usuario["nome"] ?? "usuário";
 
-$invalidar = $conexao->prepare("UPDATE recuperacao_senha SET utilizado = 1 WHERE usuario_id = ? AND utilizado = 0");
-$invalidar->bind_param("i", $usuario["id"]);
-$invalidar->execute();
+if ($usuario) {
+    $invalidar = $conexao->prepare("UPDATE recuperacao_senha SET utilizado = 1 WHERE usuario_id = ? AND utilizado = 0");
+    $invalidar->bind_param("i", $usuario["id"]);
+    $invalidar->execute();
 
-$inserir = $conexao->prepare("INSERT INTO recuperacao_senha (usuario_id, codigo, expiracao) VALUES (?, ?, ?)");
-$inserir->bind_param("iss", $usuario["id"], $codigo, $expiracao);
-$inserir->execute();
+    $inserir = $conexao->prepare("INSERT INTO recuperacao_senha (usuario_id, codigo, expiracao) VALUES (?, ?, ?)");
+    $inserir->bind_param("iss", $usuario["id"], $codigo, $expiracao);
+    $inserir->execute();
+}
 
 function mascararEmail($email) {
     $partes = explode("@", $email);
@@ -54,7 +58,7 @@ $mailer = SimpleMailer::fromEnv();
 $modoDesenvolvimento = ($mailer === null);
 $erroEnvio = null;
 
-if (!$modoDesenvolvimento) {
+if ($usuario && !$modoDesenvolvimento) {
     $corpoHtml = "
         <p>Olá, " . htmlspecialchars($usuario['nome']) . "!</p>
         <p>Recebemos uma solicitação de recuperação de senha para sua conta no FacilMed.</p>
@@ -108,7 +112,7 @@ if ($erroEnvio) {
                         <span>Recuperação de senha - FacilMed</span>
                     </div>
                     <hr>
-                    <p>Olá, <?php echo htmlspecialchars($usuario["nome"]); ?>!</p>
+                    <p>Olá, <?php echo htmlspecialchars($nomeExibicao); ?>!</p>
                     <p>Seu código de recuperação é:</p>
                     <div class="codigo"><?php echo $codigo; ?></div>
                     <p>Este código expira em:</p>
