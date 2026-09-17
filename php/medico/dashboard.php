@@ -116,6 +116,16 @@ $consultas->data_seek(0);
 
 <main class="conteudo">
 
+    <?php if ($medico["status_profissional"] !== "ativo"): ?>
+        <div class="aviso-pendente" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+            <?php if ($medico["status_profissional"] === "pendente"): ?>
+                <strong>Cadastro em análise.</strong> Seu perfil ainda não foi aprovado pelo administrador e não aparece na lista pública de agendamento até a aprovação.
+            <?php else: ?>
+                <strong>Perfil inativo.</strong> Seu perfil está marcado como inativo pelo administrador e não aparece na lista pública de agendamento.
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <header class="topo">
         <div>
             <h1>Bom dia, Dr. <?= htmlspecialchars($medico["nome"]) ?>!</h1>

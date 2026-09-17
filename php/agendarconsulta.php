@@ -113,6 +113,12 @@ $ins->bind_param(
 if($ins->execute()){
     echo "<script>alert('Consulta agendada com sucesso!'); window.location='../paginas/agendamento.php';</script>";
     exit;
+} elseif($ins->errno === 1062){
+    // Rede de segurança contra a condição de corrida: mesmo que duas
+    // requisições passem pelo SELECT acima quase ao mesmo tempo, a
+    // constraint UNIQUE do banco (uq_consulta_horario_ativo) rejeita a
+    // segunda inserção em vez de duplicar o horário.
+    die("Horário indisponível. Escolha outro horário.");
 } else {
     echo "Erro ao agendar consulta.";
 }
