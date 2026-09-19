@@ -1,0 +1,427 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #23459e;
+
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* =========================
+   LAYOUT PRINCIPAL (split-screen)
+========================= */
+
+.login-page {
+    flex: 1;
+
+    display: flex;
+    flex-direction: row;
+}
+
+.login-brand,
+.login-form-area {
+    flex: 1 1 50%;
+    min-width: 0;
+}
+
+
+/* =========================
+   PAINEL DA MARCA (esquerda)
+========================= */
+
+.login-brand {
+    position: relative;
+    overflow: hidden;
+
+    background: linear-gradient(160deg, #eaf1fd 0%, #dbe7fb 55%, #cfe0fa 100%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px;
+}
+
+.login-brand__logo {
+    position: relative;
+    z-index: 2;
+
+    width: 100%;
+    max-width: 320px;
+
+    object-fit: contain;
+}
+
+.login-brand__blob {
+    position: absolute;
+    border-radius: 50%;
+}
+
+.login-brand__blob--1 {
+    width: 420px;
+    height: 420px;
+
+    top: -140px;
+    left: -160px;
+
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.login-brand__blob--2 {
+    width: 260px;
+    height: 260px;
+
+    bottom: -90px;
+    left: 40px;
+
+    background: rgba(180, 205, 245, 0.6);
+}
+
+.login-brand__blob--3 {
+    width: 180px;
+    height: 180px;
+
+    top: 38%;
+    right: -70px;
+
+    background: rgba(255, 255, 255, 0.4);
+}
+
+
+/* =========================
+   PAINEL DO FORMULÁRIO (direita)
+========================= */
+
+.login-form-area {
+    background: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px 32px;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-mobile-logo {
+    display: none;
+
+    width: 150px;
+
+    margin: 0 auto 24px;
+    object-fit: contain;
+}
+
+
+/* =========================
+   TÍTULO
+========================= */
+
+.title {
+    font-size: 28px;
+    font-weight: 800;
+
+    color: #1c3a91;
+
+    margin-bottom: 6px;
+}
+
+.subtitle {
+    font-size: 14px;
+
+    color: #5c7fd6;
+
+    margin-bottom: 30px;
+}
+
+
+/* =========================
+   FORMULÁRIO
+========================= */
+
+.form-group {
+    width: 100%;
+
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: #2c4faa;
+
+    margin-bottom: 6px;
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+.input {
+    width: 100%;
+    height: 46px;
+
+    border: 1.5px solid #b9caf2;
+
+    border-radius: 10px;
+
+    background: transparent;
+
+    outline: none;
+
+    padding: 0 16px;
+
+    font-size: 14px;
+
+    color: #333;
+
+    transition: border-color 0.2s,
+                box-shadow 0.2s;
+}
+
+.input::placeholder {
+    color: #9fb3e0;
+}
+
+.input:focus {
+    border-color: #3a5fce;
+
+    box-shadow:
+        0 0 0 3px rgba(58, 95, 206, 0.12);
+}
+
+
+/* =========================
+   ESQUECI A SENHA
+========================= */
+
+.forgot-password {
+    display: block;
+
+    text-align: right;
+
+    margin: 8px 0 22px;
+
+    font-size: 12px;
+
+    color: #3a5fce;
+
+    text-decoration: underline;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   BOTÃO
+========================= */
+
+.login-button {
+    width: 100%;
+    height: 48px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: linear-gradient(135deg, #2450d1, #1c3a91);
+
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: filter 0.2s,
+                transform 0.1s;
+}
+
+.login-button:hover {
+    filter: brightness(1.05);
+}
+
+.login-button:active {
+    transform: scale(0.99);
+}
+
+
+/* =========================
+   SEPARADOR
+========================= */
+
+.divider {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    margin: 26px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+
+    height: 1px;
+
+    background: #d7deef;
+
+    flex: 1;
+}
+
+.divider span {
+    color: #8b9fd6;
+
+    font-size: 12px;
+
+    margin: 0 12px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================
+   BOTÃO GOOGLE
+========================= */
+
+.google-button {
+    width: 100%;
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    border: 1.5px solid #b9caf2;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #2c4faa;
+
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: background 0.2s,
+                transform 0.1s;
+}
+
+.google-button:hover {
+    background: #f4f7ff;
+}
+
+.google-button:active {
+    transform: scale(0.99);
+}
+
+.google-icon {
+    flex-shrink: 0;
+}
+
+
+/* =========================
+   CADASTRO
+========================= */
+
+.register {
+    text-align: center;
+
+    margin-top: 26px;
+
+    font-size: 13px;
+
+    color: #5c7fd6;
+}
+
+.register a {
+    color: #2c4faa;
+
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+
+/* =========================
+   RODAPÉ
+========================= */
+
+.rodape-login {
+    width: 100%;
+    background-color: #23459e;
+    color: #fff;
+    text-align: center;
+    padding: 14px;
+    font-size: 12px;
+}
+
+
+/* =========================
+   TABLET / CELULAR
+   (painel da marca sai, formulário ocupa a tela toda)
+========================= */
+
+@media (max-width: 860px) {
+
+    .login-page {
+        flex-direction: column;
+    }
+
+    .login-brand {
+        display: none;
+    }
+
+    .login-form-area {
+        padding: 40px 24px;
+    }
+
+    .login-mobile-logo {
+        display: block;
+    }
+
+}
+
+
+@media (max-width: 380px) {
+
+    .login-form-area {
+        padding: 28px 18px;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .login-mobile-logo {
+        width: 120px;
+        margin-bottom: 18px;
+    }
+
+}
