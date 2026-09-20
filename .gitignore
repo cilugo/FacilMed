@@ -11,3 +11,18 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Laravel (esqueleto instalado em 19/09)
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/storage/framework/cache/data
+/storage/framework/sessions
+/storage/framework/testing
+/storage/framework/views
+/storage/logs
+.phpunit.result.cache
+/.phpunit.cache
+auth.json
