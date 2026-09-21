@@ -1,7 +1,7 @@
 <?php
-require_once("conexao.php");
-require_once("verificarsessao.php");
-require_once("lib/helpers.php");
+require_once(__DIR__ . "/conexao.php");
+require_once(__DIR__ . "/verificarsessao.php");
+require_once(__DIR__ . "/lib/helpers.php");
 
 // Recebe dados
 if($_SERVER['REQUEST_METHOD'] !== 'POST'){
@@ -9,23 +9,24 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
 }
 
 // Somente pacientes agendam consulta para si mesmos
-if($tipoUsuario !== 'paciente'){
-    die("Apenas pacientes podem agendar consultas.");
-}
+exigirPerfil("paciente");
+
+// Agendar é uma ação que grava no banco, então precisa do token de segurança
+// (todas as outras ações de gravação do sistema já exigiam; esta não).
+exigirCsrf();
 
 $paciente_usuario_id = (int) $idUsuario;
-$medico_id = (int) ($_POST['medico_id'] ?? 0);
-$local_id = !empty($_POST['local_id']) ? (int) $_POST['local_id'] : null;
-$data_consulta = $_POST['data_consulta'] ?? '';
-$horario = $_POST['horario'] ?? '';
-$tipo_consulta = trim($_POST['tipo_consulta'] ?? '');
+$medico_id        = (int) ($_POST['medico_id'] ?? 0);
+$local_id         = !empty($_POST['local_id']) ? (int) $_POST['local_id'] : null;
+$data_consulta    = trim($_POST['data_consulta'] ?? '');
+$horario          = trim($_POST['horario'] ?? '');
+$tipo_consulta    = trim($_POST['tipo_consulta'] ?? '');
 $tipo_atendimento = trim($_POST['tipo_atendimento'] ?? '');
-$convenio_id = !empty($_POST['convenio_id']) ? (int) $_POST['convenio_id'] : null;
-$plano_id = !empty($_POST['plano_id']) ? (int) $_POST['plano_id'] : null;
-$valor = (float) ($_POST['valor'] ?? 0);
-$observacoes = trim($_POST['observacoes'] ?? '');
+$convenio_id      = !empty($_POST['convenio_id']) ? (int) $_POST['convenio_id'] : null;
+$plano_id         = !empty($_POST['plano_id']) ? (int) $_POST['plano_id'] : null;
+$observacoes      = trim($_POST['observacoes'] ?? '');
 
-if($medico_id <= 0 || empty($data_consulta) || empty($horario) || empty($tipo_consulta)){
+if($medico_id <= 0 || $data_consulta === '' || $horario === '' || $tipo_consulta === ''){
     die("Preencha todos os campos obrigatórios.");
 }
 
@@ -33,29 +34,82 @@ if(!in_array($tipo_atendimento, ['SUS', 'convenio', 'particular'], true)){
     die("Forma de atendimento inválida.");
 }
 
-// Verifica se o horário escolhido está dentro de algum bloco de
-// disponibilidade do médico para o dia da semana da consulta
-// (evita agendar fora do horário de atendimento configurado,
-// caso alguém tente burlar o calendário do formulário).
-if(strtotime($data_consulta) === false){
+if(!in_array($tipo_consulta, ['Presencial', 'Teleconsulta'], true)){
+    die("Tipo de consulta inválido.");
+}
+
+// ==========================================
+// DATA E HORÁRIO
+// ==========================================
+
+// Aceita só o formato AAAA-MM-DD e uma data que realmente existe
+// (strtotime sozinho aceita coisas como "2026-02-31" e "amanhã").
+$dataObj = DateTime::createFromFormat('Y-m-d', $data_consulta);
+if(!$dataObj || $dataObj->format('Y-m-d') !== $data_consulta){
     die("Data inválida.");
 }
-$diaSemana = diaSemanaEnum($data_consulta);
 
-$sqlDisp = $conexao->prepare(
-    "SELECT id FROM disponibilidades
-     WHERE medico_id = ? AND dia_semana = ? AND ativo = 1
-       AND ? >= hora_inicio AND ? < hora_fim"
-);
-$sqlDisp->bind_param("isss", $medico_id, $diaSemana, $horario, $horario);
-$sqlDisp->execute();
-$sqlDisp->store_result();
-if($sqlDisp->num_rows === 0){
-    die("Esse médico não atende nesse dia/horário. Escolha um horário disponível no calendário.");
+// Consulta no passado não faz sentido. Antes só o formato era conferido,
+// então um POST direto marcava consulta para o ano passado.
+if($data_consulta < date('Y-m-d')){
+    die("Não é possível agendar em uma data que já passou.");
 }
-$sqlDisp->close();
 
-// Se for por convênio, valida se o plano de fato pertence ao convênio escolhido
+$horario = normalizarHorario($horario);
+if($horario === null){
+    die("Horário inválido.");
+}
+
+// ==========================================
+// MÉDICO PRECISA ESTAR ATIVO
+// ==========================================
+// A tela só lista médicos 'ativo', mas um POST forjado podia marcar consulta
+// com médico ainda pendente de aprovação ou já suspenso.
+
+$sqlMedico = $conexao->prepare(
+    "SELECT valor_consulta FROM medicos WHERE id = ? AND status_profissional = 'ativo'"
+);
+$sqlMedico->bind_param("i", $medico_id);
+$sqlMedico->execute();
+$sqlMedico->bind_result($valorParticularMedico);
+if(!$sqlMedico->fetch()){
+    die("Médico indisponível para agendamento.");
+}
+$sqlMedico->close();
+
+// ==========================================
+// O HORÁRIO PRECISA ESTAR REALMENTE LIVRE
+// ==========================================
+// horariosLivres() é a mesma função que monta a lista mostrada no calendário:
+// respeita a grade de duração da consulta (30 em 30 min, por exemplo), exclui
+// horários já ocupados e os que já passaram. A checagem antiga só olhava se o
+// horário caía "dentro" do bloco, então 08:07 era aceito.
+
+if(!in_array($horario, horariosLivres($conexao, $medico_id, $data_consulta), true)){
+    die("Esse horário não está disponível. Escolha um horário livre no calendário.");
+}
+
+// ==========================================
+// LOCAL (opcional, mas se vier precisa existir e estar ativo)
+// ==========================================
+
+if($local_id !== null){
+    $verLocal = $conexao->prepare("SELECT 1 FROM locais WHERE id = ? AND ativo = 1");
+    $verLocal->bind_param("i", $local_id);
+    $verLocal->execute();
+    if($verLocal->get_result()->num_rows === 0){
+        die("Local de atendimento inválido.");
+    }
+    $verLocal->close();
+}
+
+// ==========================================
+// VALOR — SEMPRE CALCULADO NO SERVIDOR
+// ==========================================
+// O campo "valor" do formulário é apenas informativo. Se o valor viesse do
+// POST, o paciente poderia editar o HTML e marcar a própria consulta por
+// R$ 0,00. Aqui ele é sempre recalculado a partir do banco.
+
 if($tipo_atendimento === 'convenio'){
     if(!$convenio_id || !$plano_id){
         die("Selecione o convênio e o plano.");
@@ -68,16 +122,24 @@ if($tipo_atendimento === 'convenio'){
         die("Plano inválido para o convênio selecionado.");
     }
     $verPlano->close();
-    $valor = $valorPlano;
+    $valor = (float) $valorPlano;
+
 } elseif($tipo_atendimento === 'SUS'){
+    // Atendimento pelo SUS não é cobrado do paciente
     $convenio_id = null;
     $plano_id = null;
     $valor = 0.00;
+
 } else {
-    // particular: sem convênio/plano
+    // Particular: o preço é o que o próprio médico cadastrou no perfil dele
     $convenio_id = null;
     $plano_id = null;
+    $valor = (float) $valorParticularMedico;
 }
+
+// ==========================================
+// GRAVAÇÃO
+// ==========================================
 
 // Converte paciente_usuario_id para paciente_id (tabela pacientes)
 $stmt = $conexao->prepare("SELECT id FROM pacientes WHERE usuario_id = ?");
@@ -88,16 +150,6 @@ if(!$stmt->fetch()){
     die("Paciente não encontrado. Faça login como paciente para agendar.");
 }
 $stmt->close();
-
-// Verifica se já existe consulta no mesmo médico, data e horário
-$ver = $conexao->prepare("SELECT id FROM consultas WHERE medico_id = ? AND data_consulta = ? AND horario = ? AND status != 'Cancelada'");
-$ver->bind_param("iss", $medico_id, $data_consulta, $horario);
-$ver->execute();
-$ver->store_result();
-if($ver->num_rows > 0){
-    die("Horário indisponível. Escolha outro horário.");
-}
-$ver->close();
 
 // Insere consulta
 $ins = $conexao->prepare(
@@ -111,15 +163,16 @@ $ins->bind_param(
 );
 
 if($ins->execute()){
-    echo "<script>alert('Consulta agendada com sucesso!'); window.location='../paginas/agendamento.php';</script>";
+    echo "<script>alert('Consulta agendada com sucesso!'); window.location='"
+        . htmlspecialchars(urlBase() . "/paginas/pacientedash.php", ENT_QUOTES) . "';</script>";
     exit;
 } elseif($ins->errno === 1062){
     // Rede de segurança contra a condição de corrida: mesmo que duas
-    // requisições passem pelo SELECT acima quase ao mesmo tempo, a
+    // requisições passem pela checagem acima quase ao mesmo tempo, a
     // constraint UNIQUE do banco (uq_consulta_horario_ativo) rejeita a
     // segunda inserção em vez de duplicar o horário.
     die("Horário indisponível. Escolha outro horário.");
 } else {
-    echo "Erro ao agendar consulta.";
+    error_log("FacilMed - erro ao agendar consulta: " . $ins->error);
+    die("Erro ao agendar consulta. Tente novamente.");
 }
-?>

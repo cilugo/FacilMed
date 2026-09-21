@@ -63,6 +63,11 @@ CREATE TABLE medicos (
     especialidade_id INT,
     status_profissional ENUM('pendente', 'ativo', 'inativo') NOT NULL DEFAULT 'pendente',
     anos_atuacao INT DEFAULT 0,
+    -- Preço da consulta particular, definido pelo próprio médico no perfil dele.
+    -- Existe para o valor da consulta NÃO vir do formulário do paciente: antes
+    -- o campo "valor" era enviado no POST e dava para agendar por R$ 0,00
+    -- editando o HTML da página.
+    valor_consulta DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (especialidade_id) REFERENCES especialidades(id) ON DELETE SET NULL,
     UNIQUE (crm, uf)
@@ -216,6 +221,7 @@ CREATE TABLE recuperacao_senha (
 --     ADD FOREIGN KEY (plano_id) REFERENCES planos(id) ON DELETE SET NULL;
 -- ALTER TABLE consultas DROP COLUMN especialidade, DROP COLUMN local; -- (colunas antigas em texto livre)
 -- ALTER TABLE recuperacao_senha ADD COLUMN tentativas INT NOT NULL DEFAULT 0; -- limite de tentativas do código
+-- ALTER TABLE medicos ADD COLUMN valor_consulta DECIMAL(10,2) NOT NULL DEFAULT 0.00; -- preço da consulta particular
 
 -- ==========================================
 -- ESPECIALIDADES INICIAIS
@@ -257,10 +263,19 @@ INSERT INTO locais (nome, tipo, categoria, endereco, cidade, bairro, estado, tel
 ('Clínica FacilMed Vila Nova', 'clinica', 'privado', 'Rua das Flores, 250', 'São José dos Campos', 'Vila Nova', 'SP', '(12) 3211-1111');
 
 -- ==========================================
--- Inserção de usuário de teste
+-- USUÁRIOS DE TESTE
 -- ==========================================
+-- Três contas, uma de cada perfil, para conseguir testar o sistema
+-- inteiro logo depois de importar este arquivo:
+--
+--   admin@facilmed.com    / admin123    (administrador)
+--   marcelo@gmail.com     / alca12      (paciente)
+--   ana.cardio@facilmed.com / medico123 (médica, já APROVADA)
+--
+-- ⚠ Estas contas são só para desenvolvimento/apresentação.
+--   Apague ou troque as senhas antes de publicar em qualquer lugar real.
 
--- Senha de teste: "alca12" (hash bcrypt válido, compatível com password_verify do PHP)
+-- PACIENTE — senha "alca12"
 INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
 ('Marcelo', '123.456.789-10', 'marcelo@gmail.com', '12 98041 3375', '$2b$12$X5wW1dD2MuYF7yUKwws71u.5Cq7FDKPdnEElUKGGyP1Lk91SARX4.', 'paciente');
 
@@ -270,4 +285,36 @@ INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
 INSERT INTO pacientes (usuario_id, data_nascimento, sexo)
 SELECT id, '1990-01-01', 'Prefiro não informar' FROM usuarios WHERE email = 'marcelo@gmail.com';
 
-SELECT * FROM usuarios;
+-- ADMIN — senha "admin123"
+-- Sem esta conta NÃO EXISTE forma de entrar no painel administrativo:
+-- as telas de cadastro só criam paciente e médico. E como todo médico
+-- novo nasce com status_profissional = 'pendente' e o agendamento só
+-- lista médicos 'ativo', sem admin nenhum médico chega a aparecer para
+-- o paciente agendar. Por isso o admin faz parte do schema.
+INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
+('Administrador FacilMed', '000.000.000-00', 'admin@facilmed.com', '(12) 3211-0000', '$2y$12$BulLl9odmPwjJIQ6qvHkbueoCxXYd7WYxsxdjca8P3ytv3gZ1Kcki', 'admin');
+
+-- MÉDICA — senha "medico123", já aprovada para o agendamento funcionar de cara
+INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo) VALUES
+('Dra. Ana Ribeiro', '111.222.333-44', 'ana.cardio@facilmed.com', '(12) 99999-1234', '$2y$12$B70WDKk90B14JJVHRdrZc.eU3M6YAIu4CB2VYMfd52vKX0XVZYrRG', 'medico');
+
+INSERT INTO medicos (usuario_id, crm, uf, especialidade_id, status_profissional, anos_atuacao, valor_consulta)
+SELECT u.id, '123456', 'SP', e.id, 'ativo', 8, 250.00
+FROM usuarios u, especialidades e
+WHERE u.email = 'ana.cardio@facilmed.com' AND e.nome = 'Cardiologia';
+
+-- Horário de trabalho da médica de teste: segunda a sexta, 08:00–12:00,
+-- consultas de 30 em 30 minutos. É a partir daqui que o sistema gera os
+-- horários livres na tela de agendamento.
+INSERT INTO disponibilidades (medico_id, dia_semana, hora_inicio, hora_fim, duracao_consulta_minutos)
+SELECT m.id, d.dia, '08:00:00', '12:00:00', 30
+FROM medicos m
+JOIN usuarios u ON u.id = m.usuario_id
+CROSS JOIN (
+    SELECT 'segunda' AS dia UNION ALL SELECT 'terca' UNION ALL
+    SELECT 'quarta'         UNION ALL SELECT 'quinta' UNION ALL
+    SELECT 'sexta'
+) d
+WHERE u.email = 'ana.cardio@facilmed.com';
+
+SELECT id, nome, email, tipo, status FROM usuarios;

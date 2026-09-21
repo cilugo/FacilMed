@@ -2,9 +2,7 @@
 require_once("../../php/conexao.php");
 require_once("../../php/verificarsessao.php");
 
-if($tipoUsuario !== 'admin'){
-    die("Acesso negado.");
-}
+exigirPerfil("admin");
 
 $erro = null;
 $sucesso = null;

@@ -1,20 +1,15 @@
 <?php
 
-session_start();
+require_once(__DIR__ . "/../conexao.php");
+require_once(__DIR__ . "/../verificarsessao.php");
+require_once(__DIR__ . "/../lib/helpers.php");
 
-require_once("../conexao.php");
-require_once("../lib/helpers.php");
-
-// Verificar login
-if (!isset($_SESSION["id"])) {
-    header("Location: ../../paginas/login.html");
-    exit;
-}
-
-// Verificar se é médico
-if (!isset($_SESSION["tipo"]) || $_SESSION["tipo"] !== "medico") {
-    die("Acesso permitido apenas para médicos.");
-}
+// Esta área é exclusiva do médico. verificarsessao.php já abre a sessão com
+// cookie protegido, derruba sessão parada há muito tempo, manda quem não
+// está logado para a tela de login (com o caminho certo, que antes dava 404
+// no XAMPP) e prepara o token CSRF. Antes cada arquivo daqui repetia esse
+// controle à mão, cada um de um jeito.
+exigirPerfil("medico");
 
 $paginaAtiva = "agenda.php";
 $usuario_id = $_SESSION["id"];
@@ -109,7 +104,7 @@ $consultas = $stmt->get_result();
             <thead>
                 <tr>
                     <th>Data</th><th>Horário</th><th>Paciente</th>
-                    <th>Modalidade</th><th>Local</th><th>Status</th>
+                    <th>Modalidade</th><th>Local</th><th>Status</th><th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -126,10 +121,36 @@ $consultas = $stmt->get_result();
                                     : htmlspecialchars($c["local_nome"] ?: "A definir") ?>
                             </td>
                             <td><?= htmlspecialchars($c["status"]) ?></td>
+                            <td>
+                                <?php if ($c["status"] === "Agendada"): ?>
+                                    <!--
+                                        Faltava no sistema: a consulta ficava 'Agendada' para
+                                        sempre. Agora o médico fecha o atendimento aqui, e
+                                        cancelar devolve o horário para o calendário.
+                                    -->
+                                    <form action="../statusconsulta.php" method="POST" style="display:inline;">
+                                        <input type="hidden" name="consulta_id" value="<?= (int) $c["id"] ?>">
+                                        <input type="hidden" name="status" value="Realizada">
+                                        <input type="hidden" name="voltar" value="agenda">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                        <button type="submit">Marcar como realizada</button>
+                                    </form>
+                                    <form action="../statusconsulta.php" method="POST" style="display:inline;"
+                                          onsubmit="return confirm('Cancelar esta consulta? O horário volta a ficar livre.')">
+                                        <input type="hidden" name="consulta_id" value="<?= (int) $c["id"] ?>">
+                                        <input type="hidden" name="status" value="Cancelada">
+                                        <input type="hidden" name="voltar" value="agenda">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                        <button type="submit">Cancelar</button>
+                                    </form>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
-                    <tr><td colspan="6">Nenhuma consulta encontrada para esse filtro.</td></tr>
+                    <tr><td colspan="7">Nenhuma consulta encontrada para esse filtro.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

@@ -21,21 +21,17 @@ function validarEmail(email){
 /*
     Senha
 */
+/*
+    Mesma regra do servidor (php/lib/helpers.php): mínimo 8 caracteres,
+    máximo 72 (limite real do bcrypt).
+
+    O limite antigo aqui era "> 9", ou seja, qualquer senha com 10
+    caracteres ou mais era recusada — o contrário do que se espera de uma
+    validação de senha, e em desacordo com o maxlength="32" do formulário.
+*/
 function validarSenha(senha){
 
-    if(senha.length < 8){
-
-        return false;
-
-    }
-
-    if(senha.length > 9){
-
-        return false;
-
-    }
-
-    return true;
+    return senha.length >= 8 && senha.length <= 72;
 
 }
 

@@ -4,44 +4,58 @@
 // Cadastro de Pacientes
 //=========================================
 
-require_once("conexao.php");
+require_once(__DIR__ . "/conexao.php");
+require_once(__DIR__ . "/lib/helpers.php");
 
 //=========================================
 // Verifica se veio do formulário
 //=========================================
 
-if($_SERVER["REQUEST_METHOD"] != "POST") {
+if($_SERVER["REQUEST_METHOD"] !== "POST") {
     die("Acesso inválido.");
 }
 
 //=========================================
 // Recebe os dados
 //=========================================
+// O "?? ''" evita o warning "Undefined array key" quando o POST chega
+// sem algum campo (formulário alterado, requisição feita por fora...).
 
-$nome = trim($_POST["nome"]);
-$cpf = trim($_POST["cpf"]);
-$email = trim($_POST["email"]);
-$telefone = trim($_POST["telefone"]);
-$dataNascimento = $_POST["dataNascimento"];
-$sexo = $_POST["sexo"];
-$senha = $_POST["senha"];
-$confirmarSenha = $_POST["confirmarSenha"];
+$nome = trim($_POST["nome"] ?? "");
+$cpf = trim($_POST["cpf"] ?? "");
+$email = trim($_POST["email"] ?? "");
+$telefone = trim($_POST["telefone"] ?? "");
+$dataNascimento = trim($_POST["dataNascimento"] ?? "");
+$sexo = $_POST["sexo"] ?? "";
+$senha = $_POST["senha"] ?? "";
+$confirmarSenha = $_POST["confirmarSenha"] ?? "";
 
 //=========================================
-// Validação básica
+// Validação no servidor
 //=========================================
 
-if(empty($nome) || empty($cpf) || empty($email) || empty($telefone) || empty($senha) || empty($confirmarSenha)) {
-    die("Preencha todos os campos.");
-}
-
-if($senha != $confirmarSenha) {
-    die("As senhas não coincidem.");
+$erro = erroNosDadosDeCadastro($nome, $cpf, $email, $telefone, $senha, $confirmarSenha);
+if($erro !== null) {
+    die($erro);
 }
 
 $sexosValidos = ['Masculino', 'Feminino', 'Prefiro não informar'];
 if(!in_array($sexo, $sexosValidos, true)) {
     die("Selecione uma opção válida para sexo.");
+}
+
+// Data de nascimento: opcional, mas se vier precisa ser uma data real e
+// não pode estar no futuro
+if($dataNascimento !== "") {
+    $nascimentoObj = DateTime::createFromFormat("Y-m-d", $dataNascimento);
+    if(!$nascimentoObj || $nascimentoObj->format("Y-m-d") !== $dataNascimento) {
+        die("Data de nascimento inválida.");
+    }
+    if($dataNascimento > date("Y-m-d")) {
+        die("A data de nascimento não pode estar no futuro.");
+    }
+} else {
+    $dataNascimento = null;
 }
 
 //=========================================

@@ -1,8 +1,14 @@
 <?php
 require_once("../php/conexao.php");
+require_once("../php/verificarsessao.php");
+
+// A tela de agendamento é do paciente. Antes ela abria para qualquer um
+// (inclusive visitante não logado) — só o POST em agendarconsulta.php era
+// barrado, o que deixava a agenda dos médicos visível para estranhos.
+exigirPerfil("paciente");
 
 $medicos = $conexao->query(
-    "SELECT m.id, u.nome, e.nome AS especialidade
+    "SELECT m.id, u.nome, e.nome AS especialidade, m.valor_consulta
      FROM medicos m
      INNER JOIN usuarios u ON m.usuario_id = u.id
      LEFT JOIN especialidades e ON e.id = m.especialidade_id
@@ -46,12 +52,14 @@ while($d = $disponibilidades->fetch_assoc()){
     <section class="card">
         <h1>Agendar Consulta</h1>
         <form id="formAgendamento" action="../php/agendarconsulta.php" method="POST">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
             <label for="medico">Médico</label>
             <select id="medico" name="medico_id" required>
                 <option value="">Selecione</option>
                 <?php while ($medico = $medicos->fetch_assoc()): ?>
-                    <option value="<?= (int) $medico['id'] ?>">
+                    <option value="<?= (int) $medico['id'] ?>"
+                            data-valor-consulta="<?= number_format((float) $medico['valor_consulta'], 2, '.', '') ?>">
                         <?= htmlspecialchars($medico['nome'], ENT_QUOTES, 'UTF-8') ?>
                         <?php if ($medico['especialidade']): ?>
                             — <?= htmlspecialchars($medico['especialidade'], ENT_QUOTES, 'UTF-8') ?>
@@ -127,8 +135,17 @@ while($d = $disponibilidades->fetch_assoc()){
                 </select>
             </div>
 
+            <!--
+                Campo apenas informativo: quem define o valor é o servidor
+                (plano do convênio, R$ 0,00 no SUS, ou o preço cadastrado
+                pelo médico no particular). Por isso é readonly e não é mais
+                enviado no POST — antes o paciente podia editar o HTML e
+                agendar a própria consulta por R$ 0,00.
+            -->
             <label for="valor">Valor da consulta (R$)</label>
-            <input type="number" id="valor" name="valor" step="0.01" min="0" value="0.00">
+            <input type="number" id="valor" step="0.01" min="0" value="0.00" readonly
+                   style="background:#f1f1f1; cursor:not-allowed;">
+            <small>O valor é definido pelo sistema conforme a forma de atendimento.</small>
 
             <label for="observacoes">Observações</label>
             <textarea id="observacoes" name="observacoes"></textarea>

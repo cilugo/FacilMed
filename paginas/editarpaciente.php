@@ -2,6 +2,11 @@
 require_once("../php/conexao.php");
 require_once("../php/verificarsessao.php");
 
+// Dados pessoais de paciente (nome, CPF, e-mail) são do próprio paciente e
+// da administração — médico não edita cadastro de paciente. Antes o médico
+// passava por aqui e conseguia alterar qualquer paciente do sistema.
+exigirPerfil(['admin', 'paciente']);
+
 // Verifica id do paciente
 if(!isset($_GET['id']) && $_SERVER['REQUEST_METHOD'] !== 'POST'){
     die("Requisição inválida.");
@@ -10,20 +15,28 @@ if(!isset($_GET['id']) && $_SERVER['REQUEST_METHOD'] !== 'POST'){
 $erro = null;
 
 if($_SERVER['REQUEST_METHOD'] === 'POST'){
-    if(!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])){
-        die("Token de segurança inválido. Recarregue a página e tente novamente.");
-    }
+    exigirCsrf();
 
     // Recebe dados do formulário
-    $paciente_id = intval($_POST['paciente_id']);
-    $nome = trim($_POST['nome']);
-    $cpf = trim($_POST['cpf']);
-    $email = trim($_POST['email']);
-    $telefone = trim($_POST['telefone']);
-    $dataNascimento = $_POST['data_nascimento'];
+    $paciente_id = intval($_POST['paciente_id'] ?? 0);
+    $nome = trim($_POST['nome'] ?? '');
+    $cpf = trim($_POST['cpf'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $telefone = trim($_POST['telefone'] ?? '');
+    $dataNascimento = trim($_POST['data_nascimento'] ?? '');
+
+    // Validação no servidor. O "required" do HTML só protege quem usa o
+    // formulário — um POST direto chega sem nada e gravaria campos vazios.
+    if($nome === '' || $cpf === '' || $email === ''){
+        $erro = "Nome, CPF e e-mail são obrigatórios.";
+    } elseif(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+        $erro = "E-mail inválido.";
+    } elseif($dataNascimento !== '' && !DateTime::createFromFormat('Y-m-d', $dataNascimento)){
+        $erro = "Data de nascimento inválida.";
+    }
 
     // Checagem de propriedade: paciente só pode editar o próprio registro;
-    // admin e médico podem editar qualquer paciente
+    // admin pode editar qualquer paciente
     $dono = $conexao->prepare("SELECT usuario_id FROM pacientes WHERE id = ?");
     $dono->bind_param("i", $paciente_id);
     $dono->execute();
@@ -33,22 +46,45 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     }
     $dono->close();
 
-    if($tipoUsuario === 'paciente' && $donoUsuarioId != $idUsuario){
+    if($tipoUsuario === 'paciente' && (int) $donoUsuarioId !== (int) $idUsuario){
+        http_response_code(403);
         die("Acesso negado.");
     }
 
-    // Atualiza tabela usuarios
-    $stmt = $conexao->prepare("UPDATE usuarios u
-        INNER JOIN pacientes p ON u.id = p.usuario_id
-        SET u.nome = ?, u.cpf = ?, u.email = ?, u.telefone = ?, p.data_nascimento = ?
-        WHERE p.id = ?");
-    $stmt->bind_param("sssssi", $nome, $cpf, $email, $telefone, $dataNascimento, $paciente_id);
+    // E-mail e CPF são UNIQUE na tabela usuarios. Sem checar antes, o UPDATE
+    // falha com erro cru do MySQL e o usuário só vê "Erro ao atualizar".
+    if(!$erro){
+        $dup = $conexao->prepare(
+            "SELECT 1 FROM usuarios u
+             INNER JOIN pacientes p ON u.id = p.usuario_id
+             WHERE (u.email = ? OR u.cpf = ?) AND p.id <> ?
+             LIMIT 1"
+        );
+        $dup->bind_param("ssi", $email, $cpf, $paciente_id);
+        $dup->execute();
+        if($dup->get_result()->num_rows > 0){
+            $erro = "Já existe outro usuário com esse e-mail ou CPF.";
+        }
+        $dup->close();
+    }
 
-    if($stmt->execute()){
-        $destino = $tipoUsuario === 'paciente' ? 'pacientedash.php' : 'listarpacientes.php';
-        echo "<script>alert('Paciente atualizado com sucesso!'); window.location='$destino';</script>";
-        exit;
-    } else {
+    if(!$erro){
+        // Atualiza tabela usuarios
+        $stmt = $conexao->prepare("UPDATE usuarios u
+            INNER JOIN pacientes p ON u.id = p.usuario_id
+            SET u.nome = ?, u.cpf = ?, u.email = ?, u.telefone = ?, p.data_nascimento = ?
+            WHERE p.id = ?");
+        // data_nascimento vazia precisa virar NULL, senão o MySQL grava '0000-00-00'
+        $nascimento = $dataNascimento !== '' ? $dataNascimento : null;
+        $stmt->bind_param("sssssi", $nome, $cpf, $email, $telefone, $nascimento, $paciente_id);
+
+        if($stmt->execute()){
+            $destino = $tipoUsuario === 'paciente' ? 'pacientedash.php' : 'listarpacientes.php';
+            echo "<script>alert('Paciente atualizado com sucesso!'); window.location='"
+                . htmlspecialchars($destino, ENT_QUOTES) . "';</script>";
+            exit;
+        }
+
         $erro = "Erro ao atualizar.";
     }
 }

@@ -4,10 +4,11 @@
 // Cadastro de Médicos
 //=========================================
 
-require_once("conexao.php");
-require_once("validarCRM.php");
+require_once(__DIR__ . "/conexao.php");
+require_once(__DIR__ . "/validarCRM.php");
+require_once(__DIR__ . "/lib/helpers.php");
 
-if($_SERVER["REQUEST_METHOD"] != "POST") {
+if($_SERVER["REQUEST_METHOD"] !== "POST") {
     die("Acesso inválido.");
 }
 
@@ -15,20 +16,25 @@ if($_SERVER["REQUEST_METHOD"] != "POST") {
 // Dados
 //=========================================
 
-$nome = trim($_POST["nome"]);
-$cpf = trim($_POST["cpf"]);
-$email = trim($_POST["email"]);
-$telefone = trim($_POST["telefone"]);
-$crm = trim($_POST["crm"]);
-$uf = $_POST["uf"];
+$nome = trim($_POST["nome"] ?? "");
+$cpf = trim($_POST["cpf"] ?? "");
+$email = trim($_POST["email"] ?? "");
+$telefone = trim($_POST["telefone"] ?? "");
+$crm = trim($_POST["crm"] ?? "");
+$uf = trim($_POST["uf"] ?? "");
 $especialidadeId = (int) ($_POST["especialidade_id"] ?? 0);
-$senha = $_POST["senha"];
-$confirmarSenha = $_POST["confirmarSenha"];
+$senha = $_POST["senha"] ?? "";
+$confirmarSenha = $_POST["confirmarSenha"] ?? "";
 
 //=========================================
+// Validação no servidor
+//=========================================
+// Antes este arquivo não checava campo vazio nenhum: um POST em branco
+// gravava um médico com nome, e-mail e telefone vazios no banco.
 
-if($senha != $confirmarSenha) {
-    die("As senhas não coincidem.");
+$erro = erroNosDadosDeCadastro($nome, $cpf, $email, $telefone, $senha, $confirmarSenha);
+if($erro !== null) {
+    die($erro);
 }
 
 //=========================================
@@ -72,6 +78,16 @@ if(!validarCRM($crm, $uf)) {
 if($especialidadeId <= 0) {
     die("Selecione uma especialidade.");
 }
+
+// A especialidade precisa existir de verdade, senão a chave estrangeira
+// derruba o INSERT com um erro cru do MySQL
+$verEsp = $conexao->prepare("SELECT 1 FROM especialidades WHERE id = ?");
+$verEsp->bind_param("i", $especialidadeId);
+$verEsp->execute();
+if($verEsp->get_result()->num_rows === 0) {
+    die("Especialidade inválida.");
+}
+$verEsp->close();
 
 //=========================================
 // Verifica se já existe médico com o mesmo CRM/UF
