@@ -12,7 +12,6 @@ body {
 
 body {
     font-family: Arial, Helvetica, sans-serif;
-    background: #f7f9fc;
     color: #23459e;
 
     min-height: 100vh;
@@ -23,54 +22,112 @@ body {
 
 
 /* =========================
-   CONTAINER PRINCIPAL
+   LAYOUT PRINCIPAL (split-screen)
 ========================= */
 
 .login-page {
-    width: 100%;
     flex: 1;
 
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: row;
+}
 
-    padding: 30px 20px;
+.login-brand,
+.login-form-area {
+    flex: 1 1 50%;
+    min-width: 0;
 }
 
 
 /* =========================
-   ÁREA DO LOGIN
+   PAINEL DA MARCA (esquerda)
 ========================= */
+
+.login-brand {
+    position: relative;
+    overflow: hidden;
+
+    background: linear-gradient(160deg, #eaf1fd 0%, #dbe7fb 55%, #cfe0fa 100%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px;
+}
+
+.login-brand__logo {
+    position: relative;
+    z-index: 2;
+
+    width: 100%;
+    max-width: 320px;
+
+    object-fit: contain;
+}
+
+.login-brand__blob {
+    position: absolute;
+    border-radius: 50%;
+}
+
+.login-brand__blob--1 {
+    width: 420px;
+    height: 420px;
+
+    top: -140px;
+    left: -160px;
+
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.login-brand__blob--2 {
+    width: 260px;
+    height: 260px;
+
+    bottom: -90px;
+    left: 40px;
+
+    background: rgba(180, 205, 245, 0.6);
+}
+
+.login-brand__blob--3 {
+    width: 180px;
+    height: 180px;
+
+    top: 38%;
+    right: -70px;
+
+    background: rgba(255, 255, 255, 0.4);
+}
+
+
+/* =========================
+   PAINEL DO FORMULÁRIO (direita)
+========================= */
+
+.login-form-area {
+    background: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px 32px;
+}
 
 .login-container {
     width: 100%;
-    max-width: 360px;
-
-    display: flex;
-    flex-direction: column;
+    max-width: 400px;
 }
 
+.login-mobile-logo {
+    display: none;
 
-/* =========================
-   LOGO
-========================= */
+    width: 150px;
 
-.logo {
-    width: 90px;
-    height: 90px;
-
-    margin: 0 auto 12px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.logo img {
-    width: 200px;
-
+    margin: 0 auto 24px;
     object-fit: contain;
-    display: block;
 }
 
 
@@ -79,24 +136,20 @@ body {
 ========================= */
 
 .title {
-    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
 
-    font-size: 24px;
-    font-weight: 700;
+    color: #1c3a91;
 
-    color: #23459e;
-
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .subtitle {
-    text-align: center;
+    font-size: 14px;
 
-    font-size: 13px;
+    color: #5c7fd6;
 
-    color: #4169d5;
-
-    margin-bottom: 34px;
+    margin-bottom: 30px;
 }
 
 
@@ -107,18 +160,18 @@ body {
 .form-group {
     width: 100%;
 
-    margin-bottom: 7px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
     display: block;
 
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
 
-    color: #315bc1;
+    color: #2c4faa;
 
-    margin-left: 5px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 
@@ -128,19 +181,19 @@ body {
 
 .input {
     width: 100%;
-    height: 40px;
+    height: 46px;
 
-    border: 1.5px solid #315bc1;
+    border: 1.5px solid #b9caf2;
 
-    border-radius: 22px;
+    border-radius: 10px;
 
     background: transparent;
 
     outline: none;
 
-    padding: 0 18px;
+    padding: 0 16px;
 
-    font-size: 12px;
+    font-size: 14px;
 
     color: #333;
 
@@ -149,14 +202,14 @@ body {
 }
 
 .input::placeholder {
-    color: #4c8fe4;
+    color: #9fb3e0;
 }
 
 .input:focus {
-    border-color: #203f92;
+    border-color: #3a5fce;
 
     box-shadow:
-        0 0 0 2px rgba(49, 91, 193, 0.08);
+        0 0 0 3px rgba(58, 95, 206, 0.12);
 }
 
 
@@ -169,11 +222,11 @@ body {
 
     text-align: right;
 
-    margin-top: 5px;
+    margin: 8px 0 22px;
 
-    font-size: 10px;
+    font-size: 12px;
 
-    color: #3e8ddd;
+    color: #3a5fce;
 
     text-decoration: underline;
 
@@ -187,28 +240,27 @@ body {
 
 .login-button {
     width: 100%;
-    height: 40px;
-
-    margin-top: 35px;
+    height: 48px;
 
     border: none;
 
-    border-radius: 22px;
+    border-radius: 10px;
 
-    background: #28479e;
+    background: linear-gradient(135deg, #2450d1, #1c3a91);
 
     color: #ffffff;
 
-    font-size: 13px;
+    font-size: 15px;
+    font-weight: 600;
 
     cursor: pointer;
 
-    transition: background 0.2s,
+    transition: filter 0.2s,
                 transform 0.1s;
 }
 
 .login-button:hover {
-    background: #203d8d;
+    filter: brightness(1.05);
 }
 
 .login-button:active {
@@ -227,28 +279,71 @@ body {
 
     align-items: center;
 
-    margin-top: 28px;
+    margin: 26px 0;
 }
 
 .divider::before,
 .divider::after {
     content: "";
 
-    height: 1.5px;
+    height: 1px;
 
-    background: #315bc1;
+    background: #d7deef;
 
     flex: 1;
 }
 
 .divider span {
-    color: #3d8edb;
+    color: #8b9fd6;
 
-    font-size: 10px;
+    font-size: 12px;
 
-    margin: 0 8px;
+    margin: 0 12px;
 
     white-space: nowrap;
+}
+
+
+/* =========================
+   BOTÃO GOOGLE
+========================= */
+
+.google-button {
+    width: 100%;
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    border: 1.5px solid #b9caf2;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #2c4faa;
+
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: background 0.2s,
+                transform 0.1s;
+}
+
+.google-button:hover {
+    background: #f4f7ff;
+}
+
+.google-button:active {
+    transform: scale(0.99);
+}
+
+.google-icon {
+    flex-shrink: 0;
 }
 
 
@@ -259,24 +354,23 @@ body {
 .register {
     text-align: center;
 
-    margin-top: 65px;
+    margin-top: 26px;
 
-    font-size: 10px;
+    font-size: 13px;
 
-    color: #3d8edb;
+    color: #5c7fd6;
 }
 
 .register a {
-    color: #3d8edb;
+    color: #2c4faa;
 
     text-decoration: underline;
+    font-weight: 600;
 }
 
 
 /* =========================
    RODAPÉ
-   (mesma regra do resto do site: fundo da página é claro
-   -> rodapé escuro, na paleta desta tela)
 ========================= */
 
 .rodape-login {
@@ -284,154 +378,50 @@ body {
     background-color: #23459e;
     color: #fff;
     text-align: center;
-    padding: 16px;
+    padding: 14px;
     font-size: 12px;
 }
 
 
 /* =========================
-   TABLET
+   TABLET / CELULAR
+   (painel da marca sai, formulário ocupa a tela toda)
 ========================= */
 
-@media (min-width: 600px) {
-
-    .login-container {
-        max-width: 380px;
-    }
-
-    .logo {
-        width: 95px;
-        height: 95px;
-    }
-
-    .title {
-        font-size: 25px;
-    }
-
-}
-
-
-/* =========================
-   COMPUTADOR
-========================= */
-
-@media (min-width: 1024px) {
-
-    body {
-        background: #f7f9fc;
-    }
+@media (max-width: 860px) {
 
     .login-page {
-        padding: 40px;
+        flex-direction: column;
     }
 
-    .login-container {
-        max-width: 390px;
+    .login-brand {
+        display: none;
     }
 
-    .logo {
-        width: 100px;
-        height: 100px;
-
-        margin-bottom: 14px;
+    .login-form-area {
+        padding: 40px 24px;
     }
 
-    .title {
-        font-size: 26px;
-    }
-
-    .subtitle {
-        font-size: 14px;
-        margin-bottom: 38px;
-    }
-
-    .input {
-        height: 42px;
-
-        font-size: 13px;
-    }
-
-    .login-button {
-        height: 42px;
-
-        font-size: 14px;
+    .login-mobile-logo {
+        display: block;
     }
 
 }
 
-
-/* =========================
-   CELULARES PEQUENOS
-========================= */
 
 @media (max-width: 380px) {
 
-    .login-page {
-        padding: 20px 18px;
-    }
-
-    .login-container {
-        max-width: 100%;
-    }
-
-    .logo {
-        width: 78px;
-        height: 78px;
-
-        margin-bottom: 10px;
+    .login-form-area {
+        padding: 28px 18px;
     }
 
     .title {
-        font-size: 21px;
+        font-size: 24px;
     }
 
-    .subtitle {
-        font-size: 12px;
-
-        margin-bottom: 28px;
+    .login-mobile-logo {
+        width: 120px;
+        margin-bottom: 18px;
     }
 
-    .input {
-        height: 38px;
-    }
-
-    .login-button {
-        height: 39px;
-
-        margin-top: 30px;
-    }
-
-    .register {
-        margin-top: 55px;
-    }
-}
-
-
-/* =========================
-   CELULAR MUITO BAIXO
-========================= */
-
-@media (max-height: 650px) {
-
-    .login-page {
-        padding-top: 15px;
-        padding-bottom: 15px;
-    }
-
-    .logo {
-        width: 70px;
-        height: 70px;
-    }
-
-    .subtitle {
-        margin-bottom: 22px;
-    }
-
-    .login-button {
-        margin-top: 25px;
-    }
-
-    .register {
-        margin-top: 40px;
-    }
 }
