@@ -35,6 +35,7 @@ return [
     'medico' => [
         ['rota' => 'medico.dashboard',       'label' => 'Início',          'icone' => 'home'],
         ['rota' => 'medico.agenda',          'label' => 'Minha agenda',    'icone' => 'calendar'],
+        ['rota' => 'medico.consultas',       'label' => 'Consultas realizadas', 'icone' => 'chart'],
         ['rota' => 'medico.disponibilidade', 'label' => 'Meus horários',   'icone' => 'clock'],
         ['rota' => 'medico.bloqueios',       'label' => 'Ausências',       'icone' => 'pause'],
         ['rota' => 'medico.locais',          'label' => 'Onde eu atendo',  'icone' => 'pin'],
@@ -46,6 +47,7 @@ return [
     'clinica' => [
         ['rota' => 'clinica.dashboard',  'label' => 'Início',           'icone' => 'home'],
         ['rota' => 'clinica.agenda',     'label' => 'Agenda da clínica','icone' => 'calendar'],
+        ['rota' => 'clinica.consultas',  'label' => 'Consultas realizadas', 'icone' => 'chart'],
         ['rota' => 'clinica.medicos',    'label' => 'Meus médicos',     'icone' => 'doctors'],
         ['rota' => 'clinica.unidades',   'label' => 'Unidades',         'icone' => 'building'],
         ['rota' => 'clinica.precos',     'label' => 'Tabela de preços', 'icone' => 'money'],
