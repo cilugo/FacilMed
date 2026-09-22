@@ -1,4 +1,4 @@
-{--
+{{--
     Dashboard do médico. Os dados vêm prontos de
     App\Http\Controllers\Medico\DashboardController — aqui só se imprime.
     Nada de regra de negócio em Blade (AGENTS.md §7).

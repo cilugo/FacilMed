@@ -139,6 +139,11 @@ Route::middleware(['auth', 'tipo:medico'])->prefix('medico')->name('medico.')->g
     Route::get('/', [Medico\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/agenda', [Medico\AgendaController::class, 'index'])->name('agenda');
+
+    // Números das consultas do PRÓPRIO médico (7/30/90 dias). Mesma tela
+    // da clínica; o serviço já nasce preso ao médico logado.
+    Route::get('/consultas', [Medico\ConsultaController::class, 'index'])->name('consultas');
+
     Route::post('/agenda/{consulta}/realizada', [Medico\AgendaController::class, 'marcarRealizada'])
         ->name('agenda.realizada');
     // Sem este status, quem faltou consegue avaliar e as métricas erram.
@@ -188,6 +193,9 @@ Route::middleware(['auth', 'tipo:clinica'])->prefix('clinica')->name('clinica.')
     Route::get('/', [Clinica\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/agenda', [Clinica\AgendaController::class, 'index'])->name('agenda');
+
+    // Números das consultas de TODAS as unidades da clínica (7/30/90 dias).
+    Route::get('/consultas', [Clinica\ConsultaController::class, 'index'])->name('consultas');
 
     // Ao cadastrar médico, o sistema gera senha temporária e força a
     // troca no primeiro login — a clínica nunca sabe a senha final.
