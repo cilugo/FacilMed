@@ -73,3 +73,26 @@ prevButton.addEventListener("click", function () {
     });
 
 });
+
+
+//=slider do bgl de hospital=//
+
+const clinicsList = document.getElementById("clinicsList");
+const nextClinicButton = document.getElementById("nextClinic");
+const prevClinicButton = document.getElementById("prevClinic");
+
+if (clinicsList && nextClinicButton && prevClinicButton) {
+
+    function larguraDoPasso() {
+        const card = clinicsList.querySelector(".clinic-card");
+        return card ? card.offsetWidth + 16 : clinicsList.clientWidth;
+    }
+
+    nextClinicButton.addEventListener("click", function () {
+        clinicsList.scrollBy({ left: larguraDoPasso(), behavior: "smooth" });
+    });
+
+    prevClinicButton.addEventListener("click", function () {
+        clinicsList.scrollBy({ left: -larguraDoPasso(), behavior: "smooth" });
+    });
+}

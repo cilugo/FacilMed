@@ -24,11 +24,11 @@
 
             <!-- MENU -->
             <nav class="menu">
-                <a href="#" class="menu-link active">Início</a>
-                <a href="#" class="menu-link">Como funciona</a>
+                <a href="#inicio" class="menu-link active">Início</a>
+                <a href="#comofunciona" class="menu-link">Como funciona</a>
                 <a href="#especialidades" class="menu-link">Especialidade</a>
-                <a href="#" class="menu-link">Hospitais e Clínicas</a>
-                <a href="#" class="menu-link">Sobre</a>
+                <a href="#hospitaiseclinicas" class="menu-link">Hospitais e Clínicas</a>
+                <a href="#sobre" class="menu-link">Sobre</a>
             </nav>
 
             <!-- BOTÕES -->
@@ -49,7 +49,7 @@
         <section class="hero">
             <div class="container hero-content">
                 <!-- TEXTO -->
-                <div class="hero-text">
+                <div class="hero-text" id="inicio">
                     <h1>
                         Agende sua consulta
                         <br>
@@ -84,7 +84,7 @@
         </section>
 
 
-        <section class="how-it-works">
+        <section class="how-it-works" id="comofunciona">
             <div class="container">
                 <div class="section-header center">
                     <h2>Como funciona?</h2>
@@ -122,8 +122,8 @@
             <div class="container">
                 <!-- TÍTULO -->
                 <div class="section-header">
-                    <h2>Especialidades em destaque</h2>
-                    <a href="especialidade.php" class="view-all">Ver todas</a>
+                    <h2>Médicos em destaque</h2>
+                    <a href="especialidade.php" class="view-all">Ver todos</a>
                 </div>
 
                 <!-- CARDS -->
@@ -214,6 +214,61 @@
 
                     <button class="arrow-button right" id="nextSpecialty" type="button"></button>
                 </div>
+            </div>
+        </section>
+
+        <section class="specialties" id="hospitaiseclinicas">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Hospitais e Clínicas</h2>
+                </div>
+
+                <div class="specialties-wrapper">
+                    <button class="arrow-button left" id="prevClinic" type="button" aria-label="Clínicas anteriores">&#8249;</button>
+
+                    <div class="clinicas-list" id="clinicsList">
+                        <div class="clinica-card">
+                            <img src="../imgs/teste.jpg" alt="Foto da clínica 1">
+                            <div class="clinica-info">
+                                <span class="nome-clinica">Nome da Clínica 1</span>
+                                <span class="local-clinica">Endereço, Bairro - Cidade</span>
+                            </div>
+                        </div>
+
+                        <div class="clinica-card">
+                            <img src="../imgs/teste.jpg" alt="Foto da clínica 2">
+                            <div class="clinica-info">
+                                <span class="nome-clinica">Nome da Clínica 2</span>
+                                <span class="local-clinica">Endereço, Bairro - Cidade</span>
+                            </div>
+                        </div>
+
+                        <div class="clinica-card">
+                            <img src="../imgs/teste.jpg" alt="Foto da clínica 3">
+                            <div class="clinica-info">
+                                <span class="nome-clinica">Nome da Clínica 3</span>
+                                <span class="local-clinica">Endereço, Bairro - Cidade</span>
+                            </div>
+                        </div>
+
+                        <div class="clinica-card">
+                            <img src="../imgs/teste.jpg" alt="Foto da clínica 4">
+                            <div class="clinica-info">
+                                <span class="nome-clinica">Nome da Clínica 4</span>
+                                <span class="local-clinica">Endereço, Bairro - Cidade</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="arrow-button right" id="nextClinic" type="button" aria-label="Próximas clínicas">&#8250;</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="sobre">
+            <div class="section-header center">
+                <h2>Sobre o FacilMed</h2>
+                <p class="sobre-text">O FacilMed é uma plataforma digital que conecta pacientes a profissionais de saúde, facilitando o agendamento de consultas e melhorando o acesso aos serviços médicos. Surgindo apenas como uma ideia em sala de aula, agora o FacilMed está disponível para ajudar você a encontrar o cuidado de saúde que você precisa, quando e onde precisar. Marque consultas, acompanhe seu histórico médico, verifique a qualidade dos serviços e muito mais em um único lugar.</p>
             </div>
         </section>
     </main>

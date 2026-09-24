@@ -44,6 +44,9 @@ input {
     width: 100%;
     background-color: #fffdf8;
     border-bottom: 1px solid #e5e5e5;
+    position: fixed;
+    z-index: 1000;
+    margin-bottom: 20px;
 }
 
 .header-content {
@@ -393,7 +396,66 @@ input {
 }
 
 /* ==================================================
-   COMO FUNCIONA
+   hospoitais e clínicas com slider bala
+================================================== */
+.clinicas-list {
+    width: 100%;
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding: 3px;
+}
+
+.clinicas-list::-webkit-scrollbar {
+    display: none;
+}
+
+.clinica-card {
+    flex: 0 0 calc((100% - 16px) / 2);
+    scroll-snap-align: start;
+    background-color: white;
+    border: 1px solid #d9e2e8;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: 0.3s;
+}
+
+.clinica-card:hover {
+    border-color: #1b9ce4;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.clinica-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: block;
+}
+
+.clinica-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 14px 16px;
+}
+
+.nome-clinica {
+    font-size: 15px;
+    font-weight: 700;
+    color: #222;
+}
+
+.local-clinica {
+    font-size: 13px;
+    font-weight: 400;
+    color: #666;
+}
+
+/* ==================================================
+   COMO FUNCIONA 
 ================================================== */
 .how-it-works {
     padding: 60px 0;
@@ -413,6 +475,33 @@ input {
     color: #666;
     font-size: 15px;
 }
+
+/*=
+    Parte do ID sobre, não funções sobre. Parte sobre mano
+=*/
+
+#sobre {
+    padding: 60px 0 30px;
+}
+
+#sobre .section-header.center {
+    display: block;
+    text-align: center;
+}
+
+#sobre .section-header.center h2 {
+    margin-bottom: 12px;
+}
+
+#sobre .sobre-text {
+    max-width: 66%;
+    margin: 0 auto;
+    color: #4a4a4a;
+    font-size: 16px;
+    line-height: 1.8;
+    text-align: justify;
+}
+/**/
 
 .steps {
     display: grid;
@@ -565,5 +654,14 @@ input {
     .specialty-card {
         min-width: 140px;
         height: 175px;
+    }
+
+    /* No celular, 1 clínica por vez (2 ficariam pequenas demais) */
+    .clinic-card {
+        flex-basis: 100%;
+    }
+
+    .clinic-card img {
+        height: 180px;
     }
 }
