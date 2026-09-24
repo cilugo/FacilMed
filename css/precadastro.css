@@ -146,6 +146,11 @@ h1 {
     transition: 0.2s;
 }
 
+.btn a {
+    color: white;
+    text-decoration: none;
+}
+
 .btn:hover {
     background-color: #1d3889;
     transform: scale(1.01);
