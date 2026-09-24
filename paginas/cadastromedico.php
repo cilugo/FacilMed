@@ -22,7 +22,7 @@ $especialidades = $conexao->query("SELECT id, nome FROM especialidades ORDER BY 
     <nav>
         <ul>
             <li><a href="login.html">Login</a></li>
-            <li><a href="cadastro.html">Cadastre-se</a></li>
+            <li><a href="precadastro.html">Cadastre-se</a></li>
         </ul>
     </nav>
     <main class="container">
