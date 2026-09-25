@@ -315,7 +315,7 @@ input {
     justify-content: center;
     gap: 14px;
     background-color: white;
-    border: 1px solid #d9e2e8;
+    border: 2px solid #d9e2e8;
     border-radius: 8px;
     transition: 0.3s;
 }
@@ -339,6 +339,23 @@ input {
     color: white;
     font-size: 20px;
     font-weight: 700;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0; /* impede o card de achatar o círculo */
+}
+
+/* A foto cobre o círculo inteiro. Se a imagem não carregar,
+   o onerror no HTML remove o <img> e as iniciais aparecem por baixo */
+.specialty-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    /* as fotos mostram meio corpo: o zoom aproxima no rosto */
+    transform: scale(1.7);
+    transform-origin: center 18%;
 }
 
 .specialty-info {
@@ -657,11 +674,11 @@ input {
     }
 
     /* No celular, 1 clínica por vez (2 ficariam pequenas demais) */
-    .clinic-card {
+    .clinica-card {
         flex-basis: 100%;
     }
 
-    .clinic-card img {
+    .clinica-card img {
         height: 180px;
     }
 }

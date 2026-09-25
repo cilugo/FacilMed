@@ -84,7 +84,7 @@ const prevClinicButton = document.getElementById("prevClinic");
 if (clinicsList && nextClinicButton && prevClinicButton) {
 
     function larguraDoPasso() {
-        const card = clinicsList.querySelector(".clinic-card");
+        const card = clinicsList.querySelector(".clinica-card");
         return card ? card.offsetWidth + 16 : clinicsList.clientWidth;
     }
 
