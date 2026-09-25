@@ -16,7 +16,7 @@ Três perfis de usuário: **paciente** (agenda e cancela consultas),
 3. Abra o phpMyAdmin (`http://localhost/phpmyadmin`) e importe o arquivo
    `banco/bancofacilmed.sql`. Ele cria o banco `facilmed`, todas as tabelas e
    os dados de exemplo.
-4. Acesse `http://localhost/FacilMed/paginas/home/home/home.html`.
+4. Acesse `http://localhost/FacilMed/paginas/index.html`.
 
 Não precisa configurar mais nada: por padrão o sistema usa a conexão típica do
 XAMPP (`localhost`, usuário `root`, sem senha).

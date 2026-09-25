@@ -147,8 +147,8 @@ renascerem no projeto novo.
   Mensagem genérica e, se possível, tratamento pelo erro de UNIQUE do banco.
 - **`echo "<script>alert(...)"` como navegação** — backend cuspindo HTML. No Laravel, redirect
   com flash message.
-- **`css/home.css` estava com 0 byte no repositório**, enquanto uma segunda cópia em
-  `paginas/home/home/css/home.css` tinha o conteúdo. Dois arquivos com o mesmo nome e um vazio
+- **`css/index.css` estava com 0 byte no repositório**, enquanto uma segunda cópia em
+  `paginas/home/home/css/index.css` tinha o conteúdo. Dois arquivos com o mesmo nome e um vazio
   commitado. Sintoma da estrutura de pastas duplicada.
 - **`README.md` com uma linha.** No projeto novo, README com: o que é, como rodar, quem fez.
 
