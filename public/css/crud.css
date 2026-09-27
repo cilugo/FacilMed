@@ -1,0 +1,224 @@
+/* ==========================================================================
+   FacilMed — telas de cadastro (CRUD) dentro dos painéis
+   24/09/2026
+
+   Complementa o public/css/painel.css, que foi feito para os dashboards e
+   não tinha formulário nem tabela de edição. Usa as MESMAS variáveis de
+   cor (--fm-*) — não declare cor nova aqui; se precisar, crie a variável
+   no :root do painel.css.
+
+   Incluir na view:
+       @push('head') <link rel="stylesheet" href="{{ asset('css/crud.css') }}"> @endpush
+   ========================================================================== */
+
+.fm-grade--tres { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+
+/* ---------- Barra de ações do topo ---------- */
+
+.fm-acoes-topo { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.fm-botao { gap: 6px; border: 0; cursor: pointer; font-family: inherit; line-height: 1.2; }
+.fm-botao .fm-icone { width: 18px; height: 18px; }
+.fm-botao--pequeno { padding: 7px 12px; font-size: 13px; border-radius: 10px; }
+.fm-botao--perigo { background: var(--fm-rosa-claro); color: #a3223f !important; border: 1px solid #f7c3cf; }
+.fm-botao--ok { background: var(--fm-verde-claro); color: #0a6b53 !important; border: 1px solid #b5e8d8; }
+.fm-botao:focus-visible, .fm-campo :focus-visible, .fm-switch:focus-visible {
+    outline: 3px solid #9cc2ff;
+    outline-offset: 2px;
+}
+
+/* ---------- Formulário ---------- */
+
+.fm-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+}
+
+.fm-campo { display: grid; gap: 6px; min-width: 0; }
+
+.fm-campo label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fm-texto);
+}
+
+.fm-campo input,
+.fm-campo select,
+.fm-campo textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--fm-borda-forte);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--fm-texto);
+    font: inherit;
+    font-size: 14px;
+}
+
+.fm-campo textarea { min-height: 76px; resize: vertical; }
+
+.fm-campo input:focus,
+.fm-campo select:focus,
+.fm-campo textarea:focus { border-color: var(--fm-azul); outline: none; box-shadow: 0 0 0 3px var(--fm-azul-claro); }
+
+.fm-campo--erro input,
+.fm-campo--erro select,
+.fm-campo--erro textarea { border-color: var(--fm-rosa); }
+
+.fm-campo__erro { font-size: 12.5px; font-weight: 600; color: #a3223f; }
+.fm-campo__ajuda { font-size: 12.5px; color: var(--fm-suave); }
+
+.fm-form__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    grid-column: 1 / -1;
+}
+
+.fm-form--caixa {
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px dashed var(--fm-borda-forte);
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+/* ---------- Tabela de edição ---------- */
+
+.fm-rolagem { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.fm-tabela-crud { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+
+.fm-tabela-crud th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--fm-suave);
+    border-bottom: 1px solid var(--fm-borda);
+    white-space: nowrap;
+}
+
+.fm-tabela-crud td {
+    padding: 12px;
+    border-bottom: 1px solid #edf3fb;
+    color: var(--fm-texto);
+    vertical-align: middle;
+}
+
+.fm-tabela-crud tr.is-inativo td { color: var(--fm-suave); background: #fafcff; }
+.fm-tabela-crud strong { color: var(--fm-titulo); }
+.fm-tabela-crud__acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.fm-tabela-crud td.fm-tabela-crud__form { background: #f8fbff; padding: 16px 12px; }
+
+/* ---------- Metadados e chips ---------- */
+
+.fm-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: -4px 0 14px;
+    font-size: 13px;
+    color: var(--fm-suave);
+}
+
+.fm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.fm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--fm-azul-claro);
+    color: #1d55c4;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.fm-chip small { font-weight: 600; color: var(--fm-suave); }
+.fm-chip--cinza { background: #eef2f7; color: #5b6b85; }
+
+/* ---------- Cartões de convênio (tela da clínica) ---------- */
+
+.fm-cobertura { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+
+.fm-cobertura__item {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--fm-borda);
+    border-radius: 16px;
+    background: #fbfdff;
+}
+
+.fm-cobertura__topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fm-cobertura__nome { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--fm-titulo); font-size: 16px; }
+.fm-cobertura__nome .fm-icone { width: 20px; height: 20px; color: var(--fm-azul); }
+.fm-cobertura__rotulo { font-size: 12px; font-weight: 700; color: var(--fm-suave); text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---------- Interruptor (liga/desliga) ---------- */
+
+.fm-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fm-texto);
+}
+
+.fm-switch__trilho {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: #c9d6e8;
+    transition: background .15s ease;
+    flex: none;
+}
+
+.fm-switch__trilho::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    transition: transform .15s ease;
+}
+
+.fm-switch[aria-checked="true"] .fm-switch__trilho { background: var(--fm-verde); }
+.fm-switch[aria-checked="true"] .fm-switch__trilho::after { transform: translateX(18px); }
+
+/* ---------- Responsivo ---------- */
+
+@media (min-width: 720px) {
+    .fm-grade--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fm-form--duas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fm-form--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fm-campo--largo { grid-column: 1 / -1; }
+    .fm-cobertura { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+    .fm-grade--cartoes.fm-grade--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fm-switch__trilho, .fm-switch__trilho::after { transition: none; }
+}

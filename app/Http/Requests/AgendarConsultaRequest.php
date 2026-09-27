@@ -77,6 +77,9 @@ class AgendarConsultaRequest extends FormRequest
             ],
 
             'observacoes' => ['nullable', 'string', 'max:500'],
+
+            // Remarcacao (24/09): a consulta antiga, cancelada junto com a gravacao da nova.
+            'remarcar_consulta_id' => ['nullable', 'integer', Rule::exists('consultas', 'id')],
         ];
     }
 
@@ -92,6 +95,7 @@ class AgendarConsultaRequest extends FormRequest
             'horario.date_format'       => 'Horario invalido.',
             'forma_pagamento.required'  => 'Escolha como a consulta sera paga.',
             'paciente_plano_id.required_if' => 'Escolha qual carteirinha voce vai usar.',
+            'paciente_plano_id.exists'      => 'Essa carteirinha nao foi encontrada.',
         ];
     }
 }

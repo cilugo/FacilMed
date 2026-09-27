@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PerfilController extends Controller
 {
@@ -14,9 +15,32 @@ class PerfilController extends Controller
         ]);
     }
 
+    /**
+     * Dados pessoais (24/09). CPF e e-mail NAO mudam por aqui: CPF identifica
+     * a pessoa e e conferido nas carteirinhas; e-mail e o login.
+     * Senha tem formulario proprio (rota password.update, do Breeze).
+     */
     public function update(Request $request)
     {
-        // TODO: AtualizarPerfilPacienteRequest.
+        $request->merge(['telefone' => preg_replace('/\D/', '', (string) $request->input('telefone'))]);
+
+        $dados = $request->validate([
+            'name'            => ['required', 'string', 'min:3', 'max:255'],
+            'telefone'        => ['nullable', 'digits_between:10,11'],
+            'data_nascimento' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
+            'sexo'            => ['nullable', Rule::in(['Masculino', 'Feminino', 'Prefiro nao informar'])],
+        ], [
+            'telefone.digits_between' => 'O telefone deve ter DDD + número, com 10 ou 11 dígitos.',
+        ]);
+
+        $user = $request->user();
+        $user->update(['name' => $dados['name'], 'telefone' => $dados['telefone'] ?: null]);
+        $user->paciente->update([
+            'data_nascimento' => $dados['data_nascimento'] ?? null,
+            'sexo'            => $dados['sexo'] ?? null,
+        ]);
+
+        return back()->with('sucesso', 'Dados atualizados.');
     }
 
     /**
@@ -35,8 +59,11 @@ class PerfilController extends Controller
     {
         $dados = $request->validate([
             'possui_deficiencia' => ['required', 'boolean'],
-            'descricao'          => ['nullable', 'string', 'max:500'],
+            'descricao'          => ['nullable', 'required_if:possui_deficiencia,1', 'string', 'max:500'],
             'consentimento'      => ['accepted_if:possui_deficiencia,1'],
+        ], [
+            'descricao.required_if'     => 'Conte brevemente do que você precisa.',
+            'consentimento.accepted_if' => 'Precisamos da sua autorização para guardar essa informação.',
         ]);
 
         $paciente = auth()->user()->paciente;
@@ -44,7 +71,7 @@ class PerfilController extends Controller
         if (! $dados['possui_deficiencia']) {
             $paciente->acessibilidade()->delete();
 
-            return back()->with('sucesso', 'Informacao removida.');
+            return back()->with('sucesso', 'Informação removida.');
         }
 
         $paciente->acessibilidade()->updateOrCreate([], [
@@ -54,6 +81,6 @@ class PerfilController extends Controller
             'consentimento_versao' => '1.0',
         ]);
 
-        return back()->with('sucesso', 'Informacao salva.');
+        return back()->with('sucesso', 'Informação salva.');
     }
 }

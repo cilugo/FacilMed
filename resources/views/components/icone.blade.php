@@ -20,6 +20,58 @@
     aria-hidden="true" focusable="false"
 >
     @switch($nome)
+        {{-- Especialidades (24/09) - o slug vem de especialidades.icone --}}
+        @case('stethoscope')
+            <path d="M6 3v6a4 4 0 0 0 8 0V3"/><path d="M4.5 3H7.5M12.5 3h3"/><path d="M10 13v2a5 5 0 0 0 10 0v-1.5"/><circle cx="20" cy="11.5" r="2"/>
+            @break
+        @case('heart')
+            <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z"/>
+            @break
+        @case('baby')
+            <circle cx="12" cy="12" r="8.5"/><path d="M9 10.5h.01M15 10.5h.01"/><path d="M9.5 15a3.5 3.5 0 0 0 5 0"/><path d="M12 3.5c-1.2 1-1.2 2.5 0 3"/>
+            @break
+        @case('skin')
+            <path d="M4 7c3-3 13-3 16 0v10c-3 3-13 3-16 0Z"/><path d="M8 10h.01M12 12h.01M15.5 9.5h.01M10 15h.01M15 15h.01"/>
+            @break
+        @case('female')
+            <circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/>
+            @break
+        @case('bone')
+            <path d="M8.5 8.5 15.5 15.5"/><path d="M8.5 8.5a2.5 2.5 0 1 0-3.5-3.5 2.5 2.5 0 1 0-1.5 4.3 2.5 2.5 0 0 0 5 -.8"/><path d="M15.5 15.5a2.5 2.5 0 1 0 3.5 3.5 2.5 2.5 0 1 0 1.5-4.3 2.5 2.5 0 0 0-5 .8"/>
+            @break
+        @case('brain')
+            <path d="M12 5v14"/><path d="M12 5a3 3 0 0 0-5.5 1.5A3 3 0 0 0 4 10.5a3 3 0 0 0 1 5A3 3 0 0 0 9 19.5 3 3 0 0 0 12 19"/><path d="M12 5a3 3 0 0 1 5.5 1.5A3 3 0 0 1 20 10.5a3 3 0 0 1-1 5 3 3 0 0 1-4 4 3 3 0 0 1-3-.5"/>
+            @break
+        @case('eye')
+            <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>
+            @break
+        @case('mind')
+            <path d="M5 20v-3.5A7 7 0 1 1 17 12l1.5 3h-2V18a2 2 0 0 1-2 2h-2"/><path d="M10 9.5a2 2 0 1 1 2 2v1.5"/>
+            @break
+        @case('gland')
+            <path d="M12 4v4"/><path d="M12 8c-4 0-7 2.5-7 6.5S7.5 20 9.5 20c1.3 0 2-1 2.5-2 .5 1 1.2 2 2.5 2 2 0 4.5-1.5 4.5-5.5S16 8 12 8Z"/>
+            @break
+        @case('ear')
+            <path d="M7 9a5 5 0 0 1 10 0c0 3-2.5 4-3 6.5-.4 2.2-1.7 3.5-3.5 3.5A3 3 0 0 1 7.5 17"/><path d="M10 9.5a2 2 0 0 1 4 0c0 1.2-1 1.7-1.5 2.5"/>
+            @break
+        @case('kidney')
+            <path d="M9 4C5.5 4 4 7 4 11s1.5 8 5 8c2.5 0 3-2 2-4-.8-1.5-.8-3 0-4.5 1-2 .5-6.5-2-6.5Z"/><path d="M15 4c3.5 0 5 3 5 7s-1.5 8-5 8"/>
+            @break
+        @case('hospital')
+            <path d="M4 21V7l8-4 8 4v14"/><path d="M12 9v6M9 12h6"/><path d="M2.5 21h19"/>
+            @break
+        @case('phone')
+            <path d="M5 4h3.5l1.5 4.5-2 1.5a11 11 0 0 0 6 6l1.5-2 4.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5A15.5 15.5 0 0 1 3.5 5.5 1.5 1.5 0 0 1 5 4Z"/>
+            @break
+        @case('arrow-left')
+            <path d="M19 12H5M11 6l-6 6 6 6"/>
+            @break
+        @case('arrow-right')
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+            @break
+        @case('info')
+            <circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>
+            @break
         @case('home')
             <path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>
             @break
@@ -127,6 +179,14 @@
             @break
         @case('lightbulb')
             <path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>
+            @break
+        @case('pencil')
+            {{-- 24/09: botão "Editar" dos CRUDs (convênios e planos) --}}
+            <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>
+            @break
+        @case('power')
+            {{-- 24/09: ativar/desativar registro --}}
+            <path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/>
             @break
         @default
             <circle cx="12" cy="12" r="8"/>

@@ -1,0 +1,73 @@
+/* ==================================================
+   agendamento.css — telas de escolher horário e confirmar (24/09/2026)
+   Complementa painel.css (mesmas variáveis --fm-*).
+================================================== */
+
+.ag-grade { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; margin-top: 18px; }
+@media (max-width: 960px) { .ag-grade { grid-template-columns: 1fr; } }
+
+.ag-passo { font-size: 13px; font-weight: 700; color: var(--fm-suave); text-transform: uppercase; letter-spacing: .04em; margin: 4px 0 10px; }
+.ag-bloco + .ag-bloco { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--fm-borda); }
+
+.ag-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ag-opcao {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--fm-borda-forte); border-radius: 12px;
+    background: #fff; color: var(--fm-texto); font-weight: 600; font-size: 14px;
+    cursor: pointer; transition: border-color .15s, background .15s;
+}
+.ag-opcao small { font-weight: 400; color: var(--fm-suave); }
+.ag-opcao:hover { border-color: var(--fm-azul); }
+.ag-opcao--ativa { border-color: var(--fm-azul); background: var(--fm-azul-claro); color: var(--fm-titulo); }
+.ag-opcao:disabled { opacity: .45; cursor: not-allowed; }
+
+.ag-dias { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.ag-dia {
+    flex: 0 0 auto; width: 74px;
+    display: grid; justify-items: center; gap: 2px;
+    padding: 10px 6px;
+    border: 1.5px solid var(--fm-borda-forte); border-radius: 12px;
+    background: #fff; cursor: pointer; color: var(--fm-texto);
+}
+.ag-dia small { font-size: 11px; color: var(--fm-suave); text-transform: uppercase; font-weight: 700; }
+.ag-dia strong { font-size: 20px; color: var(--fm-titulo); line-height: 1.1; }
+.ag-dia span { font-size: 11px; color: var(--fm-suave); }
+.ag-dia:hover { border-color: var(--fm-azul); }
+.ag-dia--ativo { border-color: var(--fm-azul); background: var(--fm-azul); }
+.ag-dia--ativo small, .ag-dia--ativo strong, .ag-dia--ativo span { color: #fff; }
+
+.ag-outra-data { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; color: var(--fm-suave); flex-wrap: wrap; }
+.ag-outra-data input { height: 40px; padding: 0 10px; border: 1px solid var(--fm-borda-forte); border-radius: 10px; font: inherit; color: var(--fm-texto); }
+
+.ag-horarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 8px; }
+.ag-horario {
+    height: 42px;
+    border: 1.5px solid var(--fm-borda-forte); border-radius: 10px;
+    background: #fff; color: var(--fm-titulo); font-weight: 700; font-size: 15px;
+    cursor: pointer;
+}
+.ag-horario:hover { border-color: var(--fm-azul); }
+.ag-horario--ativo { background: var(--fm-azul); border-color: var(--fm-azul); color: #fff; }
+.ag-carregando { color: var(--fm-suave); font-size: 14px; padding: 10px 0; }
+
+.ag-resumo { position: sticky; top: 90px; }
+.ag-resumo dl { display: grid; gap: 12px; margin: 0; }
+.ag-resumo dt { font-size: 12px; font-weight: 700; color: var(--fm-suave); text-transform: uppercase; letter-spacing: .03em; }
+.ag-resumo dd { margin: 2px 0 0; color: var(--fm-titulo); font-weight: 600; }
+.ag-resumo .ag-valor { font-size: 26px; font-family: var(--fm-fonte-titulo); }
+.ag-resumo .fm-botao { width: 100%; justify-content: center; margin-top: 18px; }
+.ag-resumo .fm-botao[disabled] { opacity: .5; cursor: not-allowed; }
+
+.ag-medico { display: flex; gap: 14px; align-items: center; }
+.ag-medico strong { display: block; font-size: 18px; color: var(--fm-titulo); }
+.ag-medico span { font-size: 14px; color: var(--fm-suave); }
+
+.ag-carteiras { display: grid; gap: 8px; }
+.ag-carteira { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border: 1.5px solid var(--fm-borda-forte); border-radius: 12px; cursor: pointer; }
+.ag-carteira:has(input:checked) { border-color: var(--fm-azul); background: var(--fm-azul-claro); }
+.ag-carteira input { accent-color: var(--fm-azul); width: 18px; height: 18px; }
+.ag-carteira strong { display: block; color: var(--fm-titulo); }
+.ag-carteira small { color: var(--fm-suave); }
+
+.ag-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1px solid var(--fm-borda-forte); border-radius: 10px; font: inherit; color: var(--fm-texto); }

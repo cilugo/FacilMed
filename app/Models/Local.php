@@ -58,4 +58,22 @@ class Local extends Model
     {
         return trim("{$this->endereco}, {$this->numero} - {$this->bairro}, {$this->cidade}/{$this->uf}");
     }
+
+    /**
+     * Troca o horário de funcionamento inteiro. $horarios = ['segunda' =>
+     * ['abre' => '08:00', 'fecha' => '18:00'], ...]; dia ausente = fechado.
+     * Vazio = seg-sex 08:00-18:00 (padrão para não nascer local fechado).
+     */
+    public function definirHorarios(array $horarios): void
+    {
+        if ($horarios === []) {
+            $horarios = collect(['segunda', 'terca', 'quarta', 'quinta', 'sexta'])
+                ->mapWithKeys(fn ($d) => [$d => ['abre' => '08:00', 'fecha' => '18:00']])->all();
+        }
+
+        $this->horarios()->delete();
+        foreach ($horarios as $dia => $h) {
+            $this->horarios()->create(['dia_semana' => $dia, 'abre' => $h['abre'], 'fecha' => $h['fecha']]);
+        }
+    }
 }

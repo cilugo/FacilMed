@@ -71,6 +71,18 @@ final class Formatador
     }
 
     /** "09:00:00" (coluna TIME) vira "09:00". */
+    /** (12) 3921-1000 / (12) 99999-9999. Guarda-se só dígito; formata na tela. */
+    public static function telefone(?string $valor): string
+    {
+        $d = preg_replace('/\D/', '', (string) $valor);
+
+        return match (strlen($d)) {
+            10 => sprintf('(%s) %s-%s', substr($d, 0, 2), substr($d, 2, 4), substr($d, 6)),
+            11 => sprintf('(%s) %s-%s', substr($d, 0, 2), substr($d, 2, 5), substr($d, 7)),
+            default => (string) $valor,
+        };
+    }
+
     public static function hora(?string $time): string
     {
         return $time ? substr($time, 0, 5) : '--:--';
@@ -79,6 +91,14 @@ final class Formatador
     public static function cor(int $posicao): string
     {
         return self::CORES[$posicao % count(self::CORES)];
+    }
+
+    /** Cores dos avatares com iniciais (as mesmas da home do grupo). Todas com contraste para texto branco. */
+    public const CORES_AVATAR = ['#1b9ce4', '#183e9f', '#1a8a9a', '#155b80', '#2f6fd0'];
+
+    public static function corAvatar(int $posicao): string
+    {
+        return self::CORES_AVATAR[$posicao % count(self::CORES_AVATAR)];
     }
 
     /**

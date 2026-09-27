@@ -11,7 +11,7 @@
 
     Visual: public/css/painel.css (CSS simples, sem build).
     Comportamento: Alpine.js, que já vem no resources/js/app.js do Breeze.
-    Gráficos: public/js/graficos.js (SVG puro, sem biblioteca).
+    Gráficos: public/javas/graficos.js (SVG puro, sem biblioteca).
 --}}
 
 @php
@@ -32,14 +32,15 @@
 
     <title>@yield('titulo', 'Painel') — FacilMed</title>
 
-    <link rel="icon" href="{{ asset('imgs/marca/facilmed-simbolo.png') }}" type="image/png">
+    {{-- 24/09: o arquivo antigo (simbolo) nao existia. Nao ha PNG so com o
+         simbolo; usa a logo sem slogan, que e quadrada. --}}
+    <link rel="icon" href="{{ asset('imgs/marca/logosemslogan.png') }}" type="image/png">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=open-sans:400,600,700|rosario:600,700&display=swap" rel="stylesheet">
-
-    {{-- Tailwind e Alpine do Breeze. Vem ANTES do painel.css para o nosso
-         CSS ganhar qualquer empate. --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Sem Vite/Node desde 24/09: reset em base.css e Alpine local. --}}
+    <link rel="stylesheet" href="{{ asset('css/base.css') }}">
+    <script src="{{ asset('javas/alpine.min.js') }}" defer></script>
     <link rel="stylesheet" href="{{ asset('css/painel.css') }}">
 
     @stack('head')
@@ -60,7 +61,9 @@
             </button>
 
             <a href="{{ url('/') }}" class="fm-topo__logo" aria-label="FacilMed, ir para o início">
-                <img src="{{ asset('imgs/marca/facilmed-logo-horizontal-recortada.png') }}" alt="FacilMed">
+                {{-- 24/09: logo.png e a versao horizontal; o recorte da margem e feito
+                     no CSS (.fm-logo-recorte, no painel.css). --}}
+                <span class="fm-logo-recorte"><img src="{{ asset('imgs/marca/logo.png') }}" alt="FacilMed"></span>
             </a>
 
             <div class="fm-usuario" @click.outside="perfil = false">
@@ -106,7 +109,8 @@
 
     </div>
 
-    <script src="{{ asset('js/graficos.js') }}" defer></script>
+    {{-- 24/09: o arquivo real esta em public/javas/, nao em public/js/. --}}
+    <script src="{{ asset('javas/graficos.js') }}" defer></script>
     @stack('scripts')
 </body>
 </html>

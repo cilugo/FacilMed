@@ -17,15 +17,20 @@ class ConsultaController extends Controller
      */
     public function index(Request $request)
     {
+        $filtrada = Consulta::query()
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+            ->when($request->medico, fn ($q, $m) => $q->where('medico_id', $m))
+            ->when($request->de, fn ($q, $d) => $q->whereDate('data_consulta', '>=', $d))
+            ->when($request->ate, fn ($q, $d) => $q->whereDate('data_consulta', '<=', $d));
+
         return view('admin.consultas', [
-            'consultas' => Consulta::query()
+            'consultas' => (clone $filtrada)
                 ->with('paciente.user', 'medico.user', 'especialidade', 'vinculo.local')
-                ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-                ->when($request->de, fn ($q, $d) => $q->whereDate('data_consulta', '>=', $d))
-                ->when($request->ate, fn ($q, $d) => $q->whereDate('data_consulta', '<=', $d))
                 ->orderByDesc('data_consulta')->orderByDesc('horario')
                 ->paginate(30)
                 ->withQueryString(),
+            'porStatus' => (clone $filtrada)->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
+            'filtros'   => $request->only(['status', 'medico', 'de', 'ate']),
         ]);
     }
 }

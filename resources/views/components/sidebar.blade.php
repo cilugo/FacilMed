@@ -38,7 +38,8 @@
 
     <div class="fm-sidebar__marca">
         <a href="{{ url('/') }}" aria-label="FacilMed, ir para o início">
-            <img src="{{ asset('imgs/marca/facilmed-logo-horizontal-recortada.png') }}" alt="FacilMed">
+            {{-- 24/09: arquivo antigo nao existia; ver .fm-logo-recorte no painel.css --}}
+            <span class="fm-logo-recorte"><img src="{{ asset('imgs/marca/logo.png') }}" alt="FacilMed"></span>
         </a>
 
         <button type="button" class="fm-sidebar__fechar" @click="menu = false" aria-label="Fechar menu">

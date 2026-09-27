@@ -1,137 +1,36 @@
 # AGENTS.md — FacilMed
 
-> **Fonte canônica de contexto e regras para QUALQUER agente de IA** que trabalhar neste
-> projeto. `CLAUDE.md` apenas aponta para este arquivo. Se algo aqui conflitar com outro
-> arquivo, **este vence**.
+> Regras para **qualquer agente de IA** que trabalhar neste projeto (Claude Code, Codex, Cursor…).
+> Fica na raiz porque as ferramentas procuram este arquivo aqui.
 >
-> Última revisão: **18/09/2026**
+> **Todo o resto — como rodar, contas de teste, pastas, arquitetura, estado atual, contrato das
+> telas — está no `README.md`.** Leia o README (principalmente §4, §5 e §6) antes de editar.
+> Se algo aqui conflitar com outro arquivo, **este vence**.
+>
+> Última revisão: 24/09/2026.
 
----
+## 1. Escopo — o que este projeto NÃO é
 
-## 1. Objetivo do projeto
+Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apareça num mockup.
 
-FacilMed é uma plataforma web de agendamento de consultas médicas. O paciente encontra médico
-ou clínica por especialidade, vê preço e convênios aceitos, e marca a consulta sozinho — pelo
-plano de saúde dele ou como particular. Médicos e clínicas se cadastram, publicam sua agenda e
-recebem os agendamentos.
+- **Não é prontuário eletrônico**: nada de evolução clínica, diagnóstico, receita, atestado, exame.
+- **Não é telemedicina**, **não processa pagamento**, **não integra com o SUS**.
+- **Não armazena documento médico** (nenhum upload de laudo). Acessibilidade é texto declarado pelo paciente.
+- **Não emite parecer clínico** de nenhum tipo (ver §3).
+- **Não é produto em produção**: TCC, roda localmente, dados fictícios. Entrega 20/10/2026.
 
-É o TCC de um grupo de 4+ alunos, com entrega em **20/10/2026**.
+## 2. Stack
 
-## 2. Escopo — o que este projeto NÃO é
+- **Laravel 12** (não o 13: exige PHP 8.3 e o XAMPP parou no 8.2.12) · **PHP 8.2** · **MariaDB** do XAMPP.
+- Front: **Blade + CSS próprio (`public/css/`) + Alpine.js local**. **Sem Vite, sem Node/npm.**
+  Sem SPA, React, Vue ou Livewire.
+- O repositório **é** o projeto completo. `index.php` + `.htaccess` da raiz fazem rodar em
+  `http://localhost/FacilMed`. Fuso `America/Sao_Paulo`.
+- **Não instalar dependência nova** (Composer ou npm) sem registrar a decisão no README §6 e ter aprovação.
+- "Estado bom": `php artisan migrate:fresh --seed` roda limpo **e** `php artisan test` passa
+  (72 testes, banco `facilmed_testes` — nunca o `facilmed`).
 
-Delimitação rígida. Agente que ampliar o escopo por conta própria está errado, mesmo que a
-funcionalidade pareça óbvia ou apareça em algum mockup.
-
-- **Não é prontuário eletrônico.** Não guarda evolução clínica, anamnese, diagnóstico, receita,
-  atestado nem resultado de exame. Prontuário eletrônico é sistema regulado pelo CFM e está
-  fora do escopo, sem exceção.
-- **Não é telemedicina.** Não há videochamada, sala virtual nem consulta on-line. `Teleconsulta`
-  foi explicitamente cortada do escopo em 18/09/2026.
-- **Não processa pagamento.** A plataforma exibe e registra o valor; o pagamento acontece
-  presencialmente. Não há gateway, cobrança, estorno nem conciliação.
-- **Não integra com o SUS.** Cortado do escopo em 18/09/2026.
-- **Não emite parecer clínico de nenhum tipo.** Ver §6.
-- **Não armazena documento médico.** Nenhum upload de laudo, diagnóstico, exame ou receita.
-  Decidido em 18/09/2026: a acessibilidade é declarada em texto pelo próprio paciente, e nada
-  mais. Guardar imagem de laudo transformaria o projeto em depositário de dado sensível de
-  saúde, com obrigações de segurança que um TCC não tem como cumprir.
-- **Não é produto em produção.** É trabalho acadêmico, roda localmente, com dados fictícios.
-
-## 3. Stack e integrações
-
-> ⚠ = sistema/serviço com **side-effect**: altera estado **fora** do controle de versão.
-> O Git não versiona nem reverte essas mudanças.
-
-- **Linguagem / runtime:** **PHP 8.2** (via XAMPP 8.2.12). Confira com `php -v`.
-  > ⚠ O XAMPP que estava na máquina do grupo trazia **PHP 8.0.7** (junho de 2021) — fora de
-  > suporte e incompatível com qualquer Laravel atual. Todo integrante precisa atualizar.
-- **Framework: Laravel 12**, não o 13. Decidido em 18/09/2026 por uma restrição concreta:
-  o Laravel 13 exige PHP 8.3, e **o XAMPP parou no PHP 8.2.12** (novembro de 2023) — não
-  existe XAMPP com 8.3+. O Laravel 12 roda em PHP 8.2 e tem correções de segurança até
-  **24/02/2027**, bem depois da entrega de 20/10/2026. A alternativa (PHP avulso instalado
-  à mão) foi descartada: seis pessoas configurando `php.ini` manualmente gera mais problema
-  do que resolve.
-  ```bash
-  composer create-project laravel/laravel:^12.0 facilmed
-  ```
-  Depois de instalar, rode `php artisan --version` e **registre o número exato aqui**.
-- **Banco: MariaDB** (o que vem no XAMPP), não MySQL. ⚠ Isso importa para a coluna virtual
-  de `consultas`: se o índice único falhar ao ser criado, troque `VIRTUAL` por `PERSISTENT`
-  na migration — e **nunca** remova o índice para "resolver".
-- **Frontend:** Blade + Tailwind CSS + Alpine.js. Sem SPA, sem React, sem Vue, sem Livewire.
-- **Banco:** MySQL (via XAMPP)
-- **Onde roda:** localmente, XAMPP na máquina de cada integrante. Não há deploy.
-- **Serviços externos:**
-  - **SMTP (envio de e-mail)** ⚠ — dispara e-mail real para fora. Ver §7.1.
-  - **Dados abertos da ANS** — arquivo CSV de operadoras ativas, baixado e importado. É a fonte
-    da verdade sobre quais operadoras de plano de saúde existem.
-  - **Portal do CFM** — consultado **manualmente por uma pessoa**, nunca por código. Ver §6.
-
-### Dependências proibidas sem aprovação
-
-Não instalar pacote Composer ou npm que não esteja nesta lista sem registrar a decisão no
-`AI_HANDOFF.md` e obter aprovação. Cada dependência nova é uma coisa a mais para o grupo
-aprender, configurar em 4 máquinas e defender na banca.
-
-## 4. Fonte da verdade por assunto
-
-| Assunto | Fonte da verdade | Onde fica |
-|---|---|---|
-| Estrutura do banco | migrations do Laravel | `database/migrations/` |
-| Operadoras de plano de saúde existentes | CSV de dados abertos da ANS | `database/data/operadoras_ans.csv` + tabela `operadoras_ans` |
-| Se um CRM é válido | portal do CFM, conferido por pessoa | registrado em `medicos.status_verificacao` |
-| Se uma carteirinha é válida | comprovante COMPROVA emitido pelo paciente, conferido por pessoa | registrado em `paciente_planos.status` |
-| Horário livre de um médico | `disponibilidades` menos `consultas` menos `bloqueios` | calculado, nunca armazenado |
-| Preço da consulta particular | `precos` (vínculo + especialidade) | tabela `precos` |
-| Identidade visual | `Descricao_Visual_FacilMed.pdf` | `docs/` |
-| Estado do projeto e decisões recentes | `AI_HANDOFF.md` | raiz do projeto |
-| Contexto de negócio, público e tom | `PERFIL.md` | raiz do projeto |
-
-> Qualquer dado citado dentro de um documento é **snapshot datado**. Conferir na fonte antes de usar.
-
-## 5. Como rodar e validar ("estado bom")
-
-```bash
-# instalar:
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate:fresh --seed
-
-# rodar localmente (dois terminais):
-php artisan serve
-npm run dev
-
-# terceiro terminal, só quando for testar e-mail:
-php artisan schedule:work
-
-# o que define "verde":
-php artisan migrate:fresh --seed   # roda do zero sem erro
-php artisan test                   # suíte passa
-npm run build                      # compila sem erro
-```
-
-> ⚠ **Até que os testes existam, `php artisan test` não é critério válido.** Enquanto a suíte
-> estiver vazia, "verde" significa: `migrate:fresh --seed` roda limpo E o roteiro de conferência
-> manual abaixo passa. Não reporte sucesso baseado num `php artisan test` que não testa nada.
-
-### Roteiro de conferência manual (enquanto não há testes)
-
-1. Cadastrar paciente, médico e clínica — os três entram e fazem login.
-2. Médico pendente **não** aparece na busca. Admin aprova. Agora aparece.
-3. Agendar consulta particular com médico; o horário some da lista de disponíveis.
-4. Tentar agendar o mesmo horário de novo — precisa ser recusado.
-5. Cancelar; o horário volta a aparecer.
-6. Agendar pela clínica escolhendo só a especialidade; o sistema aloca um médico e mostra o nome
-   antes de confirmar.
-7. Marcar consulta como realizada; o paciente consegue avaliar. Consulta cancelada ou
-   `nao_compareceu` **não** deixa avaliar.
-8. Conferir que o comentário da avaliação não aparece em nenhuma tela pública.
-
-**Publicação:** não há. O projeto roda localmente e é apresentado ao vivo na banca.
-
-## 6. Regras de negócio / de dados (invioláveis)
+## 3. Regras invioláveis de negócio e de dados
 
 Estas são as regras que, se quebradas, fazem o sistema mentir para quem usa. Toda regra abaixo
 precisa estar refletida numa constraint de banco, numa Policy ou num FormRequest — não só na
@@ -141,16 +40,21 @@ intenção de quem escreveu a tela.
 
 - **Nunca** exibir em busca, listagem ou perfil público um médico cujo `status_verificacao`
   não seja `verificado`.
-- **Nunca** afirmar, em tela, e-mail ou texto, que um CRM foi "validado junto ao CFM". A
-  verificação é **manual, feita por uma pessoa**, e a interface só pode dizer "CRM verificado
-  pela equipe FacilMed". A API oficial do CFM é paga e exige CNPJ — não está integrada.
-- **Nunca** afirmar que uma carteirinha foi "validada junto à operadora". Não existe integração
-  TISS neste projeto e o COMPROVA da ANS exige login gov.br do próprio beneficiário — não há
-  API nem consulta por terceiro. A carteirinha entra como `pendente` e vira `ativa` por
-  conferência humana do comprovante que o paciente apresenta.
-- **Nunca** criar registro em `convenios` sem `operadora_ans_id` apontando para uma operadora
-  real importada da ANS. **Os planos são fictícios; as operadoras são reais.** Essa distinção
-  precisa estar clara na tela e no texto do TCC.
+- **BASES SIMULADAS (decisão do grupo, 24/09/2026 — substitui a conferência humana de 18/09).**
+  CRM, CNPJ e carteirinha são conferidos **automaticamente, na hora do cadastro**, nas tabelas
+  `base_crms`, `base_cnpjs` e `base_carteirinhas` (`App\Services\BaseSimulada`). Bateu →
+  aprovado (médico `verificado`, carteirinha `ativa`). Não bateu → recusado com o motivo.
+- **Nunca** afirmar, em tela, e-mail ou texto, que algo foi "validado junto ao CFM", "à Receita"
+  ou "à operadora". O texto correto é **"conferido na base simulada do FacilMed"**. Nenhuma
+  integração real existe (API do CFM é paga; COMPROVA/TISS não permitem consulta por terceiro).
+- **Nunca** escrever nas bases simuladas por tela ou controller. Só o `BaseSimuladaSeeder`
+  preenche — senão qualquer um "validaria" o próprio dado.
+- **Convênios e planos são 100% fictícios** (decisão do grupo em 24/09/2026, substituindo a
+  regra anterior de "operadora real da ANS + plano fictício"). `operadora_ans_id` passou a ser
+  opcional. **Nunca** usar nome, CNPJ ou logo de operadora real num convênio, e **sempre**
+  deixar claro na tela e no texto do TCC que a plataforma não tem contrato com nenhuma operadora.
+- **Nunca** apagar convênio ou plano: desativar (`ativo = false`). Apagar leva em cascata os
+  planos e as carteirinhas dos pacientes.
 
 **Nada de conteúdo clínico**
 
@@ -212,21 +116,19 @@ intenção de quem escreveu a tela.
   sozinho quando se usa `Auth::login()` com o fluxo padrão — não contorne isso com sessão
   manual. *(O protótipo antigo criava a sessão sem regenerar o ID: brecha de session fixation.)*
 
-## 7. Regras de edição
+## 4. Regras de edição
 
-- **Plano antes de editar** (ver Protocolo de Handoff, §10).
-- Commits pequenos e atômicos. Uma intenção por commit.
-- **Branch por frente de trabalho. Ninguém commita direto na `main`.** Com 4+ pessoas no mesmo
-  Laravel, isso não é preciosismo: é a diferença entre integrar e passar a última semana
-  resolvendo conflito.
-- Migration já aplicada por outra pessoa **não se edita** — cria-se uma nova. Editar uma
-  migration que já rodou na máquina de outro integrante quebra o banco dele silenciosamente.
-- Não introduzir dependência, serviço ou integração nova sem registrar a decisão no handoff (§3).
-- Manter o "estado bom" (§5). Se quebrar algo de propósito, deixar explícito no handoff.
-- Regra de negócio mora em Policy, FormRequest, Model ou constraint — **não** em `if` dentro
-  de Blade. Tela não é lugar de regra.
+- **Plano antes de editar** (ver §6). Commits pequenos, uma intenção por commit.
+- **Branch por frente de trabalho. Ninguém commita direto na `main`.**
+- **Migration já aplicada não se edita** — cria-se uma nova.
+- Regra de negócio mora em Policy, FormRequest, Model ou constraint — **não** em `if` na Blade.
+- **Toda mudança de back-end vem com teste** em `tests/Feature/`. Mudou regra e nenhum teste quebrou? Falta teste.
+- Cancelar consulta **só** por `Consulta::cancelar()`; e-mail **só** por `App\Services\Notificador`.
+- **Não criar arquivo .md novo na raiz.** Documentação vai no `README.md` (seção certa).
+- Não mexer no `.htaccess` da raiz sem testar que `/FacilMed/.env` continua dando **403**.
+- Não alterar `.env` nem credenciais. `vendor/` é gerado. `prototipo-antigo/` é só leitura.
 
-### 7.1 Rito para mudanças com side-effect ⚠ (envio de e-mail)
+### 4.1 Rito para mudanças com side-effect ⚠ (envio de e-mail)
 
 O único side-effect deste projeto é o disparo de e-mail. Ele sai da máquina e chega na caixa
 de alguém; o Git não desfaz isso.
@@ -237,19 +139,9 @@ de alguém; o Git não desfaz isso.
 3. Envio para caixa real **só com aprovação explícita**, e só para e-mail de integrante do grupo.
 4. Depois de qualquer teste de envio, conferir `notificacoes_enviadas` e **limpar as linhas de
    teste**, senão o lembrete de verdade daquela consulta nunca sai (o UNIQUE bloqueia).
-5. Registrar no `AI_HANDOFF.md` o que foi disparado.
+5. Registrar no README §6 o que foi disparado.
 
-## 8. Arquivos e áreas que NÃO devem ser alterados
-
-- `.env` e qualquer arquivo com credencial real. **Nunca commitar segredo.** Mudança de
-  configuração vai no `.env.example`, sem valor real.
-- `database/migrations/` já aplicadas — criar nova migration em vez de editar (§7).
-- `public/build/`, `vendor/`, `node_modules/` — artefatos gerados. Editar a fonte.
-- `Descricao_Visual_FacilMed.pdf` — material de referência do design; não é gerado pelo código.
-- A pasta do projeto antigo em PHP puro (`FacilMed/` original) — **somente leitura, referência
-  histórica**. O projeto novo não depende dela e nada deve ser editado lá.
-
-## 9. Restrições de segurança
+## 5. Restrições de segurança
 
 - Nunca executar comando destrutivo — apagar em massa, `migrate:fresh` no banco de outra
   pessoa, reescrever histórico remoto, resetar branch — **sem aprovação explícita**.
@@ -264,39 +156,11 @@ de alguém; o Git não desfaz isso.
 - ⚠ **Um agente por vez** ao tocar o banco compartilhado ou disparar e-mail. Branch isola código,
   não isola banco nem caixa de entrada.
 
-## 10. Protocolo de Handoff (revezamento entre IAs)
+## 6. Protocolo de passagem de bastão
 
-**Antes de editar qualquer arquivo, numa sessão nova:**
+**Ao começar:** `git log --oneline -10` e `git status` → ler README §6 (estado atual) e este
+arquivo → listar os arquivos da tarefa → plano curto → riscos (§3 e §4.1) → **aguardar aprovação**.
 
-1. Resumir o estado atual (`git log --oneline -10` e `git status`).
-2. Ler `AI_HANDOFF.md` e este arquivo.
-3. Listar os arquivos relevantes para a tarefa.
-4. Apresentar um plano curto.
-5. Apontar os riscos — especialmente §6 e §7.1.
-6. **Aguardar aprovação.**
-
-**Antes de encerrar a sessão ou trocar de ferramenta:**
-
-1. Atualizar `AI_HANDOFF.md`: intenção, decisões, becos sem saída, próximo passo.
-2. Checkpoint com **commit**:
-   ```bash
-   git add -A && git commit -m "wip: checkpoint before switching agent"
-   ```
-   Prefira commit a `git stash` — stash é local e invisível para o próximo agente.
-3. Garantir que o "estado bom" (§5) ainda passa — ou registrar o que está quebrado e por quê.
-
-> Regra de ouro: nunca troque de agente com working tree suja e handoff desatualizado.
-
-## 11. Mapa de pastas
-
-- **Raiz:** `AGENTS.md`, `CLAUDE.md`, `AI_HANDOFF.md`, `PERFIL.md`, `README.md`
-- **`app/Models/`** — fonte viva. Models Eloquent e relacionamentos.
-- **`app/Policies/`** — fonte viva. **Onde moram as regras de visibilidade da §6.**
-- **`app/Http/Requests/`** — fonte viva. Validação de entrada.
-- **`app/Mail/`** + **`app/Console/Commands/`** — fonte viva. E-mails e o comando do scheduler.
-- **`database/migrations/`** — fonte viva e **fonte da verdade do schema**.
-- **`database/seeders/`** — fonte viva. Dados fictícios de demonstração.
-- **`database/data/`** — CSV da ANS. Dado externo, não editar à mão.
-- **`resources/views/`** — fonte viva. Blade.
-- **`docs/`** — material de referência: PDF de design, modelo de dados, documentação do TCC.
-- **`public/build/`, `vendor/`, `node_modules/`** — **gerados**. Nunca editar.
+**Ao terminar:** atualizar o **README §6** (o que foi feito, decisões, becos sem saída, próximo
+passo) → `migrate:fresh --seed` + `php artisan test` passando (ou registrar o que quebrou e por
+quê) → commit. Nunca trocar de agente com mudança não commitada e §6 desatualizada.

@@ -70,7 +70,9 @@ class CadastroPacienteRequest extends FormRequest
 
             // O consentimento e obrigatorio QUANDO ha dado sensivel.
             // Sem ele, o dado nao pode ser gravado - nao e formalidade.
-            'consentimento_acessibilidade' => ['nullable', 'required_if:possui_deficiencia,1', 'accepted'],
+            // accepted_if (e nao 'accepted'): 'accepted' e regra implicita, roda mesmo com
+            // o campo vazio - com ela NINGUEM conseguia se cadastrar sem marcar a caixa.
+            'consentimento_acessibilidade' => ['accepted_if:possui_deficiencia,1'],
         ];
     }
 
@@ -87,8 +89,7 @@ class CadastroPacienteRequest extends FormRequest
             'telefone.digits_between' => 'O telefone deve ter DDD + numero, com 10 ou 11 digitos.',
             'data_nascimento.before'  => 'A data de nascimento precisa ser no passado.',
             'descricao_deficiencia.required_if' => 'Conte brevemente do que voce precisa, para prepararmos o atendimento.',
-            'consentimento_acessibilidade.required_if' => 'Precisamos da sua autorizacao para guardar essa informacao.',
-            'consentimento_acessibilidade.accepted'    => 'Precisamos da sua autorizacao para guardar essa informacao.',
+            'consentimento_acessibilidade.accepted_if' => 'Precisamos da sua autorizacao para guardar essa informacao.',
         ];
     }
 }

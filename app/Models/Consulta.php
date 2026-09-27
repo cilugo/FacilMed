@@ -87,10 +87,42 @@ class Consulta extends Model
      */
     public function ehCancelamentoTardio(): bool
     {
-        return $this->inicio->diffInHours(now()) < 24;
+        // now() -> inicio (e nao o contrario): no Carbon 3 diffInHours tem SINAL.
+        // Do jeito antigo dava sempre negativo, e TODO cancelamento virava tardio.
+        return now()->diffInHours($this->inicio) < 24;
     }
 
-    /** So consulta realizada pode ser avaliada. */
+    /**
+     * Cancela a consulta (24/09). UM lugar só para a regra - paciente,
+     * médico, ausência do médico, remarcação e bloqueio de conta passam
+     * por aqui. Cancelamento nunca é bloqueado (AGENTS.md §6); abaixo de
+     * 24h fica marcado como tardio.
+     *
+     * Aviso por e-mail (App\Services\Notificador), só depois do commit:
+     * - paciente cancelou → avisa o médico;
+     * - qualquer outro (médico, clínica, admin, ausência) → avisa o paciente;
+     * - remarcação → avisa o médico que o horário antigo foi liberado.
+     */
+    public function cancelar(?int $porUserId, ?string $motivo = null, bool $remarcacao = false): void
+    {
+        $this->update([
+            'status'              => 'cancelada',
+            'cancelada_por'       => $porUserId,
+            'cancelada_em'        => now(),
+            'motivo_cancelamento' => $motivo !== null ? mb_substr($motivo, 0, 255) : null,
+            'cancelamento_tardio' => $this->ehCancelamentoTardio(),
+        ]);
+
+        $pacienteCancelou = $porUserId !== null && $porUserId === $this->paciente?->user_id;
+
+        \Illuminate\Support\Facades\DB::afterCommit(fn () => app(\App\Services\Notificador::class)->enviar(
+            $this,
+            $remarcacao ? 'remarcacao' : 'cancelamento',
+            ($remarcacao || $pacienteCancelou) ? 'medico' : 'paciente',
+        ));
+    }
+
+    /** Só consulta realizada pode ser avaliada. */
     public function podeSerAvaliada(): bool
     {
         return $this->status === 'realizada' && $this->avaliacao === null;

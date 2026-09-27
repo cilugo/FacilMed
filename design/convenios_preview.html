@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FacilMed — Protótipo das telas de convênios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Rosario:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== public/css/painel.css (cópia fiel) ===== */
+/* ==========================================================================
+   FacilMed — painéis (paciente, médico, clínica e "Consultas realizadas")
+
+   CSS simples, sem build: carregado direto pelo layouts/painel.blade.php.
+   Todas as classes começam com "fm-" para nunca brigar com o Tailwind do
+   Breeze. Paleta e formas vêm dos mockups e do README §8:
+   azul-marinho nos títulos, azul-claro no destaque, cards brancos de
+   cantos arredondados com sombra discreta. Verde, roxo, rosa e âmbar
+   aparecem SÓ para diferenciar status e categoria, nunca como cor de marca.
+   ========================================================================== */
+
+:root {
+    --fm-fundo: #f4f8fd;
+    --fm-card: #ffffff;
+    --fm-borda: #dce8f7;
+    --fm-borda-forte: #c4d7f0;
+
+    --fm-titulo: #17358f;      /* azul-marinho: títulos e números */
+    --fm-texto: #2c4170;
+    --fm-suave: #6b80a8;
+
+    --fm-azul: #1f6feb;
+    --fm-azul-claro: #e8f1ff;
+    --fm-azul-item: #d8e8ff;
+
+    --fm-verde: #0f9f7a;
+    --fm-verde-claro: #d9f5ec;
+    --fm-roxo: #7446e6;
+    --fm-roxo-claro: #ece4ff;
+    --fm-rosa: #e0466a;
+    --fm-rosa-claro: #ffe3ea;
+    --fm-ambar: #b87400;
+    --fm-ambar-claro: #fff0cf;
+    --fm-ciano: #0b93bd;
+    --fm-ciano-claro: #d7f2fa;
+
+    --fm-sombra: 0 1px 2px rgba(23, 53, 143, .05), 0 10px 26px rgba(23, 53, 143, .06);
+    --fm-menu-largura: 264px;
+
+    --fm-fonte: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --fm-fonte-titulo: 'Rosario', 'Open Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+
+/* ---------- Base (restrita ao .fm-app para não vazar) ---------- */
+
+.fm-app,
+.fm-app *,
+.fm-app *::before,
+.fm-app *::after {
+    box-sizing: border-box;
+}
+
+.fm-app {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--fm-fonte);
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--fm-texto);
+    background: linear-gradient(180deg, #ecf3fc 0, #f4f8fd 340px) no-repeat, var(--fm-fundo);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* :where() zera a especificidade: assim qualquer classe fm-* (margin,
+   padding...) vence este reset, e o reset não briga com nada. */
+:where(.fm-app) :where(h1, h2, h3, p, ul, ol) { margin: 0; padding: 0; }
+:where(.fm-app) :where(ul, ol) { list-style: none; }
+:where(.fm-app) a { color: inherit; text-decoration: none; }
+:where(.fm-app) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:where(.fm-app) img { display: block; max-width: 100%; height: auto; }
+:where(.fm-app) svg { display: block; }
+
+[x-cloak] { display: none !important; }
+
+.fm-app a:focus-visible,
+.fm-app button:focus-visible {
+    outline: 2px solid var(--fm-azul);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.fm-icone { width: 1.25em; height: 1.25em; flex: none; }
+
+/* ---------- Estrutura: menu lateral + área principal ---------- */
+
+.fm-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    width: var(--fm-menu-largura);
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-right: 1px solid var(--fm-borda);
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+}
+
+.fm-sidebar.is-open {
+    transform: none;
+    box-shadow: 0 0 44px rgba(15, 30, 90, .28);
+}
+
+.fm-sidebar__marca {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 20px 18px;
+}
+
+.fm-sidebar__marca img { height: 34px; width: auto; }
+
+.fm-sidebar__fechar {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    color: var(--fm-suave);
+}
+
+.fm-sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 14px;
+}
+
+.fm-sidebar__nav ul { display: grid; gap: 4px; }
+
+.fm-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #3d5283;
+    text-align: left;
+    transition: background .15s ease, color .15s ease;
+}
+
+.fm-nav .fm-icone { width: 22px; height: 22px; color: #5b78b5; }
+.fm-nav:hover { background: #f0f6ff; }
+
+.fm-nav.is-ativo {
+    background: var(--fm-azul-item);
+    color: var(--fm-titulo);
+    font-weight: 700;
+}
+
+.fm-nav.is-ativo .fm-icone { color: var(--fm-azul); }
+
+.fm-sidebar__rodape {
+    padding: 12px 14px 16px;
+    border-top: 1px solid var(--fm-borda);
+}
+
+.fm-nav--sair { color: var(--fm-suave); }
+
+.fm-aviso {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--fm-ambar-claro);
+    color: #7a4d00;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
+.fm-fundo-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(15, 30, 80, .42);
+}
+
+.fm-principal { min-height: 100vh; }
+
+/* ---------- Barra de topo ---------- */
+
+.fm-topo {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 66px;
+    padding: 0 16px;
+    background: rgba(244, 248, 253, .88);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--fm-borda);
+}
+
+.fm-topo__menu {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    color: var(--fm-azul);
+}
+
+.fm-topo__menu .fm-icone { width: 26px; height: 26px; }
+
+.fm-topo__logo {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.fm-topo__logo img { height: 30px; width: auto; }
+
+.fm-usuario { position: relative; }
+
+.fm-usuario__botao {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px;
+    border-radius: 999px;
+}
+
+.fm-usuario__texto { display: none; text-align: left; line-height: 1.2; }
+.fm-usuario__texto strong { display: block; font-size: 14px; color: var(--fm-titulo); }
+.fm-usuario__texto small { font-size: 12.5px; color: var(--fm-suave); }
+/* .fm-app na frente para ganhar de ".fm-app svg { display: block }" */
+.fm-app .fm-usuario__seta { display: none; width: 18px; height: 18px; color: var(--fm-suave); }
+
+.fm-usuario__menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 60;
+    min-width: 190px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid var(--fm-borda);
+    border-radius: 14px;
+    box-shadow: 0 14px 40px rgba(20, 40, 110, .16);
+}
+
+.fm-usuario__menu a,
+.fm-usuario__menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 9px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fm-texto);
+}
+
+.fm-usuario__menu a:hover,
+.fm-usuario__menu button:hover { background: #f0f6ff; }
+
+.fm-avatar {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #cfe2ff;
+    color: #1a4fb8;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.fm-avatar--grande { width: 44px; height: 44px; font-size: 14px; }
+.fm-avatar--cor { color: #fff; }
+
+/* ---------- Área de conteúdo ---------- */
+
+.fm-conteudo {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 22px 16px 56px;
+}
+
+.fm-flash {
+    margin-bottom: 18px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.fm-flash--ok { background: var(--fm-verde-claro); color: #0a6b53; }
+.fm-flash--erro { background: var(--fm-rosa-claro); color: #a3223f; }
+
+.fm-pagina-topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.fm-titulo {
+    font-family: var(--fm-fonte-titulo);
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    color: var(--fm-titulo);
+}
+
+.fm-subtitulo { margin-top: 6px; color: var(--fm-suave); font-size: 15px; max-width: 46ch; }
+
+.fm-data {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #fff;
+    border: 1px solid var(--fm-borda);
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fm-titulo);
+    box-shadow: var(--fm-sombra);
+}
+
+.fm-data .fm-icone { color: var(--fm-azul); }
+
+.fm-voltar {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fm-azul);
+}
+
+.fm-voltar .fm-icone { width: 18px; height: 18px; }
+
+/* ---------- Grades ---------- */
+
+.fm-grade--cartoes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 22px 0 18px;
+}
+
+.fm-destaque { margin-bottom: 18px; }
+
+.fm-duas {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+/* ---------- Cartão de indicador ---------- */
+
+.fm-cartao {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--fm-card);
+    border: 1px solid var(--fm-borda);
+    border-radius: 18px;
+    box-shadow: var(--fm-sombra);
+    min-width: 0;
+}
+
+a.fm-cartao--link { transition: border-color .15s ease, transform .15s ease; }
+a.fm-cartao--link:hover { border-color: var(--fm-borda-forte); }
+
+.fm-cartao__icone {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.fm-cartao__icone .fm-icone { width: 24px; height: 24px; }
+
+.fm-cartao__texto { display: grid; gap: 2px; min-width: 0; }
+.fm-cartao__rotulo { font-size: 14px; font-weight: 600; color: var(--fm-titulo); overflow-wrap: anywhere; }
+
+.fm-cartao__valor {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--fm-titulo);
+    letter-spacing: -.01em;
+}
+
+.fm-cartao__nota {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
+    margin-top: 2px;
+    font-size: 12.5px;
+}
+
+.fm-cartao__legenda { color: var(--fm-suave); }
+
+.fm-cartao__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fm-azul);
+}
+
+.fm-cartao__link .fm-icone { width: 14px; height: 14px; }
+
+.fm-variacao { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
+.fm-variacao--bom { color: var(--fm-verde); }
+.fm-variacao--ruim { color: var(--fm-rosa); }
+.fm-variacao--neutro { color: var(--fm-suave); }
+
+.fm-variacao__seta {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.fm-variacao__seta .fm-icone { width: 11px; height: 11px; stroke-width: 3; color: #fff; }
+.fm-variacao--ruim .fm-variacao__seta { background: transparent; }
+.fm-variacao--ruim .fm-variacao__seta .fm-icone { color: var(--fm-rosa); width: 15px; height: 15px; stroke-width: 2.2; }
+
+.fm-destaque .fm-cartao {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    background: linear-gradient(90deg, #ecfaf5, #f6fcfa);
+    border-color: #c9ebdf;
+}
+
+/* Tons: usados pelo ícone circular e pelos indicadores */
+.fm-tom-azul   { background: var(--fm-azul-claro);   color: var(--fm-azul); }
+.fm-tom-verde  { background: var(--fm-verde-claro);  color: var(--fm-verde); }
+.fm-tom-roxo   { background: var(--fm-roxo-claro);   color: var(--fm-roxo); }
+.fm-tom-rosa   { background: var(--fm-rosa-claro);   color: var(--fm-rosa); }
+.fm-tom-ambar  { background: var(--fm-ambar-claro);  color: var(--fm-ambar); }
+.fm-tom-ciano  { background: var(--fm-ciano-claro);  color: var(--fm-ciano); }
+
+/* ---------- Painel (cartão de seção) ---------- */
+
+.fm-painel {
+    margin-bottom: 18px;
+    padding: 18px 16px;
+    background: var(--fm-card);
+    border: 1px solid var(--fm-borda);
+    border-radius: 20px;
+    box-shadow: var(--fm-sombra);
+    min-width: 0;
+}
+
+.fm-duas > .fm-painel { margin-bottom: 0; }
+
+.fm-painel__topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 12px;
+    margin-bottom: 12px;
+}
+
+.fm-painel__titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--fm-titulo);
+}
+
+.fm-painel__titulo .fm-icone { width: 22px; height: 22px; color: var(--fm-azul); }
+.fm-painel__periodo { font-size: 13px; color: var(--fm-suave); }
+
+.fm-pilula {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: #eef5ff;
+    border: 1px solid #d5e5fb;
+    color: var(--fm-azul);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background .15s ease;
+}
+
+.fm-pilula:hover { background: #e0edff; }
+.fm-pilula .fm-icone { width: 14px; height: 14px; }
+.fm-pilula--pequena { padding: 6px 12px; font-size: 12.5px; }
+
+.fm-botao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2450d1, #1c3a91);
+    color: #fff !important;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.fm-botao--suave {
+    background: #eaf3ff;
+    color: var(--fm-azul) !important;
+    border: 1px solid #cfe1fb;
+}
+
+.fm-vazio {
+    padding: 22px 8px;
+    text-align: center;
+    color: var(--fm-suave);
+    font-size: 14px;
+}
+
+.fm-vazio--acao { display: grid; justify-items: center; gap: 12px; }
+
+.fm-dica {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #eef6ff;
+    color: #3f5a8c;
+    font-size: 13.5px;
+}
+
+.fm-dica .fm-icone { width: 20px; height: 20px; margin-top: 1px; color: var(--fm-azul); }
+
+/* ---------- Listas ---------- */
+
+.fm-lista > li + li { border-top: 1px solid #e7eff9; }
+
+.fm-ponto {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #a9bcd4;
+    box-shadow: 0 0 0 5px #eaf2fd;
+}
+
+.fm-ponto--azul { background: #0a80fb; }
+.fm-ponto--verde { background: #00a877; }
+.fm-ponto--rosa { background: #e0466a; }
+.fm-ponto--ambar { background: #e39b00; }
+
+/* agenda do médico */
+.fm-agenda {
+    display: grid;
+    grid-template-columns: 50px 12px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 13px 0;
+}
+
+.fm-agenda__acoes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.fm-agenda__hora { font-weight: 700; color: var(--fm-titulo); }
+.fm-agenda__info { display: grid; min-width: 0; }
+.fm-agenda__info strong { color: var(--fm-titulo); font-size: 14.5px; }
+.fm-agenda__info span { color: var(--fm-suave); font-size: 13px; }
+
+/* linha simples: data + texto (histórico, avaliar, planos) */
+.fm-linha {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.fm-linha__data { font-size: 13.5px; color: var(--fm-suave); }
+.fm-linha__info { display: grid; min-width: 0; }
+.fm-linha__info strong { color: var(--fm-titulo); font-size: 14.5px; }
+.fm-linha__info span { color: var(--fm-suave); font-size: 13px; }
+
+.fm-linha:has(.fm-linha__icone) { grid-template-columns: 38px minmax(0, 1fr) auto; }
+
+.fm-linha__icone {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+}
+
+.fm-linha__icone .fm-icone { width: 20px; height: 20px; }
+
+/* próximo atendimento (paciente) */
+.fm-lista > .fm-proximo {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-areas: "icone quando botao" "icone quem botao";
+    align-items: center;
+    gap: 2px 14px;
+    margin-top: 10px;
+    padding: 14px;
+    border: 1px solid var(--fm-borda);
+    border-radius: 16px;
+    background: #fbfdff;
+}
+
+.fm-proximo__icone {
+    grid-area: icone;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.fm-proximo__icone .fm-icone { width: 24px; height: 24px; }
+
+.fm-proximo__quando { grid-area: quando; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 10px; }
+.fm-proximo__quando span { font-size: 13px; color: var(--fm-suave); }
+.fm-proximo__quando strong { font-size: 22px; line-height: 1.2; color: var(--fm-titulo); }
+.fm-proximo__quem { grid-area: quem; display: grid; }
+.fm-proximo__quem strong { color: var(--fm-titulo); font-size: 14.5px; }
+.fm-proximo__quem span { color: var(--fm-suave); font-size: 13px; }
+.fm-proximo .fm-pilula { grid-area: botao; }
+
+/* histórico do paciente (linha inteira é link) */
+.fm-historico {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) auto 18px;
+    grid-template-areas: "data medico status seta" "data esp status seta";
+    align-items: center;
+    gap: 0 12px;
+    padding: 12px 6px;
+    border-radius: 12px;
+    transition: background .15s ease;
+}
+
+.fm-historico:hover { background: #f5f9ff; }
+.fm-historico__data { grid-area: data; font-size: 13.5px; color: var(--fm-suave); }
+.fm-historico__medico { grid-area: medico; font-weight: 700; color: var(--fm-titulo); font-size: 14.5px; }
+.fm-historico__esp { grid-area: esp; font-size: 13px; color: var(--fm-suave); }
+.fm-historico .fm-etiqueta { grid-area: status; justify-self: end; }
+.fm-historico__seta { grid-area: seta; width: 18px; height: 18px; color: var(--fm-azul); }
+
+/* pessoa: avatar + texto + lado (agenda dos médicos, convênios, agendamentos) */
+.fm-pessoa {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+}
+
+.fm-pessoa__info { display: grid; min-width: 0; }
+.fm-pessoa__info strong { color: var(--fm-titulo); font-size: 14.5px; }
+.fm-pessoa__info span { color: var(--fm-suave); font-size: 13px; }
+.fm-pessoa__lado { display: grid; text-align: right; }
+.fm-pessoa__lado strong { color: var(--fm-titulo); font-size: 14px; }
+.fm-pessoa__lado span { color: var(--fm-suave); font-size: 13px; }
+
+/* ---------- Etiquetas de status ---------- */
+
+.fm-etiqueta {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.fm-etiqueta--azul  { background: #dfeaff; color: #1d55c4; }
+.fm-etiqueta--verde { background: var(--fm-verde-claro); color: #0a7a5c; }
+.fm-etiqueta--rosa  { background: var(--fm-rosa-claro); color: #b02547; }
+.fm-etiqueta--ambar { background: var(--fm-ambar-claro); color: #8a5900; }
+.fm-etiqueta--roxo  { background: var(--fm-roxo-claro); color: #5a30bd; }
+.fm-etiqueta--cinza { background: #e9eef6; color: #55668a; }
+
+/* ---------- Atalhos ---------- */
+
+.fm-atalhos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; }
+
+.fm-atalhos--linha { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.fm-atalho {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border: 1px solid var(--fm-borda);
+    border-radius: 14px;
+    background: #f5faff;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fm-titulo);
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.fm-atalho:hover { background: #ebf4ff; border-color: var(--fm-borda-forte); }
+
+/* na coluna estreita ao lado da agenda, os atalhos ficam mais compactos */
+.fm-duas--agenda .fm-atalhos { gap: 7px; }
+.fm-duas--agenda .fm-atalho { padding: 6px 10px; }
+
+.fm-atalho__icone {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #dcebff;
+    color: var(--fm-azul);
+}
+
+.fm-atalho__icone .fm-icone { width: 19px; height: 19px; }
+.fm-atalho__rotulo { flex: 1; min-width: 0; }
+.fm-atalho__seta { width: 16px; height: 16px; color: var(--fm-azul); }
+
+/* ---------- Nota do médico ---------- */
+
+.fm-nota { display: grid; justify-items: start; gap: 2px; padding: 8px 4px 4px; }
+.fm-nota__valor { font-size: 46px; line-height: 1; color: var(--fm-titulo); letter-spacing: -.02em; }
+.fm-nota__escala { color: var(--fm-suave); font-size: 14px; }
+.fm-nota__total { margin-top: 6px; font-size: 13.5px; color: var(--fm-texto); }
+
+/* ---------- Abas (semanal/mensal/anual e 7/30/90 dias) ---------- */
+
+.fm-abas {
+    display: inline-flex;
+    gap: 2px;
+    padding: 4px;
+    background: #eef5ff;
+    border: 1px solid var(--fm-borda);
+    border-radius: 12px;
+}
+
+.fm-aba {
+    padding: 7px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fm-azul);
+    transition: background .15s ease;
+}
+
+.fm-aba:hover { background: #e0edff; }
+.fm-aba.is-ativa { background: var(--fm-azul); color: #fff; }
+
+/* ---------- Gráficos ---------- */
+
+.fm-grafico-bloco { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+
+.fm-grafico { position: relative; width: 100%; height: 250px; }
+.fm-grafico--sozinho { height: 270px; }
+.fm-grafico svg { width: 100%; height: 100%; overflow: visible; }
+
+.fm-g-grade { stroke: #dfe9f7; stroke-width: 1; stroke-dasharray: 3 5; }
+.fm-g-eixo { fill: #5f7399; font-size: 12px; font-family: var(--fm-fonte); }
+.fm-g-linha { fill: none; stroke: var(--fm-azul); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.fm-g-ponto { fill: var(--fm-azul); stroke: #fff; stroke-width: 2; }
+
+.fm-resumo {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 18px;
+    border-radius: 16px;
+    background: #f1f7ff;
+    border: 1px solid #e1ecfb;
+}
+
+.fm-resumo__rotulo { font-size: 14px; color: var(--fm-suave); }
+.fm-resumo__valor { font-size: 34px; line-height: 1.1; color: var(--fm-titulo); letter-spacing: -.01em; }
+.fm-resumo__legenda { font-size: 13px; color: var(--fm-suave); }
+
+.fm-resumo__lista { margin-top: 12px; }
+
+.fm-resumo__lista li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 0;
+    border-top: 1px solid #dbe8f8;
+    font-size: 14px;
+}
+
+.fm-resumo__nome { flex: 1; }
+.fm-resumo__lista strong { color: var(--fm-titulo); }
+.fm-resumo__pct { color: var(--fm-suave); font-size: 13px; }
+
+/* rosca + legenda */
+.fm-donut-bloco { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; }
+
+.fm-donut { position: relative; flex: none; width: 168px; height: 168px; }
+.fm-donut svg { width: 100%; height: 100%; }
+
+.fm-donut__centro {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    line-height: 1.15;
+}
+
+.fm-donut__centro strong { font-size: 26px; color: var(--fm-titulo); }
+.fm-donut__centro span { font-size: 13px; color: var(--fm-suave); }
+
+.fm-legenda { flex: 1; min-width: 190px; display: grid; gap: 4px; }
+
+.fm-legenda li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 14px;
+}
+
+.fm-legenda__ponto { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.fm-legenda__nome { flex: 1; min-width: 0; }
+.fm-legenda__valor { font-weight: 700; color: var(--fm-titulo); }
+.fm-legenda__valor small { font-weight: 400; color: var(--fm-suave); font-size: 13px; }
+
+/* barras horizontais */
+.fm-barras { display: grid; gap: 4px; }
+.fm-barras li { padding: 7px 0; }
+.fm-barras__texto { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.fm-barras__texto strong { color: var(--fm-titulo); }
+
+.fm-barras__trilho {
+    height: 8px;
+    margin-top: 7px;
+    border-radius: 999px;
+    background: #e6eefa;
+    overflow: hidden;
+}
+
+.fm-barras__preenchido {
+    height: 100%;
+    min-width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1f6feb, #5aa2ff);
+}
+
+/* colunas (dia da semana) */
+.fm-colunas { display: flex; align-items: stretch; gap: 10px; height: 230px; padding-top: 4px; }
+.fm-coluna { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.fm-coluna__valor { font-size: 12.5px; color: var(--fm-suave); margin-bottom: 4px; }
+.fm-coluna__area { flex: 1; width: 100%; display: flex; align-items: flex-end; border-bottom: 1px solid #dfe9f7; }
+
+.fm-coluna__barra {
+    width: 100%;
+    min-height: 3px;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(180deg, #3b8bff, #1f6feb);
+}
+
+.fm-coluna__rotulo { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--fm-titulo); }
+
+/* ---------- Tabela "Últimas consultas" ---------- */
+
+.fm-tabela__cabecalho,
+.fm-tabela__linha {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.5fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .95fr);
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+}
+
+.fm-tabela__cabecalho {
+    border-radius: 10px;
+    background: #f1f7ff;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fm-suave);
+}
+
+.fm-tabela__linha { border-bottom: 1px solid #e7eff9; font-size: 14px; }
+.fm-tabela__linha:last-child { border-bottom: 0; }
+.fm-tabela__quando { color: var(--fm-texto); }
+.fm-tabela__paciente { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; color: var(--fm-titulo); }
+.fm-tabela__paciente .fm-avatar { width: 30px; height: 30px; font-size: 11.5px; }
+.fm-tabela__extra, .fm-tabela__esp { color: var(--fm-texto); }
+
+/* ---------- Informações gerais ---------- */
+
+.fm-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px 14px; }
+.fm-info__item { display: flex; align-items: flex-start; gap: 12px; }
+
+.fm-info__icone {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--fm-azul-claro);
+    color: var(--fm-azul);
+}
+
+.fm-info__icone .fm-icone { width: 21px; height: 21px; }
+.fm-info__item > div { display: grid; min-width: 0; }
+.fm-info__rotulo { font-size: 12.5px; color: var(--fm-suave); }
+.fm-info__valor { font-size: 17px; color: var(--fm-titulo); line-height: 1.3; }
+.fm-info__nota { font-size: 12.5px; color: var(--fm-suave); }
+
+/* ==========================================================================
+   Telas maiores
+   ========================================================================== */
+
+@media (min-width: 520px) {
+    .fm-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fm-cartao { flex-direction: row; align-items: center; gap: 14px; padding: 18px; }
+    .fm-cartao__valor { font-size: 32px; }
+}
+
+@media (min-width: 720px) {
+    .fm-conteudo { padding: 28px 28px 64px; }
+    .fm-titulo { font-size: 31px; }
+    .fm-painel { padding: 22px; }
+    .fm-atalhos--linha { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .fm-info { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .fm-agenda { grid-template-columns: 56px 12px minmax(0, 1fr) auto; }
+    .fm-agenda__acoes { flex-direction: row; align-items: center; gap: 10px; }
+}
+
+@media (min-width: 720px) and (max-width: 899px) {
+    .fm-duas--agenda .fm-atalhos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+    .fm-grade--cartoes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+    .fm-duas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .fm-duas--agenda { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); }
+    .fm-grafico-bloco { grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; }
+    .fm-proximo__quando { flex-wrap: nowrap; }
+    .fm-lista > .fm-proximo {
+        grid-template-columns: 52px minmax(200px, 1fr) minmax(0, 1.2fr) auto;
+        grid-template-areas: "icone quando quem botao";
+        gap: 18px;
+    }
+    .fm-proximo__quando { display: grid; gap: 0; border-right: 1px solid var(--fm-borda); padding-right: 18px; }
+    .fm-historico {
+        grid-template-columns: 110px minmax(0, 1.3fr) minmax(0, 1fr) 130px 22px;
+        grid-template-areas: "data medico esp status seta";
+        padding: 14px 10px;
+    }
+}
+
+/* Quatro cartões lado a lado em telas médias ficam estreitos: o ícone vai
+   para cima do texto (como no celular) em vez de espremer o rótulo. */
+@media (min-width: 900px) and (max-width: 1279px) {
+    .fm-grade--cartoes .fm-cartao { flex-direction: column; align-items: flex-start; }
+}
+
+@media (min-width: 1024px) {
+    .fm-sidebar { transform: none; }
+    .fm-sidebar__fechar { display: none; }
+    .fm-fundo-menu { display: none !important; }
+    .fm-principal { margin-left: var(--fm-menu-largura); }
+
+    .fm-topo { justify-content: flex-end; height: 72px; padding: 0 32px; }
+    .fm-topo__menu, .fm-topo__logo { display: none; }
+
+    .fm-usuario__botao { padding: 5px 12px 5px 5px; border: 1px solid transparent; }
+    .fm-usuario__botao:hover { background: #fff; border-color: var(--fm-borda); }
+    .fm-usuario__texto { display: block; }
+    .fm-app .fm-usuario__seta { display: block; }
+    .fm-avatar { width: 40px; height: 40px; font-size: 14px; }
+
+    .fm-conteudo { padding: 34px 40px 72px; }
+    .fm-titulo { font-size: 34px; }
+    .fm-pagina-topo { margin-bottom: 4px; }
+}
+
+/* ==========================================================================
+   Celular pequeno: tabela vira lista de cartões
+   ========================================================================== */
+
+@media (max-width: 719px) {
+    .fm-tabela__cabecalho { display: none; }
+
+    .fm-tabela__linha {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "paciente status"
+            "quando   quando"
+            "extra    esp";
+        gap: 4px 12px;
+        padding: 14px 4px;
+    }
+
+    .fm-tabela__paciente { grid-area: paciente; }
+    .fm-tabela__status { grid-area: status; }
+    .fm-tabela__quando { grid-area: quando; font-size: 13px; color: var(--fm-suave); }
+    .fm-tabela__extra { grid-area: extra; font-size: 13px; color: var(--fm-suave); }
+    .fm-tabela__esp { grid-area: esp; font-size: 13px; color: var(--fm-suave); text-align: right; }
+
+    .fm-destaque .fm-cartao { flex-direction: row; }
+    .fm-agenda .fm-pilula { padding: 6px 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fm-sidebar, .fm-nav, .fm-pilula, .fm-aba, .fm-atalho, a.fm-cartao--link { transition: none; }
+}
+
+/* ===== public/css/crud.css (novo, 24/09) ===== */
+/* ==========================================================================
+   FacilMed — telas de cadastro (CRUD) dentro dos painéis
+   24/09/2026
+
+   Complementa o public/css/painel.css, que foi feito para os dashboards e
+   não tinha formulário nem tabela de edição. Usa as MESMAS variáveis de
+   cor (--fm-*) — não declare cor nova aqui; se precisar, crie a variável
+   no :root do painel.css.
+
+   Incluir na view:
+       @push('head') <link rel="stylesheet" href="{{ asset('css/crud.css') }}"> @endpush
+   ========================================================================== */
+
+.fm-grade--tres { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+
+/* ---------- Barra de ações do topo ---------- */
+
+.fm-acoes-topo { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.fm-botao { gap: 6px; border: 0; cursor: pointer; font-family: inherit; line-height: 1.2; }
+.fm-botao .fm-icone { width: 18px; height: 18px; }
+.fm-botao--pequeno { padding: 7px 12px; font-size: 13px; border-radius: 10px; }
+.fm-botao--perigo { background: var(--fm-rosa-claro); color: #a3223f !important; border: 1px solid #f7c3cf; }
+.fm-botao--ok { background: var(--fm-verde-claro); color: #0a6b53 !important; border: 1px solid #b5e8d8; }
+.fm-botao:focus-visible, .fm-campo :focus-visible, .fm-switch:focus-visible {
+    outline: 3px solid #9cc2ff;
+    outline-offset: 2px;
+}
+
+/* ---------- Formulário ---------- */
+
+.fm-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+}
+
+.fm-campo { display: grid; gap: 6px; min-width: 0; }
+
+.fm-campo label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fm-texto);
+}
+
+.fm-campo input,
+.fm-campo select,
+.fm-campo textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--fm-borda-forte);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--fm-texto);
+    font: inherit;
+    font-size: 14px;
+}
+
+.fm-campo textarea { min-height: 76px; resize: vertical; }
+
+.fm-campo input:focus,
+.fm-campo select:focus,
+.fm-campo textarea:focus { border-color: var(--fm-azul); outline: none; box-shadow: 0 0 0 3px var(--fm-azul-claro); }
+
+.fm-campo--erro input,
+.fm-campo--erro select,
+.fm-campo--erro textarea { border-color: var(--fm-rosa); }
+
+.fm-campo__erro { font-size: 12.5px; font-weight: 600; color: #a3223f; }
+.fm-campo__ajuda { font-size: 12.5px; color: var(--fm-suave); }
+
+.fm-form__acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    grid-column: 1 / -1;
+}
+
+.fm-form--caixa {
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px dashed var(--fm-borda-forte);
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+/* ---------- Tabela de edição ---------- */
+
+.fm-rolagem { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.fm-tabela-crud { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+
+.fm-tabela-crud th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--fm-suave);
+    border-bottom: 1px solid var(--fm-borda);
+    white-space: nowrap;
+}
+
+.fm-tabela-crud td {
+    padding: 12px;
+    border-bottom: 1px solid #edf3fb;
+    color: var(--fm-texto);
+    vertical-align: middle;
+}
+
+.fm-tabela-crud tr.is-inativo td { color: var(--fm-suave); background: #fafcff; }
+.fm-tabela-crud strong { color: var(--fm-titulo); }
+.fm-tabela-crud__acoes { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.fm-tabela-crud td.fm-tabela-crud__form { background: #f8fbff; padding: 16px 12px; }
+
+/* ---------- Metadados e chips ---------- */
+
+.fm-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: -4px 0 14px;
+    font-size: 13px;
+    color: var(--fm-suave);
+}
+
+.fm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.fm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--fm-azul-claro);
+    color: #1d55c4;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.fm-chip small { font-weight: 600; color: var(--fm-suave); }
+.fm-chip--cinza { background: #eef2f7; color: #5b6b85; }
+
+/* ---------- Cartões de convênio (tela da clínica) ---------- */
+
+.fm-cobertura { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+
+.fm-cobertura__item {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--fm-borda);
+    border-radius: 16px;
+    background: #fbfdff;
+}
+
+.fm-cobertura__topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fm-cobertura__nome { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--fm-titulo); font-size: 16px; }
+.fm-cobertura__nome .fm-icone { width: 20px; height: 20px; color: var(--fm-azul); }
+.fm-cobertura__rotulo { font-size: 12px; font-weight: 700; color: var(--fm-suave); text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---------- Interruptor (liga/desliga) ---------- */
+
+.fm-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fm-texto);
+}
+
+.fm-switch__trilho {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: #c9d6e8;
+    transition: background .15s ease;
+    flex: none;
+}
+
+.fm-switch__trilho::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    transition: transform .15s ease;
+}
+
+.fm-switch[aria-checked="true"] .fm-switch__trilho { background: var(--fm-verde); }
+.fm-switch[aria-checked="true"] .fm-switch__trilho::after { transform: translateX(18px); }
+
+/* ---------- Responsivo ---------- */
+
+@media (min-width: 720px) {
+    .fm-grade--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fm-form--duas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fm-form--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .fm-campo--largo { grid-column: 1 / -1; }
+    .fm-cobertura { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+    .fm-grade--cartoes.fm-grade--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fm-switch__trilho, .fm-switch__trilho::after { transition: none; }
+}
+
+/* ===== só do protótipo ===== */
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); color-scheme: light; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background-color: #f4f8fd; }
+.fm-topo { top: env(safe-area-inset-top, 0px); }
+.pv-faixa { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:10px 16px; background:#17358f; color:#fff; font-size:13px; }
+.pv-faixa strong { font-weight:700; }
+.pv-faixa select { padding:6px 10px; border-radius:8px; border:0; font:inherit; color:#17358f; font-weight:600; }
+.pv-marca { font-family: var(--fm-fonte-titulo); font-weight:700; font-size:22px; color: var(--fm-titulo); }
+.pv-marca span { color: #1C9CE5; }
+.fm-topo__logo .pv-marca { font-size:19px; }
+.fm-usuario__botao { display:flex; align-items:center; gap:10px; }
+small { font-size: 12.5px; color: var(--fm-suave); }
+</style>
+</head>
+<body class="fm-app">
+<aside class="fm-sidebar" aria-label="Menu principal">
+  <div class="fm-sidebar__marca"><span class="pv-marca">Facil<span>Med</span></span>
+    <button type="button" class="fm-sidebar__fechar" data-acao="fecharMenu" aria-label="Fechar menu"><svg class="fm-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <nav class="fm-sidebar__nav"><ul id="menu"></ul></nav>
+  <div class="fm-sidebar__rodape"><span class="fm-nav fm-nav--sair">Sair (desativado no protótipo)</span></div>
+</aside>
+<div class="fm-fundo-menu" id="fundo" hidden data-acao="fecharMenu"></div>
+<div class="fm-principal">
+  <div class="pv-faixa"><strong>Protótipo visual</strong><span>Dados fictícios dos seeders · nada é salvo · ver como:</span>
+    <select id="papel" aria-label="Ver a tela como">
+      <option value="admin">Administrador → Convênios e planos</option>
+      <option>Clínica SpSaúde</option><option>Clínica Vida Plena</option><option>Centro Médico Aurora</option>
+      <option>Hospital Santa Clara</option><option>Hospital São Lucas do Vale</option><option>Hospital Esperança</option>
+    </select></div>
+  <header class="fm-topo">
+    <button type="button" class="fm-topo__menu" data-acao="abrirMenu" aria-label="Abrir menu"><svg class="fm-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="fm-topo__logo"><span class="pv-marca">Facil<span>Med</span></span></span>
+    <div class="fm-usuario"><div class="fm-usuario__botao" id="usuario"></div></div>
+  </header>
+  <main class="fm-conteudo" id="conteudo"></main>
+</div>
+<script>
+const IC = {"home": "<path d=\"M3 11.5 12 4l9 7.5\"/><path d=\"M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9\"/>", "search": "<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.5-3.5\"/>", "calendar": "<rect x=\"3.5\" y=\"5\" width=\"17\" height=\"15.5\" rx=\"2.5\"/><path d=\"M8 3v4M16 3v4M3.5 10h17\"/>", "calendar-check": "<rect x=\"3.5\" y=\"5\" width=\"17\" height=\"15.5\" rx=\"2.5\"/><path d=\"M8 3v4M16 3v4M3.5 10h17\"/><path d=\"m9 15 2 2 4-4\"/>", "card": "<rect x=\"3\" y=\"5.5\" width=\"18\" height=\"13\" rx=\"2.5\"/><path d=\"M3 10h18M7 15h3\"/>", "user": "<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4.5 20c.8-3.6 4-5.5 7.5-5.5s6.7 1.9 7.5 5.5\"/>", "user-check": "<circle cx=\"10\" cy=\"8\" r=\"4\"/><path d=\"M3.5 20c.8-3.6 3.6-5.5 6.5-5.5\"/><path d=\"m15 17 2 2 4-4.5\"/>", "user-x": "<circle cx=\"10\" cy=\"8\" r=\"4\"/><path d=\"M3.5 20c.8-3.6 3.6-5.5 6.5-5.5\"/><path d=\"m16 15.5 4 4M20 15.5l-4 4\"/>", "users": "<circle cx=\"9\" cy=\"8.5\" r=\"3.5\"/><path d=\"M2.5 19.5c.6-3.3 3.3-5 6.5-5s5.9 1.7 6.5 5\"/><circle cx=\"17\" cy=\"9.5\" r=\"2.6\"/><path d=\"M17.5 14.6c2.4.2 4.2 1.7 4.7 4.4\"/>", "doctors": "<path d=\"M6 3.5v5.5a4 4 0 0 0 8 0V3.5\"/><path d=\"M4.5 3.5H7.5M12.5 3.5h3\"/><path d=\"M10 13v2.2a4.8 4.8 0 0 0 9.6 0V13\"/><circle cx=\"19.6\" cy=\"11\" r=\"2\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3.5 2\"/>", "pause": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M10 9v6M14 9v6\"/>", "pin": "<path d=\"M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z\"/><circle cx=\"12\" cy=\"9.5\" r=\"2.5\"/>", "money": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M14.6 9.4c-.5-.8-1.4-1.3-2.6-1.3-1.5 0-2.6.8-2.6 2 0 2.7 5.3 1.4 5.3 4.1 0 1.2-1.1 2.1-2.7 2.1-1.3 0-2.3-.5-2.8-1.4M12 6.5v1.6M12 16.2v1.5\"/>", "star": "<path d=\"m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z\"/>", "building": "<path d=\"M4 20.5V5.5A1.5 1.5 0 0 1 5.5 4h8A1.5 1.5 0 0 1 15 5.5v15M15 10h3.5a1.5 1.5 0 0 1 1.5 1.5v9M3 20.5h18M8 8h3M8 12h3M8 16h3\"/>", "shield": "<path d=\"M12 3 4.5 6v5.5c0 4.5 3.2 7.6 7.5 9.5 4.3-1.9 7.5-5 7.5-9.5V6z\"/><path d=\"m9 12 2.2 2.2L15.5 10\"/>", "badge": "<circle cx=\"12\" cy=\"9\" r=\"5.5\"/><path d=\"m9 13.6-1 6.9 4-2.2 4 2.2-1-6.9\"/><path d=\"m9.8 9 1.5 1.5L14.3 7.6\"/>", "tag": "<path d=\"M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.5 1.5 0 0 1 0 2.1l-5.6 5.6a1.5 1.5 0 0 1-2.1 0z\"/><circle cx=\"8\" cy=\"8\" r=\"1.3\"/>", "logout": "<path d=\"M9 4.5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h3M15 8l4 4-4 4M19 12H9\"/>", "chart": "<path d=\"M4 20V10M10 20V4M16 20v-7M21 20H3\"/>", "menu": "<path d=\"M4 7h16M4 12h16M4 17h16\"/>", "x": "<path d=\"M6 6l12 12M18 6 6 18\"/>", "plus": "<path d=\"M12 5v14M5 12h14\"/>", "check-circle": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m8.5 12.3 2.4 2.4 4.6-5\"/>", "x-circle": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m9 9 6 6M15 9l-6 6\"/>", "alert": "<path d=\"M12 3.8 2.8 19.5h18.4z\"/><path d=\"M12 10v4.5M12 17.2v.3\"/>", "chevron-right": "<path d=\"m9 5 7 7-7 7\"/>", "chevron-left": "<path d=\"m15 5-7 7 7 7\"/>", "chevron-down": "<path d=\"m6 9 6 6 6-6\"/>", "arrow-up": "<path d=\"M12 19V5M6 11l6-6 6 6\"/>", "arrow-down": "<path d=\"M12 5v14M6 13l6 6 6-6\"/>", "minus": "<path d=\"M5 12h14\"/>", "bolt": "<path d=\"M13 3 5 13.5h6L10 21l8-10.5h-6z\"/>", "list": "<path d=\"M8.5 6.5H20M8.5 12H20M8.5 17.5H20\"/><circle cx=\"4.5\" cy=\"6.5\" r=\".6\"/><circle cx=\"4.5\" cy=\"12\" r=\".6\"/><circle cx=\"4.5\" cy=\"17.5\" r=\".6\"/>", "lightbulb": "<path d=\"M9 18h6M10 21h4\"/><path d=\"M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z\"/>", "pencil": "<path d=\"M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z\"/><path d=\"m13.5 6.5 4 4\"/>", "power": "<path d=\"M12 3v8\"/><path d=\"M6.4 6.6a8 8 0 1 0 11.2 0\"/>"};
+const ico = (n) => `<svg class="fm-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || '<circle cx="12" cy="12" r="8"/>'}</svg>`;
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TIPOS = {individual:'Individual', familiar:'Familiar', empresarial:'Empresarial'};
+const ABR = {municipal:'Municipal', estadual:'Estadual', nacional:'Nacional'};
+
+let seq = 100;
+const P = (nome, tipo, abrangencia, descricao, cart = 0) => ({id: ++seq, nome, tipo, abrangencia, descricao, ativo: true, cart});
+const S = {
+  papel: 'admin', clinica: 'Clínica SpSaúde', filtro: 'todos', flash: null, abertos: {},
+  convenios: [
+    {id:1, nome:'SpSaúde', cnpj:'44.400.001/0001-07', telefone:'(12) 4002-1000', email:'atendimento@spsaude.test', descricao:'Convênio regional com rede própria (Clínica SpSaúde) e credenciada no Vale do Paraíba.', ativo:true,
+      planos:[P('SpSaúde Empresarial','empresarial','nacional','Contratado pela empresa para os funcionários, rede nacional.'), P('SpSaúde Família','familiar','estadual','Titular e dependentes no mesmo contrato, rede estadual.',1), P('SpSaúde Individual','individual','estadual','Consultas e exames ambulatoriais para uma pessoa.')]},
+    {id:2, nome:'Horizonte Med', cnpj:'44.400.002/0001-43', telefone:'(12) 4002-2000', email:'relacionamento@horizontemed.test', descricao:'Convênio com foco em planos de entrada e atendimento ambulatorial.', ativo:true,
+      planos:[P('Horizonte Empresarial','empresarial','estadual','Plano coletivo empresarial, rede estadual.',1), P('Horizonte Essencial','individual','municipal','Plano de entrada, rede no município de contratação.'), P('Horizonte Família','familiar','estadual','Titular e dependentes, rede estadual.')]},
+    {id:3, nome:'Bem Viver Saúde', cnpj:'44.400.003/0001-98', telefone:'(12) 4002-3000', email:'contato@bemviversaude.test', descricao:'Convênio com rede ampliada e cobertura nacional nos planos superiores.', ativo:true,
+      planos:[P('Bem Viver Empresarial','empresarial','nacional','Plano coletivo empresarial com rede nacional.'), P('Bem Viver Família Plus','familiar','nacional','Titular e dependentes com rede nacional.'), P('Bem Viver Individual','individual','municipal','Rede credenciada no município.')]},
+    {id:4, nome:'Vale Saúde', cnpj:'', telefone:'(12) 4002-4000', email:'contato@valesaude.test', descricao:'Convênio desativado: parou de atender pela plataforma (exemplo de demonstração).', ativo:false,
+      planos:[Object.assign(P('Vale Saúde Básico','individual','municipal','Plano descontinuado.'), {ativo:false})]},
+  ],
+  medicos: {
+    helena:{nome:'Dra. Helena Navarro', conv:[1,2]}, rafael:{nome:'Dr. Rafael Moreira', conv:[1,3]},
+    camila:{nome:'Dra. Camila Reis', conv:[2,3]},
+  },
+  vinculos: [
+    {id:1, clinica:'Clínica SpSaúde', local:'SpSaúde - Jardim Satélite', medico:'rafael', aceita:true},
+    {id:2, clinica:'Clínica Vida Plena', local:'Vida Plena - Centro', medico:'helena', aceita:true},
+    {id:3, clinica:'Centro Médico Aurora', local:'Aurora - Vila Ema', medico:'camila', aceita:true},
+    {id:4, clinica:'Hospital Santa Clara', local:'Santa Clara - Taubaté', medico:'helena', aceita:true},
+    {id:5, clinica:'Hospital São Lucas do Vale', local:'São Lucas - Jacareí', medico:'rafael', aceita:true},
+    {id:6, clinica:'Hospital Esperança', local:'Esperança - Caçapava', medico:'camila', aceita:true},
+  ],
+};
+const CLINICAS = ['Clínica Vida Plena', 'Centro Médico Aurora', 'Hospital Santa Clara', 'Clínica SpSaúde'];
+const MENU = {
+  admin: [['home','Início'],['users','Usuários'],['badge','Verificar CRM'],['card','Conferir carteirinhas'],['building','Clínicas e hospitais'],['tag','Especialidades'],['shield','Convênios'],['calendar','Consultas']],
+  clinica: [['home','Início'],['calendar','Agenda da clínica'],['chart','Consultas realizadas'],['doctors','Meus médicos'],['building','Unidades'],['money','Tabela de preços'],['shield','Convênios'],['star','Avaliações'],['user','Perfil da clínica']],
+};
+const medicosDoConvenio = (id) => Object.values(S.medicos).filter(m => m.conv.includes(id)).length;
+const cartao = (icone, tom, rotulo, valor, nota) => `<div class="fm-cartao"><span class="fm-cartao__icone fm-tom-${tom}">${ico(icone)}</span><div class="fm-cartao__texto"><span class="fm-cartao__rotulo">${rotulo}</span><strong class="fm-cartao__valor">${valor}</strong>${nota ? `<span class="fm-cartao__nota"><span class="fm-cartao__legenda">${nota}</span></span>` : ''}</div></div>`;
+
+function camposConvenio(c, k) {
+  const v = (f) => esc(c ? c[f] : '');
+  return `
+  <div class="fm-campo"><label for="${k}-nome">Nome do convênio *</label><input id="${k}-nome" name="nome" required maxlength="150" value="${v('nome')}" placeholder="Ex.: SpSaúde"><span class="fm-campo__erro" data-erro="nome"></span></div>
+  <div class="fm-campo"><label for="${k}-cnpj">CNPJ</label><input id="${k}-cnpj" name="cnpj" maxlength="18" value="${v('cnpj')}" placeholder="00.000.000/0000-00"><span class="fm-campo__erro" data-erro="cnpj"></span></div>
+  <div class="fm-campo"><label for="${k}-tel">Telefone</label><input id="${k}-tel" name="telefone" maxlength="20" value="${v('telefone')}" placeholder="(12) 4002-1000"></div>
+  <div class="fm-campo"><label for="${k}-email">E-mail</label><input id="${k}-email" name="email" type="email" maxlength="150" value="${v('email')}" placeholder="contato@convenio.test"></div>
+  <div class="fm-campo fm-campo--largo"><label for="${k}-desc">Descrição</label><textarea id="${k}-desc" name="descricao" maxlength="1000">${v('descricao')}</textarea></div>`;
+}
+function camposPlano(p, k) {
+  const opt = (obj, atual) => Object.entries(obj).map(([a, b]) => `<option value="${a}" ${a === atual ? 'selected' : ''}>${b}</option>`).join('');
+  return `
+  <div class="fm-campo"><label for="${k}-nome">Nome do plano *</label><input id="${k}-nome" name="nome" required maxlength="150" value="${esc(p ? p.nome : '')}" placeholder="Ex.: SpSaúde Família"><span class="fm-campo__erro" data-erro="nome"></span></div>
+  <div class="fm-campo"><label for="${k}-tipo">Tipo *</label><select id="${k}-tipo" name="tipo">${opt(TIPOS, p ? p.tipo : 'individual')}</select></div>
+  <div class="fm-campo"><label for="${k}-abr">Abrangência *</label><select id="${k}-abr" name="abrangencia">${opt(ABR, p ? p.abrangencia : 'estadual')}</select></div>
+  <div class="fm-campo fm-campo--largo"><label for="${k}-desc">Descrição</label><textarea id="${k}-desc" name="descricao" maxlength="1000">${esc(p ? p.descricao : '')}</textarea></div>`;
+}
+const acoesForm = (txt) => `<div class="fm-form__acoes"><button type="button" class="fm-botao fm-botao--suave" data-acao="fechar">Cancelar</button><button type="submit" class="fm-botao">${txt}</button></div>`;
+
+function telaAdmin() {
+  const ativos = S.convenios.filter(c => c.ativo);
+  const planosDisp = ativos.reduce((n, c) => n + c.planos.filter(p => p.ativo).length, 0);
+  const lista = S.convenios
+    .filter(c => S.filtro === 'todos' || (S.filtro === 'ativos' ? c.ativo : !c.ativo))
+    .sort((a, b) => (b.ativo - a.ativo) || a.nome.localeCompare(b.nome));
+  const ab = S.abertos;
+  return `
+  <div class="fm-pagina-topo"><div><h1 class="fm-titulo">Convênios e planos</h1><p class="fm-subtitulo">Cadastre os convênios aceitos na plataforma e os planos de cada um.</p></div>
+    <div class="fm-acoes-topo"><button type="button" class="fm-botao" data-acao="abrir" data-alvo="novo">${ico('plus')} Novo convênio</button></div></div>
+  <p class="fm-dica">${ico('lightbulb')}<span><strong>Todos os convênios e planos são fictícios</strong>, criados para a demonstração do FacilMed. A plataforma não tem contrato com nenhuma operadora real. Convênio ou plano desativado some do agendamento, mas continua aqui — carteirinhas e histórico de consultas são preservados.</span></p>
+  <div class="fm-grade fm-grade--cartoes fm-grade--tres">
+    ${cartao('shield','azul','Convênios ativos', ativos.length)}${cartao('card','verde','Planos disponíveis', planosDisp, 'em convênios ativos')}${cartao('pause','ambar','Convênios desativados', S.convenios.length - ativos.length)}
+  </div>
+  ${ab.novo ? `<section class="fm-painel"><header class="fm-painel__topo"><h2 class="fm-painel__titulo">${ico('plus')} Novo convênio</h2></header>
+    <form class="fm-form fm-form--duas" data-form="novoConvenio">${camposConvenio(null, 'novo')}${acoesForm('Salvar convênio')}</form></section>` : ''}
+  <nav class="fm-abas" style="margin-bottom:16px">${[['todos','Todos'],['ativos','Ativos'],['inativos','Desativados']].map(([k, r]) => `<a href="#" class="fm-aba ${S.filtro === k ? 'is-ativa' : ''}" data-acao="filtro" data-valor="${k}">${r}</a>`).join('')}</nav>
+  ${lista.map(c => {
+    const n = medicosDoConvenio(c.id);
+    return `<section class="fm-painel">
+      <header class="fm-painel__topo">
+        <h2 class="fm-painel__titulo">${ico('shield')} ${esc(c.nome)} ${c.ativo ? '<span class="fm-etiqueta fm-etiqueta--verde">Ativo</span>' : '<span class="fm-etiqueta fm-etiqueta--cinza">Desativado</span>'}</h2>
+        <div class="fm-tabela-crud__acoes">
+          <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" data-acao="abrir" data-alvo="c${c.id}">${ico('pencil')} Editar</button>
+          <button type="button" class="fm-botao fm-botao--pequeno ${c.ativo ? 'fm-botao--perigo' : 'fm-botao--ok'}" data-acao="statusConvenio" data-id="${c.id}">${ico('power')} ${c.ativo ? 'Desativar' : 'Reativar'}</button>
+        </div>
+      </header>
+      <p class="fm-meta"><span>CNPJ: ${esc(c.cnpj) || '—'}</span><span>Telefone: ${esc(c.telefone) || '—'}</span><span>E-mail: ${esc(c.email) || '—'}</span><span>${n} ${n === 1 ? 'médico aceita' : 'médicos aceitam'}</span></p>
+      ${c.descricao ? `<p class="fm-meta" style="margin-top:-8px">${esc(c.descricao)}</p>` : ''}
+      ${ab['c' + c.id] ? `<form class="fm-form fm-form--duas fm-form--caixa" data-form="editarConvenio" data-id="${c.id}">${camposConvenio(c, 'c' + c.id)}${acoesForm('Salvar alterações')}</form>` : ''}
+      <div class="fm-painel__topo" style="margin-top:18px"><h3 class="fm-cobertura__rotulo">Planos (${c.planos.length})</h3>
+        <button type="button" class="fm-pilula fm-pilula--pequena" data-acao="abrir" data-alvo="np${c.id}">${ico('plus')} Novo plano</button></div>
+      ${c.planos.length ? `<div class="fm-rolagem"><table class="fm-tabela-crud"><thead><tr><th>Plano</th><th>Tipo</th><th>Abrangência</th><th>Carteirinhas</th><th>Status</th><th></th></tr></thead>
+        ${[...c.planos].sort((a, b) => a.nome.localeCompare(b.nome)).map(p => `<tbody><tr class="${p.ativo ? '' : 'is-inativo'}">
+          <td><strong>${esc(p.nome)}</strong>${p.descricao ? `<br><small>${esc(p.descricao)}</small>` : ''}</td><td>${TIPOS[p.tipo]}</td><td>${ABR[p.abrangencia]}</td><td>${p.cart}</td>
+          <td>${p.ativo && c.ativo ? '<span class="fm-etiqueta fm-etiqueta--verde">Ativo</span>' : p.ativo ? '<span class="fm-etiqueta fm-etiqueta--ambar">Convênio desativado</span>' : '<span class="fm-etiqueta fm-etiqueta--cinza">Desativado</span>'}</td>
+          <td><div class="fm-tabela-crud__acoes"><button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" aria-label="Editar ${esc(p.nome)}" data-acao="abrir" data-alvo="p${p.id}">${ico('pencil')}</button>
+            <button type="button" class="fm-botao fm-botao--pequeno ${p.ativo ? 'fm-botao--perigo' : 'fm-botao--ok'}" aria-label="${p.ativo ? 'Desativar' : 'Reativar'} ${esc(p.nome)}" data-acao="statusPlano" data-id="${p.id}">${ico('power')}</button></div></td></tr>
+          ${ab['p' + p.id] ? `<tr><td colspan="6" class="fm-tabela-crud__form"><form class="fm-form fm-form--tres" data-form="editarPlano" data-id="${p.id}">${camposPlano(p, 'p' + p.id)}${acoesForm('Salvar plano')}</form></td></tr>` : ''}</tbody>`).join('')}
+      </table></div>` : '<p class="fm-vazio">Nenhum plano cadastrado. Sem plano, ninguém consegue cadastrar carteirinha deste convênio.</p>'}
+      ${ab['np' + c.id] ? `<form class="fm-form fm-form--tres fm-form--caixa" data-form="novoPlano" data-id="${c.id}">${camposPlano(null, 'np' + c.id)}${acoesForm('Adicionar plano')}</form>` : ''}
+    </section>`;
+  }).join('') || `<section class="fm-painel"><p class="fm-vazio">Nenhum convênio ${S.filtro === 'inativos' ? 'desativado' : 'cadastrado'}.</p></section>`}`;
+}
+
+function telaClinica() {
+  const vs = S.vinculos.filter(v => v.clinica === S.clinica);
+  const cob = new Map();
+  vs.filter(v => v.aceita).forEach(v => S.medicos[v.medico].conv.forEach(id => {
+    const c = S.convenios.find(x => x.id === id);
+    if (!cob.has(id)) cob.set(id, {c, medicos: new Set()});
+    cob.get(id).medicos.add(S.medicos[v.medico].nome);
+  }));
+  const itens = [...cob.values()].sort((a, b) => (b.c.ativo - a.c.ativo) || a.c.nome.localeCompare(b.c.nome));
+  const medicosUnicos = new Set(vs.map(v => v.medico));
+  const comConvenio = new Set(vs.filter(v => v.aceita).map(v => v.medico));
+  return `
+  <div class="fm-pagina-topo"><div><h1 class="fm-titulo">Convênios</h1><p class="fm-subtitulo">Os convênios atendidos nas suas unidades, pelos médicos vinculados à clínica.</p></div></div>
+  <div class="fm-grade fm-grade--cartoes fm-grade--tres">
+    ${cartao('shield','azul','Convênios atendidos', itens.filter(i => i.c.ativo).length)}
+    ${cartao('doctors','verde','Médicos que atendem convênio', comConvenio.size, 'de ' + medicosUnicos.size + ' vinculados')}
+    ${cartao('calendar-check','roxo','Consultas por convênio', ['Clínica Vida Plena','Clínica SpSaúde'].includes(S.clinica) ? 1 : 0, 'realizadas nos últimos 30 dias')}
+  </div>
+  <p class="fm-dica">${ico('lightbulb')}<span>No FacilMed, <strong>quem aceita o convênio é o médico</strong>. Aqui você escolhe, em cada unidade, se o médico atende por convênio. Para mudar <em>quais</em> convênios ele aceita, o próprio médico ajusta no perfil dele. Os convênios da plataforma são fictícios, criados para demonstração.</span></p>
+  <section class="fm-painel" style="margin-top:18px"><header class="fm-painel__topo"><h2 class="fm-painel__titulo">${ico('shield')} Convênios atendidos</h2></header>
+    ${itens.length ? `<div class="fm-cobertura">${itens.map(i => `<article class="fm-cobertura__item">
+      <div class="fm-cobertura__topo"><span class="fm-cobertura__nome">${ico('shield')} ${esc(i.c.nome)}</span>${i.c.ativo ? '<span class="fm-etiqueta fm-etiqueta--verde">Atendido</span>' : '<span class="fm-etiqueta fm-etiqueta--cinza">Desativado na plataforma</span>'}</div>
+      <div><p class="fm-cobertura__rotulo">Planos</p>${i.c.planos.filter(p => p.ativo).length ? `<div class="fm-chips" style="margin-top:6px">${i.c.planos.filter(p => p.ativo).sort((a, b) => a.nome.localeCompare(b.nome)).map(p => `<span class="fm-chip">${esc(p.nome)} <small>${TIPOS[p.tipo]}</small></span>`).join('')}</div>` : '<p class="fm-campo__ajuda">Nenhum plano ativo.</p>'}</div>
+      <div><p class="fm-cobertura__rotulo">Atendido por</p><div class="fm-chips" style="margin-top:6px">${[...i.medicos].map(m => `<span class="fm-chip fm-chip--cinza">${esc(m)}</span>`).join('')}</div></div>
+    </article>`).join('')}</div>` : '<p class="fm-vazio">Nenhum convênio atendido ainda. Ligue "Atende por convênio" para um médico abaixo — ele precisa ter convênios cadastrados no perfil.</p>'}
+  </section>
+  <section class="fm-painel"><header class="fm-painel__topo"><h2 class="fm-painel__titulo">${ico('doctors')} Médicos por unidade</h2></header>
+    ${vs.length ? `<div class="fm-rolagem"><table class="fm-tabela-crud"><thead><tr><th>Médico</th><th>Unidade</th><th>Convênios que o médico aceita</th><th>Atende por convênio aqui</th></tr></thead><tbody>
+    ${vs.map(v => { const m = S.medicos[v.medico]; return `<tr><td><strong>${esc(m.nome)}</strong></td><td>${esc(v.local)}</td>
+      <td>${m.conv.length ? `<div class="fm-chips">${m.conv.map(id => { const c = S.convenios.find(x => x.id === id); return `<span class="fm-chip ${c.ativo ? '' : 'fm-chip--cinza'}">${esc(c.nome)}</span>`; }).join('')}</div>` : '<span class="fm-campo__ajuda">Nenhum cadastrado</span>'}</td>
+      <td><button type="button" class="fm-switch" role="switch" aria-checked="${v.aceita}" data-acao="switch" data-id="${v.id}" aria-label="Atende por convênio: ${esc(m.nome)} em ${esc(v.local)}"><span class="fm-switch__trilho"></span>${v.aceita ? 'Sim' : 'Não'}</button></td></tr>`; }).join('')}
+    </tbody></table></div>` : '<p class="fm-vazio">Nenhum médico vinculado às suas unidades ainda.</p>'}
+  </section>`;
+}
+
+function render() {
+  const nome = S.papel === 'admin' ? 'Administrador FacilMed' : S.clinica;
+  const iniciais = nome.split(' ').filter(p => p.length > 2).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+  document.getElementById('menu').innerHTML = MENU[S.papel].map(([i, r]) => `<li><a href="#" class="fm-nav ${r === 'Convênios' ? 'is-ativo' : ''}" data-acao="menu" data-valor="${r}" ${r === 'Convênios' ? 'aria-current="page"' : ''}>${ico(i)}<span>${r}</span></a></li>`).join('');
+  document.getElementById('usuario').innerHTML = `<span class="fm-avatar">${iniciais}</span><span class="fm-usuario__texto"><strong>${esc(nome)}</strong><small>${S.papel === 'admin' ? 'Administrador' : 'Clínica'}</small></span>`;
+  document.getElementById('papel').value = S.papel === 'admin' ? 'admin' : S.clinica;
+  const f = S.flash ? `<div class="fm-flash fm-flash--${S.flash[0]}" role="${S.flash[0] === 'ok' ? 'status' : 'alert'}">${esc(S.flash[1])}</div>` : '';
+  document.getElementById('conteudo').innerHTML = f + (S.papel === 'admin' ? telaAdmin() : telaClinica());
+}
+const ok = (m) => { S.flash = ['ok', m]; };
+const achaPlano = (id) => { for (const c of S.convenios) { const p = c.planos.find(x => x.id === id); if (p) return [c, p]; } return []; };
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-acao]'); if (!el) return;
+  const a = el.dataset.acao, id = +el.dataset.id;
+  if (a === 'menu' || a === 'filtro') e.preventDefault();
+  if (a === 'menu') { if (el.dataset.valor !== 'Convênios') { S.flash = ['erro', `"${el.dataset.valor}" não faz parte deste protótipo — aqui só as telas de convênios.`]; render(); } document.body.classList.remove('menu-aberto'); document.querySelector('.fm-sidebar').classList.remove('is-open'); return; }
+  if (a === 'filtro') S.filtro = el.dataset.valor;
+  if (a === 'abrir') { S.abertos[el.dataset.alvo] = !S.abertos[el.dataset.alvo]; S.flash = null; }
+  if (a === 'fechar') { const form = el.closest('form'); const k = {novoConvenio: 'novo', editarConvenio: 'c', novoPlano: 'np', editarPlano: 'p'}[form.dataset.form]; S.abertos[k === 'novo' ? 'novo' : k + form.dataset.id] = false; }
+  if (a === 'statusConvenio') { const c = S.convenios.find(x => x.id === id); if (!confirm(`${c.ativo ? 'Desativar' : 'Reativar'} o convênio ${c.nome}?`)) return; c.ativo = !c.ativo; ok(c.ativo ? `Convênio ${c.nome} reativado.` : `Convênio ${c.nome} desativado. Ele não aparece mais para agendamento.`); }
+  if (a === 'statusPlano') { const [, p] = achaPlano(id); if (!confirm(`${p.ativo ? 'Desativar' : 'Reativar'} o plano ${p.nome}?`)) return; p.ativo = !p.ativo; ok(`Plano ${p.nome} ${p.ativo ? 'reativado' : 'desativado'}.`); }
+  if (a === 'switch') { const v = S.vinculos.find(x => x.id === id); const m = S.medicos[v.medico];
+    if (!v.aceita && !m.conv.length) { S.flash = ['erro', `${m.nome} ainda não cadastrou nenhum convênio. O médico precisa informar os convênios que aceita no perfil dele.`]; }
+    else { v.aceita = !v.aceita; ok(`${m.nome} ${v.aceita ? 'passa a atender' : 'deixa de atender'} por convênio em ${v.local}.`); } }
+  if (a === 'abrirMenu') { document.querySelector('.fm-sidebar').classList.add('is-open'); document.getElementById('fundo').hidden = false; return; }
+  if (a === 'fecharMenu') { document.querySelector('.fm-sidebar').classList.remove('is-open'); document.getElementById('fundo').hidden = true; return; }
+  render();
+});
+
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const form = e.target, d = Object.fromEntries(new FormData(form)), tipo = form.dataset.form, id = +form.dataset.id;
+  Object.keys(d).forEach(k => d[k] = d[k].trim());
+  const erro = (campo, msg) => { const s = form.querySelector(`[data-erro="${campo}"]`); s.textContent = msg; s.closest('.fm-campo').classList.add('fm-campo--erro'); return true; };
+  form.querySelectorAll('[data-erro]').forEach(s => { s.textContent = ''; s.closest('.fm-campo').classList.remove('fm-campo--erro'); });
+  if (tipo === 'novoConvenio' || tipo === 'editarConvenio') {
+    let falhou = false;
+    if (S.convenios.some(c => c.id !== id && c.nome.toLowerCase() === d.nome.toLowerCase())) falhou = erro('nome', 'Já existe um convênio com esse nome.');
+    if (d.cnpj && !/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(d.cnpj)) falhou = erro('cnpj', 'Use o formato 00.000.000/0000-00.');
+    else if (d.cnpj && S.convenios.some(c => c.id !== id && c.cnpj === d.cnpj)) falhou = erro('cnpj', 'Já existe um convênio com esse CNPJ.');
+    if (falhou) return;
+    if (tipo === 'novoConvenio') { S.convenios.push({id: ++seq, ...d, ativo: true, planos: []}); S.abertos.novo = false; ok(`Convênio ${d.nome} criado. Agora cadastre os planos dele.`); }
+    else { Object.assign(S.convenios.find(c => c.id === id), d); S.abertos['c' + id] = false; ok(`Convênio ${d.nome} atualizado.`); }
+  } else {
+    const [conv, plano] = tipo === 'editarPlano' ? achaPlano(id) : [S.convenios.find(c => c.id === id), null];
+    if (conv.planos.some(p => p !== plano && p.nome.toLowerCase() === d.nome.toLowerCase())) return erro('nome', 'Este convênio já tem um plano com esse nome.');
+    if (plano) { Object.assign(plano, d); S.abertos['p' + id] = false; ok(`Plano ${d.nome} atualizado.`); }
+    else { conv.planos.push({id: ++seq, ...d, ativo: true, cart: 0}); S.abertos['np' + id] = false; ok(`Plano ${d.nome} criado em ${conv.nome}.`); }
+  }
+  render();
+});
+document.getElementById('papel').addEventListener('change', (e) => { const v = e.target.value; S.papel = v === 'admin' ? 'admin' : 'clinica'; if (v !== 'admin') S.clinica = v; S.flash = null; S.abertos = {}; render(); });
+render();
+
+</script>
+</body>
+</html>

@@ -11,9 +11,12 @@ class EspecialidadeSeeder extends Seeder
     /**
      * `destaque` alimenta os cards da home. A view faz foreach em
      * Especialidade::emDestaque() - nunca com a lista escrita no Blade.
+     *
+     * Nomes COM acento desde 24/09 ("Clínica Geral"). O slug continua
+     * sem acento (clinica-geral), porque o Str::slug remove os acentos.
      */
     private const ESPECIALIDADES = [
-        ['Clinica Geral',   'stethoscope', true],
+        ['Clínica Geral',   'stethoscope', true],
         ['Cardiologia',     'heart',       true],
         ['Pediatria',       'baby',        true],
         ['Dermatologia',    'skin',        true],

@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * Importada dos dados abertos da ANS por comando Artisan.
- * Nunca cadastrada a mao - e a unica validacao externa real
- * do projeto.
+ * Operadoras dos dados abertos da ANS (comando facilmed:importar-operadoras).
+ *
+ * OPCIONAL desde 24/09/2026: os convênios do FacilMed passaram a ser
+ * fictícios e não dependem mais desta tabela. Ela continua existindo
+ * para quem quiser, no futuro, ligar um convênio a uma operadora real.
+ * Nunca cadastre operadora à mão — ou vem do CSV da ANS, ou não existe.
  */
 class OperadoraAns extends Model
 {

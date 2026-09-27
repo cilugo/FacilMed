@@ -10,9 +10,11 @@ use App\Models\PacientePlano;
 use App\Models\Vinculo;
 use App\Services\AlocadorDeMedico;
 use App\Services\CalculadoraDeHorarios;
+use App\Services\Notificador;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * O NUCLEO DO SISTEMA. Leia inteiro antes de mexer.
@@ -46,8 +48,11 @@ class AgendamentoController extends Controller
 
         return view('agendamento.horario', [
             'vinculo'        => $vinculo->load('medico.user', 'local', 'precos.especialidade'),
-            'especialidades' => $vinculo->precos->pluck('especialidade'),
+            'especialidades' => $vinculo->precos->where('ativo', true)->pluck('especialidade')->filter()->values(),
             'janelaDias'     => config('agendamento.janela_maxima_dias'),
+            // 24/09: os proximos dias com vaga, para a tela abrir ja mostrando
+            // horarios (sem o paciente ter que adivinhar uma data).
+            'diasComVaga'    => $this->calculadora->proximosDias($vinculo, 10),
         ]);
     }
 
@@ -138,8 +143,8 @@ class AgendamentoController extends Controller
         // e chegar aqui, alguem pode ter marcado.
         if (! $this->calculadora->estaLivre($vinculo, $data, $dados['horario'])) {
             return redirect()
-                ->route('agendamento.horario', $vinculo)
-                ->withErrors(['horario' => 'Esse horario acabou de ser preenchido. Escolha outro.']);
+                ->route('agendamento.horario', array_filter(['vinculo' => $vinculo->id, 'remarcar' => $request->input('remarcar_consulta_id')]))
+                ->withErrors(['horario' => 'Esse horário acabou de ser preenchido. Escolha outro.']);
         }
 
         $especialidade = Especialidade::findOrFail($dados['especialidade_id']);
@@ -193,14 +198,23 @@ class AgendamentoController extends Controller
         // --- Regras que o FormRequest nao tem contexto para checar ---
 
         if (! $vinculo->ativo || $vinculo->medico->status_verificacao !== 'verificado') {
-            return back()->withErrors(['vinculo_id' => 'Esse profissional nao esta disponivel.']);
+            return back()->withErrors(['vinculo_id' => 'Esse profissional não está disponível.']);
+        }
+
+        // A especialidade precisa ser uma das oferecidas NESTE vinculo (as mesmas que a
+        // tela de horario lista, vindas de precos). Sem isso, por convenio (valor 0, sem
+        // consulta de preco) dava para marcar Dermatologia com uma cardiologista.
+        if (! $vinculo->precos->contains('especialidade_id', (int) $dados['especialidade_id'])) {
+            return back()->withErrors([
+                'especialidade_id' => 'Esse profissional não atende essa especialidade neste endereço.',
+            ])->withInput();
         }
 
         $data = Carbon::parse($dados['data_consulta']);
 
         if (! $this->calculadora->estaLivre($vinculo, $data, $dados['horario'])) {
             return back()->withErrors([
-                'horario' => 'Esse horario nao esta mais disponivel. Escolha outro.',
+                'horario' => 'Esse horário não está mais disponível. Escolha outro.',
             ])->withInput();
         }
 
@@ -227,12 +241,22 @@ class AgendamentoController extends Controller
 
         if ($valor === null) {
             return back()->withErrors([
-                'especialidade_id' => 'Esse profissional nao tem preco definido para essa especialidade.',
+                'especialidade_id' => 'Esse profissional não tem preço definido para essa especialidade.',
             ])->withInput();
         }
 
+        // Remarcacao: a antiga precisa ser deste paciente e ainda poder ser cancelada.
+        $antiga = null;
+        if (! empty($dados['remarcar_consulta_id'])) {
+            $antiga = Consulta::find($dados['remarcar_consulta_id']);
+            if (! $antiga || $request->user()->cannot('cancelar', $antiga) || ! $antiga->podeSerCancelada()) {
+                return back()->withErrors(['horario' => 'Essa consulta não pode mais ser remarcada.'])->withInput();
+            }
+        }
+
         try {
-            $consulta = Consulta::create([
+            $consulta = DB::transaction(function () use ($antiga, $paciente, $vinculo, $dados, $data, $planoId, $valor, $request) {
+            $nova = Consulta::create([
                 'paciente_id'       => $paciente->id,
                 'medico_id'         => $vinculo->medico_id,
                 'vinculo_id'        => $vinculo->id,
@@ -247,13 +271,20 @@ class AgendamentoController extends Controller
                 'origem'            => $request->input('origem') === 'clinica' ? 'clinica' : 'medico',
                 'observacoes'       => $dados['observacoes'] ?? null,
             ]);
+
+            if ($antiga) {
+                $antiga->cancelar($request->user()->id, 'Remarcada para ' . $data->format('d/m/Y') . ' às ' . $dados['horario'], remarcacao: true);
+            }
+
+            return $nova;
+            });
         } catch (QueryException $e) {
             // 23000 = violacao de constraint. Aqui significa que
             // alguem gravou este mesmo horario entre a checagem e o
             // insert. Nao e bug: e a protecao funcionando.
             if ($e->getCode() === '23000') {
                 return back()->withErrors([
-                    'horario' => 'Esse horario acabou de ser preenchido. Escolha outro.',
+                    'horario' => 'Esse horário acabou de ser preenchido. Escolha outro.',
                 ])->withInput();
             }
 
@@ -261,17 +292,19 @@ class AgendamentoController extends Controller
         }
 
         /**
-         * TODO (bloco de e-mails): disparar a confirmacao e gravar em
-         * notificacoes_enviadas com tipo 'confirmacao'.
-         *
-         * ⚠ Regra de deduplicacao: so mandar o lembrete de 24h se
-         * faltar MAIS de 24h no momento do agendamento - senao a
-         * pessoa recebe confirmacao, lembrete e "no dia" quase juntos.
+         * E-mail de confirmacao: Notificador (24/09), logo abaixo. O lembrete
+         * de 24h so sai se a consulta foi marcada com MAIS de 24h de
+         * antecedencia (EnviarLembretes) - senao a pessoa recebe
+         * confirmacao e lembrete quase juntos.
          */
+
+        app(Notificador::class)->enviar($consulta, 'confirmacao', 'paciente');
 
         return redirect()
             ->route('paciente.consultas.show', $consulta)
-            ->with('sucesso', 'Consulta agendada! Voce vai receber a confirmacao por e-mail.');
+            ->with('sucesso', $antiga
+                ? 'Consulta remarcada! O horário antigo foi liberado.'
+                : 'Consulta agendada! Você vai receber a confirmação por e-mail.');
     }
 
     // -----------------------------------------------------------------
@@ -305,8 +338,9 @@ class AgendamentoController extends Controller
     /**
      * A carteirinha serve para esta consulta?
      *
-     * Tres perguntas, nessa ordem: e do paciente logado, esta ativa e
-     * dentro da validade, e o medico aceita esse convenio.
+     * Quatro perguntas, nessa ordem: e do paciente logado, esta ativa e
+     * dentro da validade, o plano/convenio continuam ativos, e o medico
+     * aceita esse convenio.
      *
      * A terceira e a que mais esquece. Sem ela, a pessoa marca com
      * uma carteirinha que o profissional nao atende e so descobre na
@@ -314,22 +348,29 @@ class AgendamentoController extends Controller
      */
     private function validarCarteirinha(int $pacienteId, Vinculo $vinculo, int $planoId): ?string
     {
-        $carteirinha = PacientePlano::with('plano')->find($planoId);
+        $carteirinha = PacientePlano::with('plano.convenio')->find($planoId);
 
         if ($carteirinha === null || $carteirinha->paciente_id !== $pacienteId) {
-            return 'Essa carteirinha nao e sua.';
+            return 'Essa carteirinha não é sua.';
         }
 
         if ($carteirinha->status !== 'ativa') {
-            return 'Essa carteirinha ainda nao foi conferida pela nossa equipe.';
+            return 'Essa carteirinha não está ativa.';
         }
 
         if ($carteirinha->estaVencida()) {
-            return 'Essa carteirinha esta vencida.';
+            return 'Essa carteirinha está vencida.';
+        }
+
+        // 24/09: o admin agora pode desativar convenio e plano. Sem esta
+        // checagem, a carteirinha de um plano desativado continuava
+        // passando e a consulta era marcada normalmente.
+        if (! $carteirinha->plano?->ativo || ! $carteirinha->plano?->convenio?->ativo) {
+            return 'Esse plano não está mais disponível para agendamento.';
         }
 
         if (! $vinculo->aceita_convenio) {
-            return 'Esse profissional nao atende por convenio neste endereco.';
+            return 'Esse profissional não atende por convênio neste endereço.';
         }
 
         $convenioId = $carteirinha->plano?->convenio_id;
@@ -339,7 +380,7 @@ class AgendamentoController extends Controller
             ->exists();
 
         if (! $aceita) {
-            return 'Esse profissional nao atende esse convenio.';
+            return 'Esse profissional não atende esse convênio.';
         }
 
         return null;

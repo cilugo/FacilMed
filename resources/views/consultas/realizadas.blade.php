@@ -7,7 +7,7 @@
       "Confirmadas" -> "Realizadas" e "Em espera" -> "Não compareceram",
       porque esses são os status que existem em consultas.status.
       "Média de espera 12 min" -> "Comparecimento": o sistema não registra
-      check-in nem início do atendimento (lacuna anotada no AI_HANDOFF.md).
+      check-in nem início do atendimento (lacuna anotada no README §6).
 --}}
 @extends('layouts.painel')
 

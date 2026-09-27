@@ -3,44 +3,79 @@
 namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CadastroCarteirinhaRequest;
+use App\Models\Consulta;
 use App\Models\Convenio;
 use App\Models\PacientePlano;
-use Illuminate\Http\Request;
 
 class PlanoController extends Controller
 {
     /**
-     * Carteirinha do paciente.
+     * Carteirinhas do paciente ("Meus planos").
      *
-     * NAO EXISTE VALIDACAO AUTOMATICA. Nem API da ANS, nem integracao
-     * TISS, e o COMPROVA exige login gov.br do proprio beneficiario.
+     * 24/09/2026 — CONFERÊNCIA AUTOMÁTICA NA BASE SIMULADA (decisão do
+     * grupo). Como os convênios são fictícios, a tabela base_carteirinhas
+     * faz o papel da operadora. O CadastroCarteirinhaRequest confere
+     * número + plano + CPF do paciente + situação + validade:
+     *   - bateu     → grava 'ativa' na hora (conferido_por = NULL, porque
+     *                 quem conferiu foi a base, não uma pessoa);
+     *   - não bateu → volta para o formulário com o motivo, nada é gravado.
      *
-     * O que da para recusar na hora: operadora fora da lista da ANS,
-     * formato invalido, validade vencida, carteirinha ja cadastrada.
-     * O resto entra como 'pendente' e alguem confere.
+     * Substitui o fluxo antigo "entra pendente e alguém confere pelo
+     * COMPROVA da ANS", que não funciona com plano fictício.
      *
-     * A tela precisa dizer "em conferencia", nunca "validado".
-     *
-     * Guardamos SO o codigo de controle do comprovante e a data -
-     * nunca o PDF, que traz CPF, nome da mae e dados do plano.
+     * A tela diz "conferida na base simulada do FacilMed" — nunca
+     * "validada pela operadora".
      */
     public function index()
     {
         return view('paciente.planos', [
-            'planos'    => auth()->user()->paciente->planos()->with('plano.convenio')->get(),
-            'convenios' => Convenio::with('planos')->where('ativo', true)->orderBy('nome')->get(),
+            'planos'    => auth()->user()->paciente->planos()->with('plano.convenio')->latest()->get(),
+            // Só planos ATIVOS de convênios ATIVOS.
+            'convenios' => Convenio::with(['planos' => fn ($q) => $q->where('ativo', true)])
+                ->where('ativo', true)->orderBy('nome')->get(),
         ]);
     }
 
-    public function salvar(Request $request)
+    public function salvar(CadastroCarteirinhaRequest $request)
     {
-        // TODO: trocar por CadastroCarteirinhaRequest.
-        // Status inicial SEMPRE 'pendente'.
+        $base = $request->registroBase; // preenchido pelo after() do request
+
+        $carteirinha = PacientePlano::create([
+            'paciente_id'        => $request->user()->paciente->id,
+            'plano_id'           => $base->plano_id,
+            'numero_carteirinha' => $base->numero_carteirinha,
+            // Validade e nome vêm da BASE, não do que foi digitado.
+            'validade'           => $base->validade,
+            'titular_nome'       => $base->beneficiario_nome,
+            'status'             => 'ativa',
+            'conferido_por'      => null,
+            'conferido_em'       => now(),
+        ]);
+
+        $carteirinha->load('plano');
+
+        return back()->with('sucesso',
+            "Carteirinha do {$carteirinha->plano->nome} conferida na base simulada do FacilMed e liberada para agendamento.");
     }
 
+    /**
+     * Remover carteirinha.
+     *
+     * Se ela já foi usada em alguma consulta, NÃO remove: a FK de
+     * consultas é nullOnDelete, então o histórico perderia a informação
+     * de qual plano foi usado.
+     */
     public function remover(PacientePlano $pacientePlano)
     {
         $this->authorize('delete', $pacientePlano);
-        // TODO
+
+        if (Consulta::where('paciente_plano_id', $pacientePlano->id)->exists()) {
+            return back()->with('erro', 'Essa carteirinha já foi usada em consultas e fica guardada no seu histórico.');
+        }
+
+        $pacientePlano->delete();
+
+        return back()->with('sucesso', 'Carteirinha removida.');
     }
 }

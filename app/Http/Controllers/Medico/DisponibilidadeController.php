@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Medico;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Medico\SalvarDisponibilidadeRequest;
 use App\Models\Disponibilidade;
 use Illuminate\Http\Request;
 
@@ -24,23 +25,34 @@ class DisponibilidadeController extends Controller
                 ->with('local', 'disponibilidades')
                 ->get(),
             'dias' => Disponibilidade::DIAS,
+            'duracoes' => SalvarDisponibilidadeRequest::DURACOES,
         ]);
     }
 
-    public function salvar(Request $request)
+    public function salvar(SalvarDisponibilidadeRequest $request)
     {
-        // TODO: SalvarDisponibilidadeRequest.
-        // Validar: hora_fim > hora_inicio, o bloco cabe no horario de
-        // funcionamento do local, e nao se sobrepoe a outro bloco do
-        // mesmo vinculo e dia.
-        // Validar tambem que o vinculo e DESTE medico.
+        Disponibilidade::create($request->validated() + ['ativo' => true]);
+
+        return back()->with('sucesso', 'Horário de atendimento adicionado.');
     }
 
+    /**
+     * Apagar bloco NÃO cancela consulta já marcada dentro dele: a mensagem
+     * diz quantas continuam de pé, para o médico decidir na agenda.
+     */
     public function remover(Disponibilidade $disponibilidade)
     {
         $this->authorize('delete', $disponibilidade);
 
-        // ATENCAO: apagar bloco nao cancela consulta ja marcada dentro
-        // dele. Avise na tela quantas consultas futuras existem ali.
+        $futuras = $disponibilidade->consultasFuturasDentro()->count();
+        $disponibilidade->delete();
+
+        $msg = 'Horário removido. Ele não aparece mais para agendamento.';
+        if ($futuras > 0) {
+            $msg .= " Atenção: {$futuras} " . ($futuras === 1 ? 'consulta já marcada continua' : 'consultas já marcadas continuam')
+                . ' na sua agenda — cancele por lá se não for atender.';
+        }
+
+        return back()->with('sucesso', $msg);
     }
 }

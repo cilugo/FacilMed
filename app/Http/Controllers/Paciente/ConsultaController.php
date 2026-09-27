@@ -43,35 +43,40 @@ class ConsultaController extends Controller
 
         abort_unless($consulta->podeSerCancelada(), 422);
 
-        $consulta->update([
-            'status'              => 'cancelada',
-            'cancelada_por'       => auth()->id(),
-            'cancelada_em'        => now(),
-            'motivo_cancelamento' => $request->input('motivo'),
-            'cancelamento_tardio' => $consulta->ehCancelamentoTardio(),
-        ]);
+        // A coluna tem 255 caracteres: sem limitar aqui, texto maior dava erro 500.
+        $request->validate(['motivo' => ['nullable', 'string', 'max:255']]);
 
-        // TODO: avisar o medico por e-mail e gravar em
-        // notificacoes_enviadas (tipo 'cancelamento').
+        $consulta->cancelar(auth()->id(), $request->input('motivo'));
+
+        // O médico é avisado por e-mail dentro de Consulta::cancelar().
 
         return redirect()->route('paciente.consultas')
             ->with('sucesso', 'Consulta cancelada.');
-    }
-
-    public function formRemarcar(Consulta $consulta)
-    {
-        $this->authorize('cancelar', $consulta);
-        // TODO: reaproveitar a tela de escolha de horario do mesmo vinculo.
     }
 
     /**
      * Remarcar = cancelar a antiga e criar a nova, em UMA transacao.
      * Nunca edite a data da consulta existente: o indice unico calcula
      * em cima do horario, e o historico se perde.
+     *
+     * 24/09: reaproveita as telas do agendamento no MESMO vinculo, levando
+     * ?remarcar={id}. A antiga so e cancelada quando a nova e gravada, na
+     * mesma transacao (AgendamentoController@salvar): se a nova falhar,
+     * a antiga continua de pe.
      */
-    public function remarcar(Request $request, Consulta $consulta)
+    public function formRemarcar(Consulta $consulta)
     {
         $this->authorize('cancelar', $consulta);
-        // TODO
+        abort_unless($consulta->podeSerCancelada(), 422);
+
+        return redirect()->route('agendamento.horario', [
+            'vinculo'  => $consulta->vinculo_id,
+            'remarcar' => $consulta->id,
+        ]);
+    }
+
+    public function remarcar(Request $request, Consulta $consulta)
+    {
+        return $this->formRemarcar($consulta);
     }
 }

@@ -23,13 +23,20 @@ class CarteirinhaController extends Controller
      * operadora. NAO confirma o numero da carteirinha que ela digitou.
      * A tela precisa deixar isso claro para quem confere.
      */
-    public function index()
+    /**
+     * Desde 24/09 a carteirinha é conferida na hora pela base simulada, então
+     * a fila de "pendentes" costuma estar vazia. A tela vira CONSULTA: as
+     * carteirinhas mais recentes e a situação de cada uma.
+     */
+    public function index(Request $request)
     {
         return view('admin.carteirinhas', [
             'pendentes' => PacientePlano::where('status', 'pendente')
-                ->with('paciente.user', 'plano.convenio.operadora')
-                ->oldest()
-                ->get(),
+                ->with('paciente.user', 'plano.convenio')->oldest()->get(),
+            'recentes'  => PacientePlano::query()
+                ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+                ->with('paciente.user', 'plano.convenio')
+                ->latest()->paginate(30)->withQueryString(),
         ]);
     }
 

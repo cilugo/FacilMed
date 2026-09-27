@@ -74,6 +74,11 @@ class CalculadoraDeHorarios
             return [];
         }
 
+        // Clínica com a conta bloqueada/inativa não recebe agendamento (24/09).
+        if ($local->clinica_id !== null && $local->clinica?->user?->status !== 'ativo') {
+            return [];
+        }
+
         // Feriado fecha o dia inteiro: nao adianta calcular o resto.
         if (Feriado::fecha($local, $dia)) {
             return [];

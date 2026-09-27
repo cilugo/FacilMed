@@ -46,6 +46,12 @@ class EstatisticasDeConsultas
     {
     }
 
+    /** Todas as consultas do sistema (painel do admin, 24/09). */
+    public static function daPlataforma(): self
+    {
+        return new self(Consulta::query());
+    }
+
     public static function doMedico(Medico $medico): self
     {
         return new self(Consulta::query()->where('consultas.medico_id', $medico->id));

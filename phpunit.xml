@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <!-- Fixo: o .env de quem usa XAMPP tem /FacilMed no APP_URL, e os testes
+             montariam as URLs em cima disso (tudo daria 404). -->
+        <env name="APP_URL" value="http://localhost"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!-- Banco SEPARADO para teste (MariaDB do XAMPP). As migrations usam coluna
+             virtual e CHECK, que o SQLite nao tem. tests/bootstrap.php cria o banco
+             sozinho; os testes APAGAM e recriam tudo nele - nunca aponte para "facilmed". -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="3306"/>
+        <env name="DB_DATABASE" value="facilmed_testes"/>
+        <env name="DB_USERNAME" value="root"/>
+        <env name="DB_PASSWORD" value=""/>
+        <env name="APP_LOCALE" value="pt_BR"/>
+        <env name="APP_KEY" value="base64:dGVzdGVzLWRvLWZhY2lsbWVkLXNvLXBhcmEtdGVzdGU="/>
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>
