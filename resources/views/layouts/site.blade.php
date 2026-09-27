@@ -44,6 +44,8 @@
                 <a href="{{ route('home') }}" class="menu-link {{ $menuAtivo === 'inicio' ? 'active' : '' }}">Início</a>
                 <a href="{{ route('home') }}#como-funciona" class="menu-link">Como funciona</a>
                 <a href="{{ route('home') }}#especialidades" class="menu-link">Especialidades</a>
+                <a href="{{ route('home') }}#hospitais-clinicas" class="menu-link">Hospitais e clínicas</a>
+                <a href="{{ route('home') }}#sobre" class="menu-link">Sobre</a>
                 <a href="{{ route('busca.index') }}" class="menu-link {{ $menuAtivo === 'busca' ? 'active' : '' }}">Encontrar médicos</a>
             </nav>
 
@@ -67,6 +69,8 @@
             <a href="{{ route('home') }}">Início</a>
             <a href="{{ route('home') }}#como-funciona" @click="menuAberto = false">Como funciona</a>
             <a href="{{ route('home') }}#especialidades" @click="menuAberto = false">Especialidades</a>
+            <a href="{{ route('home') }}#hospitais-clinicas" @click="menuAberto = false">Hospitais e clínicas</a>
+            <a href="{{ route('home') }}#sobre" @click="menuAberto = false">Sobre</a>
             <a href="{{ route('busca.index') }}">Encontrar médicos</a>
         </nav>
     </header>

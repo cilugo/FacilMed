@@ -325,6 +325,8 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 
 **Atualizado em 24/09/2026.**
 
+**Junção de 25/09/2026:** a home que o grupo fez no protótipo depois da organização (slider do início com 9 fotos, fotos dos médicos, "Hospitais e Clínicas" e "Sobre") foi trazida para `resources/views/home.blade.php`, `public/css/home.css` e `public/javas/home.js`; fotos em `public/imgs/` (sliderinicio, medicos, sliderhospcli — estas comprimidas de 10,5 MB para 1 MB). Os 3 médicos fictícios ganharam foto (`foto` em `DadosFicticios::MEDICOS`). O `prototipo-antigo/` também foi atualizado com a versão do GitHub (a home agora é `paginas/index.html`). **27/09:** entrou o commit `c9faffe` (mudanças na home: slider em loop contínuo, menu que marca o item clicado, cores em azul-escuro, novo texto do topo, "Sobre nós" e nova foto `medico5`), no protótipo e na home em Laravel.
+
 **Pronto e testado:**
 - Estrutura: o repositório é o projeto Laravel completo; roda pelo XAMPP (`/FacilMed`) ou `composer run dev`.
 - Banco: 28 migrations, seed completo, travas e índices.
@@ -690,4 +692,4 @@ e para o capítulo do TCC sobre a evolução do projeto.
 
 Para abrir: importe `prototipo-antigo/banco/bancofacilmed.sql` no phpMyAdmin (cria o banco
 **separado** `facilmed_prototipo`) e acesse
-`http://localhost/FacilMed/prototipo-antigo/paginas/home.html`.
+`http://localhost/FacilMed/prototipo-antigo/paginas/index.html`.

@@ -100,7 +100,7 @@ $titulo = $especialidadeSelecionada
 </header>
 
 <main class="container">
-    <p><a href="home/home/home.html">&larr; Voltar para a página inicial</a></p>
+    <p><a href="index.html">&larr; Voltar para a página inicial</a></p>
 
     <section class="card-admin" style="max-width:none;">
         <h2><?= htmlspecialchars($titulo) ?></h2>

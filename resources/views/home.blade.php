@@ -15,8 +15,8 @@
     <section class="hero">
         <div class="container hero-content">
             <div class="hero-text">
-                <h1>Agende sua consulta<br>de forma rápida e fácil</h1>
-                <p>Encontre médicos, hospitais e clínicas perto de você.</p>
+                <h1>Agende sua consulta<br>de forma rápida e fácil!</h1>
+                <p>Encontre médicos, hospitais e clínicas perto de você.<br>Pesquise por especialidade, confira os horários disponíveis e encontre a melhor opção para cuidar da sua saúde.</p>
 
                 <form method="GET" action="{{ route('busca.index') }}" class="busca-caixa" role="search">
                     <div class="busca-campo">
@@ -48,19 +48,27 @@
             </div>
 
             <div class="hero-carousel" id="heroCarousel">
+                {{-- Fotos em public/imgs/sliderinicio/. [arquivo, legenda] --}}
+                @php
+                    $slides = [
+                        ['si1.jpeg', 'Atendimento humanizado'],
+                        ['si2.jpeg', 'Equipe especializada'],
+                        ['si3.jpeg', 'Atendimento de confiança'],
+                        ['si4.jpeg', 'Agende em poucos cliques'],
+                        ['si5.jpeg', 'Encontre a especialidade certa'],
+                        ['si6.jpeg', 'Use seu convênio ou particular'],
+                        ['si7.jpeg', 'Veja os horários disponíveis'],
+                        ['si8.jpeg', 'Clínicas perto de você'],
+                        ['si9.jpeg', 'Isso é FacilMed'],
+                    ];
+                @endphp
                 <div class="carousel-track" id="carouselTrack">
-                    <div class="carousel-slide">
-                        <img src="{{ asset('imgs/teste.jpg') }}" alt="Médica atendendo paciente em consulta">
-                        <span class="carousel-caption">Atendimento humanizado</span>
-                    </div>
-                    <div class="carousel-slide">
-                        <img src="{{ asset('imgs/teste.jpg') }}" alt="Equipe médica especializada">
-                        <span class="carousel-caption">Equipe especializada</span>
-                    </div>
-                    <div class="carousel-slide">
-                        <img src="{{ asset('imgs/teste.jpg') }}" alt="Clínicas e hospitais perto de você">
-                        <span class="carousel-caption">Clínicas e hospitais perto de você</span>
-                    </div>
+                    @foreach ($slides as [$arquivo, $legenda])
+                        <div class="carousel-slide">
+                            <img src="{{ asset('imgs/sliderinicio/' . $arquivo) }}" alt="">
+                            <span class="carousel-caption">{{ $legenda }}</span>
+                        </div>
+                    @endforeach
                 </div>
                 <div class="carousel-dots" id="carouselDots"></div>
             </div>
@@ -141,8 +149,13 @@
                 <div class="specialties-list">
                     @foreach ($medicosDestaque as $i => $medico)
                         <a href="{{ route('publico.medico', $medico) }}" class="specialty-card" style="min-width: 200px;">
+                            {{-- A foto cobre as iniciais; se o arquivo não carregar, o onerror
+                                 tira a imagem e as iniciais aparecem no lugar --}}
                             <div class="specialty-photo" style="background-color: {{ \App\Support\Formatador::corAvatar($i) }};">
                                 {{ \App\Support\Formatador::iniciais($medico->user->name) }}
+                                @if ($medico->foto)
+                                    <img src="{{ asset($medico->foto) }}" alt="" onerror="this.remove()">
+                                @endif
                             </div>
                             <div class="specialty-info">
                                 <span class="nome-medico">{{ $medico->user->name }}</span>
@@ -157,6 +170,54 @@
             </div>
         </section>
     @endif
+
+    {{-- ========================= HOSPITAIS E CLÍNICAS ========================= --}}
+    {{-- Vitrine fixa (nomes fictícios, endereços reais), trazida do protótipo.
+         Fotos em public/imgs/sliderhospcli/. --}}
+    @php
+        $estabelecimentos = [
+            ['h1.jpg', 'Hospital Santa Clara', 'Av. Tiradentes, 280 - Centro, Taubaté - SP'],
+            ['h2.jpg', 'Clínica Vida Plena', 'Av. Cassiano Ricardo, 319 - Jardim Aquarius, São José dos Campos - SP'],
+            ['h3.jpg', 'Hospital Vale Sereno', 'Av. Lineu de Moura, 995 - Urbanova, São José dos Campos - SP'],
+            ['h4.jpg', 'Centro Médico Aurora', 'Rua Major Francisco de Paula Elias, 217 - Vila Adyana, São José dos Campos - SP'],
+        ];
+    @endphp
+    <section class="specialties" id="hospitais-clinicas">
+        <div class="container">
+            <div class="section-header">
+                <h2>Hospitais e Clínicas</h2>
+                <a href="{{ route('busca.index') }}" class="view-all">Ver todos</a>
+            </div>
+
+            <div class="specialties-wrapper">
+                <button class="arrow-button left" id="prevClinic" type="button" aria-label="Clínicas anteriores">‹</button>
+
+                <div class="clinicas-list" id="clinicsList">
+                    @foreach ($estabelecimentos as [$foto, $nome, $endereco])
+                        <div class="clinica-card">
+                            <img src="{{ asset('imgs/sliderhospcli/' . $foto) }}" alt="">
+                            <div class="clinica-info">
+                                <span class="nome-clinica">{{ $nome }}</span>
+                                <span class="local-clinica">{{ $endereco }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <button class="arrow-button right" id="nextClinic" type="button" aria-label="Próximas clínicas">›</button>
+            </div>
+        </div>
+    </section>
+
+    {{-- ========================= SOBRE ========================= --}}
+    <section id="sobre">
+        <div class="container">
+            <div class="section-header center">
+                <h2>Sobre nós</h2>
+                <p class="sobre-text">O FacilMed é uma plataforma digital que conecta pacientes a profissionais de saúde, facilitando o agendamento de consultas e melhorando o acesso aos serviços médicos. Surgindo apenas como uma ideia em sala de aula, agora o FacilMed está disponível para ajudar você a encontrar o cuidado de saúde que você precisa, quando e onde precisar. Marque consultas, acompanhe seu histórico de consultas, veja a avaliação de outros pacientes e muito mais em um único lugar.</p>
+            </div>
+        </div>
+    </section>
 
     {{-- ========================= CHAMADA PARA PROFISSIONAIS ========================= --}}
     <section class="chamada">

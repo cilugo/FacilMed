@@ -26,6 +26,11 @@ body { background-color: var(--site-fundo); }
 
 /* ---------- Cabeçalho ---------- */
 .header { position: sticky; top: 0; z-index: 20; }
+/* O protótipo usa header FIXO e por isso empurra o hero 150px para baixo
+   (home.css). Aqui o header é sticky e já ocupa o próprio espaço: sem isto,
+   sobrava um vão vazio no topo da home. Valores originais do home.css. */
+.hero { padding-top: 45px; }
+@media (max-width: 800px) { .hero { padding-top: 35px; } }
 .site-logo img { height: 30px; width: auto; display: block; }
 .menu-link.active::after { bottom: -26px; }
 
@@ -43,10 +48,14 @@ body { background-color: var(--site-fundo); }
 }
 .site-menu-celular a { padding: 14px 5%; font-weight: 600; color: var(--site-marinho); border-bottom: 1px solid #eef1f3; }
 
-@media (max-width: 800px) {
+/* Com 6 itens o menu não cabe numa linha abaixo de ~1160px: a partir
+   daí ele vira o botão de menu (antes só virava abaixo de 800px). */
+.menu-link { white-space: nowrap; }
+@media (max-width: 1160px) {
+    .header .menu { display: none; }
     .site-menu-botao { display: inline-flex; }
 }
-@media (min-width: 801px) {
+@media (min-width: 1161px) {
     .site-menu-celular { display: none !important; }
 }
 @media (max-width: 500px) {

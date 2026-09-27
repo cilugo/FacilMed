@@ -53,6 +53,7 @@ class MedicoSeeder extends Seeder
                     'bio'                   => $d['bio'],
                     'telefone_profissional' => sprintf('12390%05d', 10000 + $i),
                     'anos_atuacao'          => $d['anos'],
+                    'foto'                  => $d['foto'] ?? null,
                 ]
             );
 

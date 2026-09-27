@@ -60,7 +60,7 @@ final class DadosFicticios
      */
     public const MEDICOS = [
         [
-            'nome' => 'Dra. Helena Navarro', 'email' => 'helena@facilmed.test', 'cpf' => '70120130106',
+            'nome' => 'Dra. Helena Navarro', 'foto' => 'imgs/medicos/medico3.jpeg', 'email' => 'helena@facilmed.test', 'cpf' => '70120130106',
             'crm' => '112233', 'uf' => 'SP', 'anos' => 14,
             'bio' => 'Cardiologista com atuação em prevenção e acompanhamento de hipertensão.',
             'especialidades' => ['Cardiologia', 'Clínica Geral'],
@@ -71,7 +71,7 @@ final class DadosFicticios
             'convenios' => ['SpSaúde', 'Horizonte Med'],
         ],
         [
-            'nome' => 'Dr. Rafael Moreira', 'email' => 'rafael@facilmed.test', 'cpf' => '70120130289',
+            'nome' => 'Dr. Rafael Moreira', 'foto' => 'imgs/medicos/medico2.jpeg', 'email' => 'rafael@facilmed.test', 'cpf' => '70120130289',
             'crm' => '223344', 'uf' => 'SP', 'anos' => 9,
             'bio' => 'Dermatologista e clínico geral, atendimento adulto.',
             'especialidades' => ['Dermatologia', 'Clínica Geral'],
@@ -82,7 +82,7 @@ final class DadosFicticios
             'convenios' => ['SpSaúde', 'Bem Viver Saúde'],
         ],
         [
-            'nome' => 'Dra. Camila Reis', 'email' => 'camila@facilmed.test', 'cpf' => '70120130360',
+            'nome' => 'Dra. Camila Reis', 'foto' => 'imgs/medicos/medico5.jpeg', 'email' => 'camila@facilmed.test', 'cpf' => '70120130360',
             'crm' => '334455', 'uf' => 'SP', 'anos' => 18,
             'bio' => 'Pediatra, atendimento de recém-nascidos a adolescentes.',
             'especialidades' => ['Pediatria'],
