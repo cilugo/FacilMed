@@ -41,8 +41,12 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/buscar', [BuscaController::class, 'index'])->name('busca.index');
 
 // Perfis públicos
-Route::get('/medico/{medico}', [PerfilPublicoController::class, 'medico'])->name('publico.medico');
-Route::get('/clinica/{clinica}', [PerfilPublicoController::class, 'clinica'])->name('publico.clinica');
+// whereNumber: sem ele, /medico/{medico} captura /medico/agenda, /medico/perfil etc.
+// (declarado antes do grupo do painel) e todas as telas do médico e da clínica davam 404.
+Route::get('/medico/{medico}', [PerfilPublicoController::class, 'medico'])
+    ->whereNumber('medico')->name('publico.medico');
+Route::get('/clinica/{clinica}', [PerfilPublicoController::class, 'clinica'])
+    ->whereNumber('clinica')->name('publico.clinica');
 
 // Cadastro dos três tipos. O Breeze cuida de login, logout e senha.
 Route::middleware('guest')->group(function () {
@@ -115,14 +119,14 @@ Route::middleware(['auth', 'tipo:paciente'])->prefix('paciente')->name('paciente
         ->name('consultas.avaliar');
     Route::post('/consultas/{consulta}/avaliar', [Paciente\AvaliacaoController::class, 'salvar']);
 
-    // Carteirinha. Entra como 'pendente' — não existe validação
-    // automática (nem API da ANS, nem TISS).
+    // Carteirinha. Conferida NA HORA na base simulada (base_carteirinhas,
+    // decisão de 24/09): bateu -> 'ativa'; não bateu -> erro com o motivo.
     Route::get('/planos', [Paciente\PlanoController::class, 'index'])->name('planos');
     Route::post('/planos', [Paciente\PlanoController::class, 'salvar'])->name('planos.salvar');
     Route::delete('/planos/{pacientePlano}', [Paciente\PlanoController::class, 'remover'])->name('planos.remover');
 
     Route::get('/perfil', [Paciente\PerfilController::class, 'edit'])->name('perfil');
-    Route::put('/perfil', [Paciente\PerfilController::class, 'update']);
+    Route::put('/perfil', [Paciente\PerfilController::class, 'update'])->name('perfil.atualizar');
 
     // DADO SENSÍVEL DE SAÚDE (LGPD art. 11). Opcional, com consentimento
     // explícito. Sem upload de arquivo — só texto.
@@ -177,7 +181,7 @@ Route::middleware(['auth', 'tipo:medico'])->prefix('medico')->name('medico.')->g
     Route::get('/avaliacoes', [Medico\AvaliacaoController::class, 'index'])->name('avaliacoes');
 
     Route::get('/perfil', [Medico\PerfilController::class, 'edit'])->name('perfil');
-    Route::put('/perfil', [Medico\PerfilController::class, 'update']);
+    Route::put('/perfil', [Medico\PerfilController::class, 'update'])->name('perfil.atualizar');
     Route::put('/perfil/especialidades', [Medico\PerfilController::class, 'salvarEspecialidades'])
         ->name('perfil.especialidades');
     Route::put('/perfil/convenios', [Medico\PerfilController::class, 'salvarConvenios'])
@@ -215,13 +219,15 @@ Route::middleware(['auth', 'tipo:clinica'])->prefix('clinica')->name('clinica.')
     Route::get('/precos', [Clinica\PrecoController::class, 'index'])->name('precos');
     Route::post('/precos', [Clinica\PrecoController::class, 'salvar'])->name('precos.salvar');
 
+    // Cobertura de convênios da clínica. O convênio é aceito pelo MÉDICO;
+    // aqui a clínica só liga/desliga "aceita convênio" por médico e unidade.
     Route::get('/convenios', [Clinica\ConvenioController::class, 'index'])->name('convenios');
     Route::post('/convenios', [Clinica\ConvenioController::class, 'salvar'])->name('convenios.salvar');
 
     Route::get('/avaliacoes', [Clinica\AvaliacaoController::class, 'index'])->name('avaliacoes');
 
     Route::get('/perfil', [Clinica\PerfilController::class, 'edit'])->name('perfil');
-    Route::put('/perfil', [Clinica\PerfilController::class, 'update']);
+    Route::put('/perfil', [Clinica\PerfilController::class, 'update'])->name('perfil.atualizar');
 });
 
 // ---------------------------------------------------------------------
@@ -264,14 +270,34 @@ Route::middleware(['auth', 'tipo:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/especialidades/{especialidade}', [Admin\EspecialidadeController::class, 'atualizar'])
         ->name('especialidades.atualizar');
 
-    // Convênio só existe ancorado numa operadora real da ANS.
-    // Importe antes: php artisan facilmed:importar-operadoras
+    // Convênios e planos FICTÍCIOS (decisão do grupo, 24/09) — não
+    // dependem mais da ANS. Nada se apaga: desativar esconde do
+    // agendamento e preserva carteirinhas e histórico.
     Route::get('/convenios', [Admin\ConvenioController::class, 'index'])->name('convenios');
     Route::post('/convenios', [Admin\ConvenioController::class, 'salvar'])->name('convenios.salvar');
+    Route::put('/convenios/{convenio}', [Admin\ConvenioController::class, 'atualizar'])
+        ->whereNumber('convenio')->name('convenios.atualizar');
+    Route::patch('/convenios/{convenio}/status', [Admin\ConvenioController::class, 'alternar'])
+        ->whereNumber('convenio')->name('convenios.status');
+
     Route::post('/convenios/{convenio}/planos', [Admin\ConvenioController::class, 'salvarPlano'])
-        ->name('convenios.planos');
+        ->whereNumber('convenio')->name('convenios.planos');
+    Route::put('/convenios/planos/{plano}', [Admin\ConvenioController::class, 'atualizarPlano'])
+        ->whereNumber('plano')->name('convenios.planos.atualizar');
+    Route::patch('/convenios/planos/{plano}/status', [Admin\ConvenioController::class, 'alternarPlano'])
+        ->whereNumber('plano')->name('convenios.planos.status');
 
     Route::get('/consultas', [Admin\ConsultaController::class, 'index'])->name('consultas');
 });
+
+// ---------------------------------------------------------------------
+// /dashboard — adicionado em 24/09.
+// O Breeze, depois do login, manda para route('dashboard'). Como cada
+// tipo de usuário tem o próprio painel (paciente.dashboard, ...), sem
+// esta rota o login dava erro "Route [dashboard] not defined".
+// ---------------------------------------------------------------------
+Route::get('/dashboard', function () {
+    return redirect()->route(auth()->user()->tipo . '.dashboard');
+})->middleware('auth')->name('dashboard');
 
 require __DIR__ . '/auth.php';

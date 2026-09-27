@@ -18,7 +18,20 @@ class HomeController extends Controller
     public function index()
     {
         return view('home', [
-            'especialidades' => Especialidade::emDestaque()->get(),
+            // 24/09: com a contagem de medicos visiveis, para o card mostrar
+            // "3 medicos" e a home nao oferecer especialidade vazia como destaque.
+            'especialidades' => Especialidade::where('ativo', true)
+                ->withCount(['medicos' => fn ($q) => $q->visivel()])
+                ->orderByDesc('destaque')
+                ->orderByDesc('medicos_count')
+                ->orderBy('nome')
+                ->get(),
+
+            'totais' => [
+                'medicos'  => Medico::visivel()->count(),
+                'unidades' => Local::where('ativo', true)->count(),
+                'cidades'  => Local::where('ativo', true)->distinct()->count('cidade'),
+            ],
 
             // So medico verificado. O scope ja aplica a regra.
             'medicosDestaque' => Medico::visivel()

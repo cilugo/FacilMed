@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\Cpf;
+use App\Rules\CrmNaBaseSimulada;
 use App\Rules\SenhaPadrao;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,12 +17,13 @@ use Illuminate\Validation\Rule;
  * (Clinica\MedicoController). Nada mais muda: o banco ja suporta os
  * dois casos porque `locais` aceita clinica_id OU medico_id.
  *
- * O CRM AQUI NAO E VALIDADO - e so formato.
- * O medico entra com status_verificacao = 'pendente' e NAO aparece
- * em busca nenhuma ate um admin conferir no portal do CFM. O web
- * service oficial custa R$ 772/ano e exige CNPJ; por isso a
- * conferencia e humana. A tela nunca pode dizer "validado junto ao
- * CFM" - diz "verificado pela equipe FacilMed".
+ * CRM CONFERIDO NA BASE SIMULADA (decisao do grupo, 24/09/2026).
+ * Substitui a conferencia humana de 18/09: como o FacilMed e todo
+ * ficticio, a tabela base_crms faz o papel do CFM. CRM encontrado e
+ * ativo -> o medico ja nasce 'verificado'. Nao encontrado, suspenso ou
+ * cassado -> o cadastro e recusado na hora, com o motivo.
+ * A tela nunca pode dizer "validado junto ao CFM" - diz "conferido na
+ * base simulada do FacilMed".
  */
 class CadastroMedicoRequest extends FormRequest
 {
@@ -53,7 +55,8 @@ class CadastroMedicoRequest extends FormRequest
 
             // CRM: 4 a 10 digitos. O numero varia por estado, entao
             // nao da para fixar tamanho.
-            'crm' => ['required', 'digits_between:4,10'],
+            // 'bail': se o formato ja falhou, nem consulta a base.
+            'crm' => ['bail', 'required', 'digits_between:4,10', new CrmNaBaseSimulada],
 
             // O par (crm, uf) e que e unico no banco: o mesmo numero
             // pode existir em estados diferentes, em medicos diferentes.

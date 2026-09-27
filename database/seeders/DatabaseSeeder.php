@@ -9,10 +9,13 @@ class DatabaseSeeder extends Seeder
     /**
      * A ORDEM IMPORTA - cada seeder depende do anterior.
      *
-     * ConvenioSeeder precisa de `operadoras_ans` populada. Rode antes:
-     *   php artisan facilmed:importar-operadoras
-     * Se a tabela estiver vazia, o ConvenioSeeder avisa e pula, e os
-     * agendamentos por convenio ficam sem dado - o resto funciona.
+     * Desde 24/09 os convenios sao ficticios e o ConvenioSeeder NAO
+     * depende mais do CSV da ANS: `php artisan db:seed` sozinho ja
+     * monta tudo (admin, 3 clinicas + 3 hospitais, 3 convenios ativos,
+     * bases simuladas, 3 medicos, 2 pacientes, consultas).
+     *
+     * Ordem: Convenio antes de Medico (medico aceita convenio) e de
+     * Paciente (carteirinha aponta para plano).
      */
     public function run(): void
     {
@@ -20,6 +23,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             EspecialidadeSeeder::class,
             ConvenioSeeder::class,
+            BaseSimuladaSeeder::class,   // depois do Convenio: carteirinha aponta para plano
             ClinicaSeeder::class,
             MedicoSeeder::class,
             PacienteSeeder::class,

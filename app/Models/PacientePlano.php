@@ -7,9 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A carteirinha. Nao existe validacao automatica - nem API da ANS,
- * nem TISS. O status so vira 'ativa' por conferencia humana do
- * codigo do comprovante COMPROVA.
+ * A carteirinha do paciente.
+ *
+ * Desde 24/09/2026 e conferida AUTOMATICAMENTE na base simulada
+ * (base_carteirinhas) no momento do cadastro - ver
+ * CadastroCarteirinhaRequest. Por isso so entra 'ativa'; o status
+ * 'pendente' e os campos do COMPROVA ficaram para carteirinhas antigas.
+ * conferido_por NULL + conferido_em preenchido = conferida pela base.
  */
 class PacientePlano extends Model
 {

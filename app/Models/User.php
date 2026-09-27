@@ -89,4 +89,24 @@ class User extends Authenticatable
     {
         return $this->status === 'bloqueado';
     }
+
+    /**
+     * Consultas AGENDADAS daqui para frente que dependem desta conta (24/09):
+     * do paciente, do médico, ou nas unidades da clínica. Usado ao bloquear
+     * a conta ou rejeitar o CRM.
+     */
+    public function consultasFuturasAfetadas(): \Illuminate\Database\Eloquent\Builder
+    {
+        $q = Consulta::query()->where('status', 'agendada');
+
+        $q = match ($this->tipo) {
+            self::TIPO_PACIENTE => $q->where('paciente_id', $this->paciente?->id ?? 0),
+            self::TIPO_MEDICO   => $q->where('medico_id', $this->medico?->id ?? 0),
+            self::TIPO_CLINICA  => $q->whereIn('vinculo_id', Vinculo::whereIn('local_id',
+                Local::where('clinica_id', $this->clinica?->id ?? 0)->select('id'))->select('id')),
+            default             => $q->whereRaw('1 = 0'),
+        };
+
+        return \App\Services\EstatisticasDeConsultas::aPartirDeAgora($q);
+    }
 }

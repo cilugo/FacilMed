@@ -1,0 +1,239 @@
+/* ==================================================
+   site.css — complemento do home.css (24/09/2026)
+
+   O home.css é o visual que o grupo fez para a página inicial.
+   Aqui fica só o que a home não tinha: logo, menu do celular,
+   busca, cards de médico, perfis e avisos. Mesmas cores:
+     marinho #183e9f · azul #1b9ce4 · petróleo #155b80
+     fundo #f7fbfd · creme #fffdf8 · borda #d9e2e8
+================================================== */
+
+:root {
+    --site-marinho: #183e9f;
+    --site-azul: #1b9ce4;
+    --site-petroleo: #155b80;
+    --site-fundo: #f7fbfd;
+    --site-borda: #d9e2e8;
+    --site-texto: #333;
+    --site-suave: #666;
+    --site-verde: #0f8a6a;
+    --site-ambar: #a86a00;
+}
+
+body { background-color: var(--site-fundo); }
+[x-cloak] { display: none !important; }
+.fm-icone { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* ---------- Cabeçalho ---------- */
+.header { position: sticky; top: 0; z-index: 20; }
+.site-logo img { height: 30px; width: auto; display: block; }
+.menu-link.active::after { bottom: -26px; }
+
+.site-menu-botao {
+    display: none;
+    width: 40px; height: 40px;
+    align-items: center; justify-content: center;
+    border: 1px solid var(--site-borda); border-radius: 8px;
+    background: #fff; color: var(--site-marinho); cursor: pointer;
+}
+.site-menu-celular {
+    display: grid;
+    border-top: 1px solid var(--site-borda);
+    background: #fffdf8;
+}
+.site-menu-celular a { padding: 14px 5%; font-weight: 600; color: var(--site-marinho); border-bottom: 1px solid #eef1f3; }
+
+@media (max-width: 800px) {
+    .site-menu-botao { display: inline-flex; }
+}
+@media (min-width: 801px) {
+    .site-menu-celular { display: none !important; }
+}
+@media (max-width: 500px) {
+    .header-actions .btn { padding: 8px 12px; font-size: 13px; }
+    .site-logo img { height: 24px; }
+}
+
+/* ---------- Rodapé ---------- */
+.site-rodape { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; text-align: center; }
+.site-rodape__logo { width: 34px; height: 34px; object-fit: contain; background: #fff; border-radius: 50%; padding: 4px; }
+
+/* ---------- Avisos ---------- */
+.site-aviso { margin: 20px 0 0; padding: 12px 16px; border-radius: 10px; font-size: 14px; }
+.site-aviso--ok { background: #e6f6ef; color: #145c42; }
+.site-aviso--erro { background: #fdecec; color: #9b2c2c; }
+.site-aviso--info { background: #eaf4fc; color: var(--site-petroleo); }
+
+/* ---------- Botões extras ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.btn-grande { padding: 12px 22px; font-size: 15px; border-radius: 8px; }
+.btn-azul { background: var(--site-azul); border: 1px solid var(--site-azul); color: #fff; }
+.btn-azul:hover { background: #1487c7; border-color: #1487c7; }
+.btn-bloco { width: 100%; }
+
+/* ---------- Busca (no hero e no topo da página de busca) ---------- */
+.busca-caixa {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr auto;
+    gap: 10px;
+    margin-top: 26px;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid var(--site-borda);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(24, 62, 159, .07);
+}
+.busca-caixa--larga { grid-template-columns: 1.2fr 1fr 1fr auto; margin-top: 0; }
+.busca-campo { display: grid; gap: 4px; text-align: left; }
+.busca-campo label { font-size: 11px; font-weight: 700; color: var(--site-suave); text-transform: uppercase; letter-spacing: .04em; padding-left: 2px; }
+.busca-campo select,
+.busca-campo input {
+    height: 42px; width: 100%;
+    padding: 0 12px;
+    border: 1px solid var(--site-borda); border-radius: 8px;
+    background: #fff; color: var(--site-texto); font: inherit; font-size: 14px;
+}
+.busca-campo select:focus,
+.busca-campo input:focus { outline: none; border-color: var(--site-azul); box-shadow: 0 0 0 3px rgba(27, 156, 228, .15); }
+.busca-caixa .btn { align-self: end; height: 42px; }
+
+@media (max-width: 800px) {
+    .busca-caixa, .busca-caixa--larga { grid-template-columns: 1fr; }
+}
+
+/* ---------- Home: números e chamadas ---------- */
+.hero-numeros { display: flex; gap: 26px; margin-top: 22px; flex-wrap: wrap; }
+.hero-numeros div { display: grid; }
+.hero-numeros strong { font-family: "Rosario", Arial, sans-serif; font-size: 24px; color: var(--site-marinho); line-height: 1.1; }
+.hero-numeros span { font-size: 13px; color: var(--site-suave); }
+@media (max-width: 800px) { .hero-numeros { justify-content: center; } }
+
+.especialidade-icone {
+    width: 64px; height: 64px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: #eaf4fc; color: var(--site-marinho);
+}
+.especialidade-icone .fm-icone { width: 30px; height: 30px; }
+.arrow-button { font-family: Arial, sans-serif; line-height: 1; }
+.arrow-button.left, .arrow-button.right { left: auto; right: auto; }
+.arrow-button.left { left: -18px; }
+.arrow-button.right { right: -18px; }
+.specialty-card { text-align: center; }
+.medico-nota { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--site-ambar); }
+.medico-nota .fm-icone { width: 14px; height: 14px; fill: currentColor; }
+
+.chamada {
+    padding: 50px 0;
+    background: var(--site-marinho);
+    color: #fff;
+}
+.chamada .container { display: flex; align-items: center; justify-content: space-between; gap: 30px; flex-wrap: wrap; }
+.chamada h2 { font-family: "Rosario", Arial, sans-serif; font-size: 26px; line-height: 1.2; margin-bottom: 6px; }
+.chamada p { color: #d4e0ff; max-width: 560px; }
+.chamada .btn-outline { border-color: #fff; color: #fff; }
+.chamada .btn-outline:hover { background: #fff; color: var(--site-marinho); }
+.chamada .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Página de busca ---------- */
+.pagina-topo { padding: 34px 0 26px; background: #fff; border-bottom: 1px solid var(--site-borda); }
+.pagina-topo h1 { font-family: "Rosario", Arial, sans-serif; font-size: 30px; color: var(--site-marinho); line-height: 1.2; }
+.pagina-topo p { color: var(--site-suave); margin: 4px 0 20px; }
+
+.resultado-info { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 26px 0 14px; color: var(--site-suave); font-size: 14px; }
+.resultado-info strong { color: var(--site-marinho); }
+.limpar-filtros { font-weight: 600; color: var(--site-azul); }
+
+.lista-medicos { display: grid; gap: 16px; padding-bottom: 50px; }
+.card-medico {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: start;
+    padding: 22px;
+    background: #fff;
+    border: 1px solid var(--site-borda);
+    border-radius: 12px;
+    transition: border-color .2s, box-shadow .2s;
+}
+.card-medico:hover { border-color: #b8d9ef; box-shadow: 0 6px 18px rgba(24, 62, 159, .07); }
+.avatar {
+    width: 64px; height: 64px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    color: #fff; font-size: 20px; font-weight: 700;
+    flex-shrink: 0;
+}
+.avatar--grande { width: 96px; height: 96px; font-size: 30px; }
+.card-medico h2 { font-size: 18px; color: var(--site-marinho); line-height: 1.3; }
+.card-medico h2 a:hover { text-decoration: underline; }
+.crm { font-size: 12px; color: var(--site-suave); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; background: #eaf4fc; color: var(--site-petroleo); font-size: 12px; font-weight: 600; }
+.chip--verde { background: #e6f6ef; color: #145c42; }
+.chip--cinza { background: #f0f2f4; color: #555; }
+.chip--ambar { background: #fff3d6; color: var(--site-ambar); }
+.locais-resumo { display: grid; gap: 6px; font-size: 13px; color: var(--site-suave); }
+.locais-resumo div { display: flex; gap: 6px; align-items: flex-start; }
+.locais-resumo .fm-icone { width: 16px; height: 16px; margin-top: 2px; color: var(--site-azul); }
+.card-medico__lado { display: grid; gap: 10px; justify-items: end; text-align: right; min-width: 170px; }
+.preco-a-partir { font-size: 12px; color: var(--site-suave); }
+.preco-a-partir strong { display: block; font-size: 20px; color: var(--site-marinho); }
+
+@media (max-width: 700px) {
+    .card-medico { grid-template-columns: auto 1fr; }
+    .card-medico__lado { grid-column: 1 / -1; justify-items: stretch; text-align: left; min-width: 0; }
+}
+
+.vazio {
+    padding: 50px 20px; text-align: center;
+    background: #fff; border: 1px dashed var(--site-borda); border-radius: 12px; color: var(--site-suave);
+}
+.vazio h2 { color: var(--site-marinho); font-size: 20px; margin-bottom: 6px; }
+
+.paginacao { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; padding-bottom: 50px; }
+.paginacao a, .paginacao span { min-width: 38px; height: 38px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--site-borda); border-radius: 8px; background: #fff; font-size: 14px; color: var(--site-marinho); }
+.paginacao .atual { background: var(--site-marinho); border-color: var(--site-marinho); color: #fff; }
+.paginacao .desligado { color: #aaa; }
+
+/* ---------- Perfis (médico e clínica) ---------- */
+.perfil { padding: 30px 0 60px; }
+.perfil-grade { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+@media (max-width: 900px) { .perfil-grade { grid-template-columns: 1fr; } }
+
+.caixa { background: #fff; border: 1px solid var(--site-borda); border-radius: 14px; padding: 24px; }
+.caixa + .caixa { margin-top: 20px; }
+.caixa h2 { font-family: "Rosario", Arial, sans-serif; font-size: 20px; color: var(--site-marinho); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.caixa h2 .fm-icone { color: var(--site-azul); }
+
+.perfil-cabeca { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+.perfil-cabeca h1 { font-family: "Rosario", Arial, sans-serif; font-size: 28px; line-height: 1.2; color: var(--site-marinho); }
+.perfil-cabeca .dados { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 4px; font-size: 14px; color: var(--site-suave); }
+.perfil-bio { margin-top: 18px; color: #444; line-height: 1.7; }
+.voltar { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px; font-size: 14px; font-weight: 600; color: var(--site-azul); }
+.voltar .fm-icone { width: 16px; height: 16px; }
+
+.local { padding: 18px; border: 1px solid var(--site-borda); border-radius: 12px; }
+.local + .local { margin-top: 14px; }
+.local__topo { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.local h3 { font-size: 16px; color: var(--site-marinho); }
+.local__endereco { font-size: 13px; color: var(--site-suave); margin-top: 2px; }
+.tabela-precos { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 14px; }
+.tabela-precos td { padding: 8px 0; border-top: 1px solid #eef1f3; }
+.tabela-precos td:last-child { text-align: right; font-weight: 700; color: var(--site-marinho); }
+.horarios-lista { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; font-size: 13px; color: #555; margin-top: 10px; }
+
+.notas { display: grid; gap: 6px; }
+.notas__linha { display: grid; grid-template-columns: 42px 1fr 28px; gap: 8px; align-items: center; font-size: 13px; color: #555; }
+.notas__barra { height: 8px; border-radius: 999px; background: #eef1f3; overflow: hidden; }
+.notas__barra span { display: block; height: 100%; background: #f2b01e; }
+.nota-grande { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.nota-grande strong { font-family: "Rosario", Arial, sans-serif; font-size: 38px; color: var(--site-marinho); line-height: 1; }
+.nota-grande span { color: var(--site-suave); font-size: 14px; }
+.texto-pequeno { font-size: 13px; color: var(--site-suave); line-height: 1.5; }
+.lista-simples { display: grid; gap: 10px; }
+.lista-simples a { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; }
+.lista-simples a:hover { background: var(--site-fundo); }
+.lista-simples .avatar { width: 44px; height: 44px; font-size: 15px; }
+.lista-simples strong { display: block; color: var(--site-marinho); font-size: 15px; }
+.lista-simples small { color: var(--site-suave); }

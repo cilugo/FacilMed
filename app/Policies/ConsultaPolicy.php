@@ -94,9 +94,12 @@ class ConsultaPolicy
      */
     public function atender(User $user, Consulta $consulta): bool
     {
+        // inicio no passado: sem isso dava para marcar como realizada (ou falta)
+        // uma consulta da semana que vem - e o paciente ja podia avaliar.
         return $user->ehMedico()
             && $user->medico?->id === $consulta->medico_id
-            && $consulta->status === 'agendada';
+            && $consulta->status === 'agendada'
+            && ! $consulta->inicio->isFuture();
     }
 
     /**

@@ -3,7 +3,7 @@
 
    CSS simples, sem build: carregado direto pelo layouts/painel.blade.php.
    Todas as classes começam com "fm-" para nunca brigar com o Tailwind do
-   Breeze. Paleta e formas vêm dos mockups e do PERFIL.md §8:
+   Breeze. Paleta e formas vêm dos mockups e do README §8:
    azul-marinho nos títulos, azul-claro no destaque, cards brancos de
    cantos arredondados com sombra discreta. Verde, roxo, rosa e âmbar
    aparecem SÓ para diferenciar status e categoria, nunca como cor de marca.
@@ -213,6 +213,29 @@
 }
 
 .fm-topo__logo img { height: 30px; width: auto; }
+
+/* 24/09 — Recorte da logo.png. O PNG é 2000x2000 e o desenho ocupa só a
+   faixa x 501-1445 / y 1025-1204 (944 x 179). Esta "janela" com overflow
+   escondido mostra só o desenho, sem precisar de arquivo novo. Se um dia
+   exportarem a logo já recortada, apaguem este bloco e usem <img> direto. */
+.fm-logo-recorte {
+    position: relative;
+    display: block;
+    height: var(--fm-logo-altura, 34px);
+    aspect-ratio: 944 / 179;
+    overflow: hidden;
+}
+
+.fm-logo-recorte img {
+    position: absolute;
+    height: calc(var(--fm-logo-altura, 34px) * 11.1732) !important; /* 2000 / 179 */
+    width: auto !important;
+    max-width: none !important;
+    left: calc(var(--fm-logo-altura, 34px) * -2.7989);  /* 501 / 179 */
+    top: calc(var(--fm-logo-altura, 34px) * -5.7263);   /* 1025 / 179 */
+}
+
+.fm-topo__logo .fm-logo-recorte { --fm-logo-altura: 30px; }
 
 .fm-usuario { position: relative; }
 
@@ -1033,3 +1056,9 @@ a.fm-cartao--link:hover { border-color: var(--fm-borda-forte); }
 @media (prefers-reduced-motion: reduce) {
     .fm-sidebar, .fm-nav, .fm-pilula, .fm-aba, .fm-atalho, a.fm-cartao--link { transition: none; }
 }
+
+/* ---------- 24/09/2026 ---------- */
+/* Fundo também abaixo da dobra (antes ficava uma faixa branca no fim de páginas longas). */
+html { background: var(--fm-fundo); }
+/* fm-info em uma coluna: lista de detalhes dentro de painel estreito. */
+.fm-info.fm-info--lista { grid-template-columns: minmax(0, 1fr) !important; }

@@ -1,0 +1,48 @@
+# ======================================================================
+# FacilMed — Apache do XAMPP (24/09/2026). Trabalha junto com o index.php.
+# Com isto, http://localhost/FacilMed/ abre o sistema em Laravel.
+# ======================================================================
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Cabeçalho de autenticação (o Laravel precisa dele em algumas requisições).
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # 0. O próprio index.php da raiz é o ponto de entrada: não mexe nele.
+    #    (Sem isto, o Apache relê as regras e cai no public/index.php, e o
+    #    Laravel erra o caminho de todas as páginas.)
+    RewriteRule ^index\.php$ - [L]
+
+    # 1. PROTEÇÃO: nada de .env, código-fonte, banco, logs ou dependências
+    #    pelo navegador. (Sem isto, http://localhost/FacilMed/.env mostraria
+    #    a configuração inteira.)
+    RewriteRule ^\.(?!well-known) - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|docs|lang|resources|routes|storage|tests|vendor)(/|$) - [F,L]
+    RewriteRule ^(artisan|composer\.(json|lock)|phpunit\.xml|package(-lock)?\.json)$ - [F,L]
+    RewriteRule \.(md|sql|log)$ - [F,L]
+
+    # 2. Arquivos do Laravel ficam em public/ (css, javas, imgs, favicon...).
+    #    Descobre a pasta do projeto na URL (ex.: /FacilMed/) e, se o arquivo
+    #    pedido existe em public/, entrega de lá. Funciona com qualquer nome
+    #    de pasta dentro do htdocs.
+    RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
+    RewriteRule ^(.*)$ - [E=FM_BASE:%1]
+
+    RewriteCond %{DOCUMENT_ROOT}%{ENV:FM_BASE}public/$1 -f
+    RewriteRule ^(.+)$ public/$1 [L]
+
+    # 3. Arquivo ou pasta que existe de verdade (protótipo antigo: paginas/,
+    #    php/, css/...) é servido como está.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 4. O resto é rota do Laravel.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+DirectoryIndex index.php

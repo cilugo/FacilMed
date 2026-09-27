@@ -48,6 +48,6 @@ class AvaliacaoController extends Controller
         // A media do medico se recalcula sozinha (evento no model).
 
         return redirect()->route('paciente.consultas')
-            ->with('sucesso', 'Obrigado pela avaliacao.');
+            ->with('sucesso', 'Obrigado pela avaliação!');
     }
 }

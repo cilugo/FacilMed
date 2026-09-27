@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Medico;
 
 use App\Http\Controllers\Controller;
+use App\Models\Preco;
+use App\Http\Requests\Medico\SalvarPrecoRequest;
 use Illuminate\Http\Request;
 
 class PrecoController extends Controller
@@ -28,9 +30,15 @@ class PrecoController extends Controller
         ]);
     }
 
-    public function salvar(Request $request)
+    public function salvar(SalvarPrecoRequest $request)
     {
-        // TODO: SalvarPrecoRequest.
-        // A Policy precisa checar Local::donoUserId() === auth()->id().
+        $dados = $request->validated();
+
+        Preco::updateOrCreate(
+            ['vinculo_id' => $dados['vinculo_id'], 'especialidade_id' => $dados['especialidade_id']],
+            ['valor' => $dados['valor'], 'ativo' => $request->has('ativo') ? $request->boolean('ativo') : true],
+        );
+
+        return back()->with('sucesso', 'Preço salvo.');
     }
 }
