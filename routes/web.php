@@ -246,17 +246,19 @@ Route::middleware(['auth', 'tipo:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/usuarios/{user}/desbloquear', [Admin\UsuarioController::class, 'desbloquear'])
         ->name('usuarios.desbloquear');
 
-    // Fila de verificação de CRM. A conferência é MANUAL, no portal do
-    // CFM — a API oficial é paga e exige CNPJ. A tela nunca pode dizer
-    // "validado junto ao CFM"; diz "verificado pela equipe FacilMed".
+    // Verificação de CRM. Desde 24/09 o CRM é conferido NA HORA DO CADASTRO
+    // na base simulada (base_crms); esta tela vira histórico + "rejeitar"
+    // (tirar da plataforma). Texto da tela: "conferido na base simulada do
+    // FacilMed" — nunca "validado junto ao CFM".
     Route::get('/verificacoes', [Admin\VerificacaoController::class, 'index'])->name('verificacoes');
     Route::post('/verificacoes/{medico}/aprovar', [Admin\VerificacaoController::class, 'aprovar'])
         ->name('verificacoes.aprovar');
     Route::post('/verificacoes/{medico}/rejeitar', [Admin\VerificacaoController::class, 'rejeitar'])
         ->name('verificacoes.rejeitar');
 
-    // Conferência do código do comprovante COMPROVA no site da ANS.
-    // Também manual — não existe API.
+    // Carteirinhas. Desde 24/09 são conferidas NA HORA na base simulada
+    // (base_carteirinhas); a tela vira consulta. Aprovar/recusar só para
+    // alguma que tenha ficado pendente.
     Route::get('/carteirinhas', [Admin\CarteirinhaController::class, 'index'])->name('carteirinhas');
     Route::post('/carteirinhas/{pacientePlano}/aprovar', [Admin\CarteirinhaController::class, 'aprovar'])
         ->name('carteirinhas.aprovar');

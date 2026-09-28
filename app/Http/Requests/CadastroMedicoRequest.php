@@ -83,16 +83,16 @@ class CadastroMedicoRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.unique'       => 'Ja existe uma conta com esse e-mail.',
-            'password.confirmed' => 'As duas senhas nao sao iguais.',
-            'cpf.unique'         => 'Ja existe um cadastro de medico com esse CPF.',
-            'crm.required'       => 'Digite o numero do seu CRM.',
-            'crm.digits_between' => 'O CRM deve ter entre 4 e 10 digitos, so numeros.',
+            'email.unique'       => 'Já existe uma conta com esse e-mail.',
+            'password.confirmed' => 'As duas senhas não são iguais.',
+            'cpf.unique'         => 'Já existe um cadastro de médico com esse CPF.',
+            'crm.required'       => 'Digite o número do seu CRM.',
+            'crm.digits_between' => 'O CRM deve ter entre 4 e 10 dígitos, só números.',
             'uf.required'        => 'Escolha o estado do seu CRM.',
-            'uf.in'              => 'Escolha um estado valido.',
-            'uf.unique'          => 'Esse CRM ja esta cadastrado nesse estado.',
+            'uf.in'              => 'Escolha um estado válido.',
+            'uf.unique'          => 'Esse CRM já está cadastrado nesse estado.',
             'especialidades.required' => 'Escolha pelo menos uma especialidade.',
-            'anos_atuacao.max'   => 'Confira os anos de atuacao.',
+            'anos_atuacao.max'   => 'Confira os anos de atuação.',
         ];
     }
 

@@ -13,9 +13,7 @@
 
 @php
     $unidades = $clinica->locais->where('ativo', true)->values();
-    $medicos = $clinica->vinculos->where('ativo', true)
-        ->map->medico->filter(fn ($m) => $m && $m->status_verificacao === 'verificado')
-        ->unique('id')->values();
+    // $medicos vem pronto do controller (só médico visível — regra fora da Blade).
     $ordemDias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
     $nomeDia = ['segunda' => 'Segunda', 'terca' => 'Terça', 'quarta' => 'Quarta', 'quinta' => 'Quinta', 'sexta' => 'Sexta', 'sabado' => 'Sábado', 'domingo' => 'Domingo'];
     $ehHospital = $unidades->contains('tipo', 'hospital');

@@ -24,7 +24,7 @@ class GarantirTipoUsuario
         $user = Auth::user();
 
         if (! $user || ! in_array($user->tipo, $tipos, true)) {
-            abort(403, 'Voce nao tem acesso a esta area.');
+            abort(403, 'Você não tem acesso a esta área.');
         }
 
         return $next($request);

@@ -10,18 +10,16 @@ use Illuminate\Http\Request;
 class VerificacaoController extends Controller
 {
     /**
-     * Fila de verificacao de CRM.
+     * Verificação de CRM (28/09: texto atualizado).
      *
-     * A CONFERENCIA E MANUAL: a pessoa abre o portal do CFM, procura
-     * o CRM e a UF, confere o nome, e aprova aqui. A API oficial e
-     * paga (R$ 772/ano) e exige CNPJ com representante legal no SEI.
+     * Desde 24/09 o CRM é conferido AUTOMATICAMENTE no cadastro, na base
+     * simulada (base_crms, App\Services\BaseSimulada). A fila de pendentes
+     * costuma ficar vazia; a tela serve de histórico e para REJEITAR (tirar
+     * da plataforma) um médico — o que cancela as consultas futuras dele.
      *
-     * A TELA NUNCA PODE DIZER "validado junto ao CFM". Diz
-     * "verificado pela equipe FacilMed". Prometer validacao automatica
-     * e mentir sobre o que o sistema faz (AGENTS.md secao 6).
-     *
-     * Ajude quem confere: mostre um link direto para a busca do CFM
-     * com o CRM e a UF ja preenchidos.
+     * A TELA NUNCA PODE DIZER "validado junto ao CFM". Diz "conferido na
+     * base simulada do FacilMed" (AGENTS.md §3). A API real do CFM é paga
+     * (R$ 772/ano) e exige CNPJ — por isso a base simulada.
      */
     public function index()
     {

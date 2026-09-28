@@ -53,6 +53,10 @@
 
                     <p class="fm-local__endereco"><x-icone nome="building" /> {{ $v->local->nome }}</p>
 
+                    @unless ($v->medico->user->estaAtivo())
+                        <p class="fm-aviso" style="margin-top: 10px;">Conta do médico bloqueada pela administração: ele não recebe agendamento.</p>
+                    @endunless
+
                     <div class="fm-chips" style="margin-top: 10px;">
                         @foreach ($v->medico->especialidades as $esp)
                             <span class="fm-chip">{{ $esp->nome }}</span>
