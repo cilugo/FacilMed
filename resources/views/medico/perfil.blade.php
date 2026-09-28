@@ -86,7 +86,7 @@
             <div class="fm-campo {{ $errors->has('crm') ? 'fm-campo--erro' : '' }}">
                 <label for="crm">CRM *</label>
                 <input id="crm" name="crm" inputmode="numeric" maxlength="10" required value="{{ old('crm', $medico->crm) }}">
-                <span class="fm-campo__ajuda">Se mudar, o novo CRM é conferido na base simulada do FacilMed.</span>
+                <span class="fm-campo__ajuda">Se mudar o CRM ou o nome, os dois são conferidos juntos na base simulada do FacilMed.</span>
                 @error('crm') <span class="fm-campo__erro">{{ $message }}</span> @enderror
             </div>
 

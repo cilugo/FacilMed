@@ -32,6 +32,8 @@
     // Médico pendente não aparece na busca. Ele precisa saber disso, em vez
     // de estranhar que ninguém agenda com ele.
     $crmPendente = $usuario?->ehMedico() && $usuario->medico?->status_verificacao === 'pendente';
+    // 28/09 (3ª revisão): o rejeitado pelo admin também some da busca, e antes não via aviso nenhum.
+    $crmRecusado = $usuario?->ehMedico() && $usuario->medico?->status_verificacao === 'rejeitado';
 @endphp
 
 <aside class="fm-sidebar" :class="{ 'is-open': menu }" aria-label="Menu principal">
@@ -68,6 +70,10 @@
         @if ($crmPendente)
             <p class="fm-aviso">
                 Seu CRM está em verificação. Você ainda não aparece nas buscas.
+            </p>
+        @elseif ($crmRecusado)
+            <p class="fm-aviso">
+                Seu cadastro foi recusado pela administração do FacilMed. Você não aparece nas buscas.
             </p>
         @endif
 

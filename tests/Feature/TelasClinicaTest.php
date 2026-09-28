@@ -62,13 +62,13 @@ class TelasClinicaTest extends TestCase
         $resposta = $this->comoClinica()->post('/clinica/medicos', [
             'crm' => '445566', 'uf' => 'SP', 'local_id' => $unidade->id,
             'aceita_particular' => '1', 'aceita_convenio' => '0',
-            'name' => 'Dr. Teste Novo', 'email' => 'teste.novo@facilmed.test', 'cpf' => '529.982.247-25',
+            'name' => 'Dr. Paulo Yamada', 'email' => 'teste.novo@facilmed.test', 'cpf' => '529.982.247-25',
             'especialidades' => [1],
         ]);
         $resposta->assertRedirect(route('clinica.precos'))->assertSessionHas('senha_temporaria');
 
         $senha = session('senha_temporaria');
-        $this->comoClinica()->get('/clinica/precos')->assertOk()->assertSee($senha)->assertSee('Dr. Teste Novo');
+        $this->comoClinica()->get('/clinica/precos')->assertOk()->assertSee($senha)->assertSee('Dr. Paulo Yamada');
 
         // Na próxima visita, a senha não aparece mais.
         $this->comoClinica()->get('/clinica/precos')->assertOk()->assertDontSee($senha);

@@ -16,7 +16,7 @@ class CadastroTest extends TestCase
     private function medico(array $extra = []): array
     {
         return array_merge([
-            'name' => 'Dr. Teste da Silva', 'email' => 'novo.medico@teste.test', 'cpf' => '529.982.247-25',
+            'name' => 'Dr. Paulo Yamada', 'email' => 'novo.medico@teste.test', 'cpf' => '529.982.247-25',
             'crm' => '445566', 'uf' => 'SP', 'especialidades' => [1],
         ], self::SENHA, $extra);
     }

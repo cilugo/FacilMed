@@ -5,7 +5,7 @@
         <header class="fm-painel__topo"><h1 class="fm-painel__titulo"><x-icone nome="doctors" /> Cadastro de médico</h1></header>
 
         <p class="fm-dica"><x-icone nome="lightbulb" />
-            <span>O CRM é <strong>conferido na hora na base simulada do FacilMed</strong> (o FacilMed é um projeto acadêmico e não consulta o CFM de verdade). CRM não encontrado, suspenso ou cassado não é aceito.</span></p>
+            <span>O CRM é <strong>conferido na hora na base simulada do FacilMed</strong> (o FacilMed é um projeto acadêmico e não consulta o CFM de verdade). CRM não encontrado, suspenso ou cassado não é aceito, e o <strong>nome completo</strong> precisa ser o mesmo do CRM.</span></p>
 
         <form method="POST" action="{{ route('cadastro.medico') }}" class="fm-form fm-form--duas" novalidate style="margin-top:14px">
             @csrf

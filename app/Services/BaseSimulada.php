@@ -6,6 +6,7 @@ use App\Models\BaseCarteirinha;
 use App\Models\BaseCnpj;
 use App\Models\BaseCrm;
 use App\Support\Documento;
+use Illuminate\Support\Str;
 
 /**
  * Consulta às BASES SIMULADAS (decisão do grupo, 24/09/2026).
@@ -23,7 +24,15 @@ use App\Support\Documento;
  */
 class BaseSimulada
 {
-    public function conferirCrm(?string $crm, ?string $uf): ?string
+    /**
+     * CRM: existe NESSE estado, está ativo e é DESSA pessoa (nome).
+     *
+     * 28/09 (3ª revisão): o nome passou a ser conferido. Antes, qualquer
+     * um se cadastrava com o CRM de outra pessoa - bastava o número e o
+     * estado. É a mesma ideia da carteirinha, que confere o CPF do titular.
+     * Quem chama sem nome (null) confere só número, estado e situação.
+     */
+    public function conferirCrm(?string $crm, ?string $uf, ?string $nome = null): ?string
     {
         $registro = BaseCrm::where('crm', Documento::digitos($crm))
             ->where('uf', mb_strtoupper((string) $uf))
@@ -37,7 +46,26 @@ class BaseSimulada
             return "Esse CRM está {$registro->situacao} na base simulada e não pode ser cadastrado.";
         }
 
+        if (trim((string) $nome) !== '' && self::nomeComparavel($nome) !== self::nomeComparavel($registro->nome)) {
+            return 'Esse CRM está registrado em nome de outra pessoa na base simulada do FacilMed. '
+                . 'Confira se o nome completo está igual ao do CRM.';
+        }
+
         return null;
+    }
+
+    /**
+     * Nome pronto para comparar: sem "Dr."/"Dra." no começo, sem acento,
+     * sem pontuação e tudo minúsculo. "Dra. Helena Navarro" e "helena
+     * navarro" são o mesmo nome; "Helena Souza" não é.
+     */
+    public static function nomeComparavel(?string $nome): string
+    {
+        $n = Str::lower(Str::ascii((string) $nome));
+        $n = preg_replace('/[^a-z]+/', ' ', $n);
+        $n = preg_replace('/^\s*(dr|dra|doutor|doutora)\s+/', '', $n);
+
+        return trim(preg_replace('/\s+/', ' ', $n));
     }
 
     public function conferirCnpj(?string $cnpj): ?string

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Medico;
 
 use App\Rules\CrmNaBaseSimulada;
+use App\Services\BaseSimulada;
 use App\Support\Uf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,7 +11,8 @@ use Illuminate\Validation\Rule;
 /**
  * Dados do médico. CRM/UF podem mudar, mas o novo par passa de novo pela
  * base simulada (senão bastava cadastrar um CRM válido, ser verificado e
- * trocar pelo número que quisesse).
+ * trocar pelo número que quisesse). Desde 28/09 a base também confere o
+ * NOME: por isso trocar só o nome também passa por ela.
  */
 class AtualizarPerfilMedicoRequest extends FormRequest
 {
@@ -35,13 +37,19 @@ class AtualizarPerfilMedicoRequest extends FormRequest
         return $this->input('crm') !== $m->crm || $this->input('uf') !== $m->uf;
     }
 
+    /** "Dra. Helena Navarro" -> "Helena Navarro" não conta como mudança. */
+    public function nomeMudou(): bool
+    {
+        return BaseSimulada::nomeComparavel($this->input('name')) !== BaseSimulada::nomeComparavel($this->user()->name);
+    }
+
     public function rules(): array
     {
         $medico = $this->user()->medico;
 
         return [
             'name'  => ['required', 'string', 'min:3', 'max:255'],
-            'crm'   => array_merge(['bail', 'required', 'digits_between:4,10'], $this->crmMudou() ? [new CrmNaBaseSimulada] : []),
+            'crm'   => array_merge(['bail', 'required', 'digits_between:4,10'], $this->crmMudou() || $this->nomeMudou() ? [new CrmNaBaseSimulada] : []),
             'uf'    => ['required', Rule::in(Uf::TODAS),
                 Rule::unique('medicos', 'uf')->where(fn ($q) => $q->where('crm', $this->input('crm')))->ignore($medico->id)],
             'bio'   => ['nullable', 'string', 'max:1000'],

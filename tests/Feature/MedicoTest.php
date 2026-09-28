@@ -153,8 +153,14 @@ class MedicoTest extends TestCase
         $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '112233'])->assertSessionHasNoErrors();    // o dela
         $this->assertSame('Nova bio', Medico::find(1)->bio);
 
-        $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '445566'])->assertSessionHasNoErrors();    // livre na base
-        $this->assertSame('445566', Medico::find(1)->crm);
+        // 28/09 (3ª revisão): o 445566 está livre, mas é do "Paulo Yamada" — o nome não bate.
+        $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '445566'])->assertSessionHasErrors('crm');
+        $this->assertSame('112233', Medico::find(1)->crm);
+
+        // Um segundo CRM dela (outro estado) é aceito. Só o teste escreve na base, nunca uma tela.
+        \App\Models\BaseCrm::create(['crm' => '778899', 'uf' => 'RJ', 'nome' => 'Helena Navarro', 'situacao' => 'ativo']);
+        $this->comoMedico()->put('/medico/perfil', ['crm' => '778899', 'uf' => 'RJ'] + $base)->assertSessionHasNoErrors();
+        $this->assertSame('778899', Medico::find(1)->crm);
     }
 
     public function test_especialidades_com_principal_e_precos_desativados(): void

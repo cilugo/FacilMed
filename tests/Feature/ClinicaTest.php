@@ -21,7 +21,7 @@ class ClinicaTest extends TestCase
     {
         return $this->comoClinica()->post('/clinica/medicos', array_merge([
             'crm' => '445566', 'uf' => 'SP', 'local_id' => 2,
-            'name' => 'Dr. Novo Contratado', 'email' => 'novo@teste.test', 'cpf' => '529.982.247-25',
+            'name' => 'Dr. Paulo Yamada', 'email' => 'novo@teste.test', 'cpf' => '529.982.247-25',
             'especialidades' => [1], 'aceita_convenio' => 1,
         ], $extra));
     }

@@ -43,7 +43,8 @@ class VerificacaoController extends Controller
         // 28/09: aprovar também passa pela base simulada. Antes o admin
         // aprovava sem conferir, e um CRM cassado ganhava a etiqueta
         // "conferido na base simulada" — que aí seria mentira.
-        if ($erro = $base->conferirCrm($medico->crm, $medico->uf)) {
+        // Desde 28/09 (3ª revisão) confere o nome também, como no cadastro.
+        if ($erro = $base->conferirCrm($medico->crm, $medico->uf, $medico->user->name)) {
             return back()->with('erro', "Não dá para aprovar {$medico->user->name}. {$erro}");
         }
 

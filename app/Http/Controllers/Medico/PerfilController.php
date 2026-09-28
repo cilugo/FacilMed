@@ -29,7 +29,13 @@ class PerfilController extends Controller
         $medico = $request->user()->medico;
         $mudouCrm = $request->crmMudou();
 
-        DB::transaction(function () use ($request, $medico, $dados, $mudouCrm) {
+        // 28/09 (3ª revisão): quem foi REJEITADO pelo admin continua rejeitado.
+        // Antes, trocar o CRM no perfil voltava a situação para "verificado" e
+        // o médico reaparecia na busca sozinho. Só o "Desfazer rejeição" do
+        // admin (que confere a base de novo) tira alguém dessa situação.
+        $rejeitado = $medico->status_verificacao === 'rejeitado';
+
+        DB::transaction(function () use ($request, $medico, $dados, $mudouCrm, $rejeitado) {
             $request->user()->update(['name' => $dados['name']]);
             $medico->update([
                 'crm' => $dados['crm'],
@@ -37,12 +43,15 @@ class PerfilController extends Controller
                 'bio' => $dados['bio'] ?? null,
                 'anos_atuacao' => $dados['anos_atuacao'] ?? 0,
                 'telefone_profissional' => ($dados['telefone_profissional'] ?? '') ?: null,
-            ] + ($mudouCrm ? ['status_verificacao' => 'verificado', 'verificado_em' => now(), 'verificado_por' => null] : []));
+            ] + ($mudouCrm && ! $rejeitado ? ['status_verificacao' => 'verificado', 'verificado_em' => now(), 'verificado_por' => null] : []));
         });
 
-        return back()->with('sucesso', $mudouCrm
-            ? 'Dados salvos. O novo CRM foi conferido na base simulada do FacilMed.'
-            : 'Dados salvos.');
+        return back()->with('sucesso', match (true) {
+            $mudouCrm && $rejeitado => 'Dados salvos. O novo CRM foi conferido na base simulada, mas o seu cadastro '
+                . 'continua recusado pela administração do FacilMed.',
+            $mudouCrm => 'Dados salvos. O novo CRM foi conferido na base simulada do FacilMed.',
+            default   => 'Dados salvos.',
+        });
     }
 
     /**

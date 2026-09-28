@@ -92,8 +92,8 @@
                 <p class="fm-dica">
                     <x-icone nome="lightbulb" />
                     <span>O CRM é <strong>conferido na hora na base simulada do FacilMed</strong> (projeto acadêmico: não consulta o
-                        CFM de verdade). Se o médico <strong>já tem conta</strong> no FacilMed com esse CRM, ele só é vinculado à
-                        unidade — os dados abaixo são ignorados.</span>
+                        CFM de verdade), junto com o <strong>nome completo</strong> do médico. Se o médico <strong>já tem conta</strong>
+                        no FacilMed com esse CRM, ele só é vinculado à unidade — os dados abaixo são ignorados.</span>
                 </p>
             </section>
 
