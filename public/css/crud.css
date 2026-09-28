@@ -301,7 +301,7 @@
     color: var(--fm-texto);
     cursor: pointer;
 }
-.fm-marcar input { flex: none; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--fm-azul); }
+.fm-marcar input { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--fm-azul); accent-color: var(--fm-azul); }
 .fm-marcar--linha { align-items: center; font-weight: 600; }
 .fm-marcar--linha input { margin-top: 0; }
 
@@ -439,8 +439,29 @@
     background: linear-gradient(to top, var(--fm-fundo) 70%, transparent);
 }
 
-/* Caixa de marcar dentro de .fm-campo não herda o visual de campo de texto. */
-.fm-campo .fm-marcar input { width: 18px; height: 18px; padding: 0; border-radius: 4px; }
+/* Caixa de marcar dentro de .fm-campo não herda o visual de campo de texto.
+   28/09 (3ª revisão): o ".fm-campo input" do começo deste arquivo é para
+   campo de texto (largura 100%, padding, fundo branco). Numa caixa de marcar
+   ele deixava a caixa larga — o cadastro de médico mostrava só "C", "D"... no
+   lugar das especialidades — e, marcada, branca: o "background: #fff" apagava
+   o ✓ que o base.css desenha. Vale para qualquer caixa dentro de .fm-campo,
+   com ou sem .fm-marcar. */
+.fm-campo input[type=checkbox] {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 4px;
+    color: var(--fm-azul);
+}
+.fm-campo input[type=checkbox]:checked {
+    border-color: transparent;
+    background-color: currentColor;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23fff' viewBox='0 0 16 16'%3E%3Cpath d='M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
 
 /* ==========================================================================
    Telas do admin (28/09/2026) — linhas de conta (usuários, CRM,

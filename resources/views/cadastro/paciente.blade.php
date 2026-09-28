@@ -24,13 +24,13 @@
 
             <p class="fm-secao-form">Acessibilidade (opcional)</p>
             <div class="fm-campo fm-campo--largo">
-                <label class="fm-checks"><input type="checkbox" name="possui_deficiencia" value="1" x-model="deficiencia" @checked(old('possui_deficiencia'))> Preciso de algum recurso de acessibilidade no atendimento</label>
+                <label class="fm-marcar fm-marcar--linha"><input type="checkbox" name="possui_deficiencia" value="1" x-model="deficiencia" @checked(old('possui_deficiencia'))> <span>Preciso de algum recurso de acessibilidade no atendimento</span></label>
             </div>
             <template x-if="deficiencia">
                 <div class="fm-campo fm-campo--largo" style="display:grid;gap:14px">
                     @include('cadastro._campo', ['nome' => 'descricao_deficiencia', 'rotulo' => 'Do que você precisa?', 'tipo' => 'textarea', 'largo' => true, 'atributos' => 'maxlength="1000"'])
-                    <label class="fm-checks"><input type="checkbox" name="consentimento_acessibilidade" value="1" @checked(old('consentimento_acessibilidade'))>
-                        Autorizo o FacilMed a guardar essa informação e mostrá-la só aos profissionais com quem eu tiver consulta.</label>
+                    <label class="fm-marcar"><input type="checkbox" name="consentimento_acessibilidade" value="1" @checked(old('consentimento_acessibilidade'))>
+                        <span>Autorizo o FacilMed a guardar essa informação e mostrá-la só aos profissionais com quem eu tiver consulta.</span></label>
                     @error('consentimento_acessibilidade') <span class="fm-campo__erro">{{ $message }}</span> @enderror
                 </div>
             </template>
