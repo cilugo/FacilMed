@@ -1,0 +1,254 @@
+:root {
+  --azul-escuro: #1e3a8f;
+  --azul: #2350d0;
+  --azul-claro: #19a0ea;
+  --texto-suave: #4f7bd6;
+  --placeholder: #9aaed3;
+  --borda: #d6e2f5;
+  --fundo: #f7faff;
+  --fundo-cabecalho: #edf3fd;
+  --erro: #d93636;
+  --painel-1: #eaf2fd;
+  --painel-2: #d4e4fb;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+/* A página ocupa exatamente a altura da tela; quem rola é só o formulário */
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--fundo);
+  color: var(--azul-escuro);
+}
+
+.pagina {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* 50% marca | 50% formulário */
+}
+
+/* ---------- Painel da marca ---------- */
+.marca {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--painel-1) 0%, var(--painel-2) 100%);
+}
+
+.circulo { position: absolute; border-radius: 50%; pointer-events: none; }
+.circulo--1 { width: 360px; height: 360px; top: -130px; left: -140px; background: rgba(255,255,255,.5); }
+.circulo--2 { width: 160px; height: 160px; top: 22%; right: -60px; background: rgba(255,255,255,.45); }
+.circulo--3 { width: 300px; height: 300px; bottom: -120px; left: -70px; background: rgba(170,200,245,.4); }
+
+.logo { position: relative; text-align: center; }
+.logo .logo__imagem {
+  display: block;
+  width: 130px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 160 / 140;
+  object-fit: contain;
+  margin: 0 auto 6px;
+}
+.logo__nome { font-size: 1.8rem; font-weight: 700; line-height: 1.1; }
+.logo__nome span:first-child { color: var(--azul-escuro); }
+.logo__nome span:last-child  { color: var(--azul-claro); }
+.logo__slogan { margin-top: 6px; font-size: .85rem; letter-spacing: .05em; color: var(--azul-escuro); }
+
+/* ---------- Conteúdo ---------- */
+.conteudo {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 32px;
+}
+
+.formulario { width: 100%; max-width: 760px; }
+
+h1 { font-size: 1.75rem; font-weight: 800; }
+
+.subtitulo {
+  margin-top: 8px;
+  font-size: .9rem;
+  color: var(--texto-suave);
+}
+
+/* ---------- Card ---------- */
+.card {
+  margin-top: 28px;
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card__cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--fundo-cabecalho);
+}
+.card__cabecalho h2 { font-size: 1rem; font-weight: 700; }
+
+.card__corpo { padding: 20px; }
+
+.grade {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+
+/* ---------- Campos ---------- */
+.campo--inteiro { grid-column: 1 / -1; }
+
+.campo label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.entrada {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.entrada:focus-within {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(35, 80, 208, .12);
+}
+.campo--invalido .entrada { border-color: var(--erro); }
+
+.entrada input,
+.entrada select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: .85rem;
+  color: var(--azul-escuro);
+}
+.entrada input::placeholder { color: var(--placeholder); }
+
+.entrada--select select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 24px;
+}
+.entrada--select select:invalid { color: var(--texto-suave); }
+.entrada--select option { color: var(--azul-escuro); }
+.icone--seta { position: absolute; right: 12px; pointer-events: none; }
+
+.icone {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--azul-escuro);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.card__cabecalho .icone { width: 22px; height: 22px; }
+
+.mostrar-senha {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.mostrar-senha .icone { stroke: var(--placeholder); }
+.mostrar-senha[aria-pressed="true"] .icone { stroke: var(--azul); }
+.mostrar-senha:focus-visible { outline: 2px solid var(--azul); }
+
+.erro {
+  min-height: 18px;
+  padding-top: 3px;
+  font-size: .75rem;
+  color: var(--erro);
+}
+
+/* ---------- Rodapé ---------- */
+.rodape {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 32px;
+}
+
+.entrar { font-size: .85rem; color: var(--texto-suave); }
+.entrar a { color: var(--azul-escuro); font-weight: 700; }
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--azul) 0%, var(--azul-escuro) 100%);
+  color: #fff;
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(30, 58, 143, .18);
+  transition: filter .15s;
+}
+.botao:hover { filter: brightness(1.1); }
+.botao:focus-visible { outline: 3px solid var(--azul-claro); outline-offset: 3px; }
+.botao svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 900px) {
+  /* No celular volta a rolar a página inteira */
+  body { height: auto; overflow: visible; }
+  .pagina { grid-template-columns: 1fr; }
+  .marca { min-height: 200px; padding: 28px 0; }
+  .conteudo { overflow: visible; }
+  .logo .logo__imagem { width: 80px; }
+  .logo__nome { font-size: 1.4rem; }
+  .conteudo { padding: 28px 16px; }
+}
+
+@media (max-width: 600px) {
+  .grade { grid-template-columns: 1fr; }
+  .rodape { flex-direction: column-reverse; gap: 16px; }
+  .botao { width: 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
