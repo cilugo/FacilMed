@@ -222,7 +222,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 72 testes automáticos
+├── tests/Feature/         ← 80 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -312,7 +312,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **72 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **80 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -323,7 +323,7 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 24/09/2026.**
+**Atualizado em 28/09/2026.**
 
 **Junção de 25/09/2026:** a home que o grupo fez no protótipo depois da organização (slider do início com 9 fotos, fotos dos médicos, "Hospitais e Clínicas" e "Sobre") foi trazida para `resources/views/home.blade.php`, `public/css/home.css` e `public/javas/home.js`; fotos em `public/imgs/` (sliderinicio, medicos, sliderhospcli — estas comprimidas de 10,5 MB para 1 MB). Os 3 médicos fictícios ganharam foto (`foto` em `DadosFicticios::MEDICOS`). O `prototipo-antigo/` também foi atualizado com a versão do GitHub (a home agora é `paginas/index.html`). **27/09:** entrou o commit `c9faffe` (mudanças na home: slider em loop contínuo, menu que marca o item clicado, cores em azul-escuro, novo texto do topo, "Sobre nós" e nova foto `medico5`), no protótipo e na home em Laravel.
 
@@ -333,16 +333,36 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 - Back-end: **todas** as ações de paciente, médico, clínica e admin (nenhum TODO sobrando).
 - Telas: site público (home, busca, perfis), login e cadastros, agendamento completo, todas as
   telas do paciente, dashboards dos 4 tipos de conta, convênios (admin e clínica).
-- E-mails e lembretes. 72 testes automáticos.
+- **Telas do médico (28/09):** agenda, meus horários, ausências, onde atendo, preços, avaliações
+  e perfil (com o fluxo da senha provisória). Branch `front/telas-medico`.
+- E-mails e lembretes. 80 testes automáticos.
 
-**Falta — só views (Blade):** 20 telas internas. O back-end delas está pronto; a seção 7 diz
+**Telas do médico — o que vale saber (28/09):**
+- Classes novas no fim de `public/css/crud.css` (filtros, agenda, semana, opções, preços,
+  avaliações, paginação). Só usam as variáveis `--fm-*` do `painel.css`.
+- Paginação: `{{ $lista->links('painel.parciais.paginacao') }}`. A padrão do Laravel usa classes
+  do Tailwind, que o projeto não tem — use essa nas telas de admin/clínica também.
+- **Preço sempre com vírgula na tela** (`250,00`): o `SalvarPrecoRequest` tira os pontos, então
+  `250.00` viraria 25000. Vale para a grade de preços da clínica.
+- Senha provisória: o `ExigirTrocaDeSenha` bloqueia todas as outras rotas, então o perfil mostra
+  **só** o formulário de senha até ela ser trocada.
+- `tests/Feature/TelasMedicoTest.php` abre as 7 telas com a view real.
+
+**Falta — só views (Blade):** 13 telas internas. O back-end delas está pronto; a seção 7 diz
 exatamente o que cada uma recebe e envia.
 
-| Médico (7) | Clínica (7) | Admin (6) |
-|---|---|---|
-| agenda, meus horários, ausências, onde atendo, preços, avaliações, perfil | agenda, meus médicos, cadastrar médico, unidades, preços, avaliações, perfil | usuários, verificar CRM, carteirinhas, clínicas, especialidades, consultas |
+| Clínica (7) | Admin (6) |
+|---|---|
+| agenda, meus médicos, cadastrar médico, unidades, preços, avaliações, perfil | usuários, verificar CRM, carteirinhas, clínicas, especialidades, consultas |
 
-**Próximo passo sugerido:** telas do médico (sem elas o médico não vê a própria agenda).
+**Próximo passo sugerido:** telas da clínica (sem a tabela de preços, médico de clínica novo
+fica sem preço e não aparece para agendamento particular).
+
+**Pendente de decisão do grupo (28/09):** o PDF "Dashboard da Clínica" tira do menu a tabela
+de preços e o perfil, e pede documentação com upload, resultados de exames, status "remarcada",
+convênio vencido/renovado e unidade "em implantação". Nada disso existe no banco, e exames/upload
+de documento são fora do escopo (AGENTS.md §1). Até o grupo decidir, as telas da clínica seguem
+o contrato da seção 7.
 
 **Não reabrir sem motivo** (decisões já testadas):
 - `Consulta::cancelar()` é o ÚNICO jeito de cancelar — ele dispara o e-mail certo.
