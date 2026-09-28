@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Consulta;
+use App\Models\Medico;
 use Illuminate\Http\Request;
 
 class ConsultaController extends Controller
@@ -17,6 +18,14 @@ class ConsultaController extends Controller
      */
     public function index(Request $request)
     {
+        // 28/09: filtro vem da URL — data inválida ("?de=banana") dava erro 500.
+        $request->validate([
+            'status' => ['nullable', 'in:agendada,realizada,cancelada,nao_compareceu'],
+            'medico' => ['nullable', 'integer'],
+            'de'     => ['nullable', 'date'],
+            'ate'    => ['nullable', 'date'],
+        ]);
+
         $filtrada = Consulta::query()
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->when($request->medico, fn ($q, $m) => $q->where('medico_id', $m))
@@ -31,6 +40,8 @@ class ConsultaController extends Controller
                 ->withQueryString(),
             'porStatus' => (clone $filtrada)->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
             'filtros'   => $request->only(['status', 'medico', 'de', 'ate']),
+            // Para o select "médico" do filtro (28/09).
+            'medicos'   => Medico::with('user:id,name')->get()->sortBy(fn ($m) => $m->user?->name)->values(),
         ]);
     }
 }

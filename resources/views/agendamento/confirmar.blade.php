@@ -108,8 +108,11 @@
             <div class="ag-bloco">
                 <label for="observacoes" class="ag-passo" style="display: block;">Observações para o médico (opcional)</label>
                 <textarea id="observacoes" name="observacoes" class="ag-textarea" maxlength="500"
-                          placeholder="Ex.: é retorno, preciso de atendimento em cadeira de rodas...">{{ old('observacoes') }}</textarea>
-                <p class="fm-meta">Não escreva sintomas ou informações de saúde aqui.</p>
+                          placeholder="Ex.: é retorno; vou com acompanhante.">{{ old('observacoes') }}</textarea>
+                {{-- 28/09: o exemplo antigo ("cadeira de rodas") pedia aqui um dado de acessibilidade,
+                     que tem campo próprio com consentimento (Meu perfil) — e contradizia o aviso abaixo. --}}
+                <p class="fm-meta">Não escreva sintomas ou informações de saúde aqui. Precisa de acessibilidade no atendimento?
+                    Informe em <a href="{{ route('paciente.perfil') }}">Meu perfil</a> — só o médico das suas consultas vê.</p>
             </div>
         </section>
 

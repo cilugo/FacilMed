@@ -44,11 +44,12 @@ class AgendamentoController extends Controller
      */
     public function escolherHorario(Vinculo $vinculo)
     {
-        abort_unless($vinculo->ativo && $vinculo->medico->status_verificacao === 'verificado', 404);
+        // 28/09: a mesma regra da CalculadoraDeHorarios (conta bloqueada também some).
+        abort_unless($vinculo->recebeAgendamento(), 404);
 
         return view('agendamento.horario', [
             'vinculo'        => $vinculo->load('medico.user', 'local', 'precos.especialidade'),
-            'especialidades' => $vinculo->precos->where('ativo', true)->pluck('especialidade')->filter()->values(),
+            'especialidades' => $vinculo->especialidadesOferecidas(),
             'janelaDias'     => config('agendamento.janela_maxima_dias'),
             // 24/09: os proximos dias com vaga, para a tela abrir ja mostrando
             // horarios (sem o paciente ter que adivinhar uma data).
@@ -68,6 +69,9 @@ class AgendamentoController extends Controller
      */
     public function porEspecialidade(Request $request, Clinica $clinica, Especialidade $especialidade)
     {
+        // 28/09: "?data=banana" dava erro 500 no Carbon::parse.
+        $request->validate(['data' => ['nullable', 'date']]);
+
         $data = $request->filled('data')
             ? Carbon::parse($request->input('data'))
             : null;
@@ -147,6 +151,13 @@ class AgendamentoController extends Controller
                 ->withErrors(['horario' => 'Esse horário acabou de ser preenchido. Escolha outro.']);
         }
 
+        $vinculo->loadMissing('precos.especialidade');
+        if (! $vinculo->ofereceEspecialidade((int) $dados['especialidade_id'])) {
+            return redirect()
+                ->route('agendamento.horario', array_filter(['vinculo' => $vinculo->id, 'remarcar' => $request->input('remarcar_consulta_id')]))
+                ->withErrors(['especialidade_id' => 'Esse profissional não atende essa especialidade neste endereço.']);
+        }
+
         $especialidade = Especialidade::findOrFail($dados['especialidade_id']);
 
         $paciente = $request->user()->paciente;
@@ -190,21 +201,22 @@ class AgendamentoController extends Controller
     public function salvar(AgendarConsultaRequest $request)
     {
         $dados    = $request->validated();
-        $vinculo  = Vinculo::with('medico', 'local', 'precos')->findOrFail($dados['vinculo_id']);
+        $vinculo  = Vinculo::with('medico.user', 'local.clinica.user', 'precos.especialidade')->findOrFail($dados['vinculo_id']);
         $paciente = $request->user()->paciente;
 
         abort_if($paciente === null, 403, 'Só paciente agenda consulta.');
 
         // --- Regras que o FormRequest nao tem contexto para checar ---
 
-        if (! $vinculo->ativo || $vinculo->medico->status_verificacao !== 'verificado') {
+        if (! $vinculo->recebeAgendamento()) {
             return back()->withErrors(['vinculo_id' => 'Esse profissional não está disponível.']);
         }
 
         // A especialidade precisa ser uma das oferecidas NESTE vinculo (as mesmas que a
         // tela de horario lista, vindas de precos). Sem isso, por convenio (valor 0, sem
         // consulta de preco) dava para marcar Dermatologia com uma cardiologista.
-        if (! $vinculo->precos->contains('especialidade_id', (int) $dados['especialidade_id'])) {
+        // 28/09: e o preço precisa estar ATIVO — antes bastava existir a linha.
+        if (! $vinculo->ofereceEspecialidade((int) $dados['especialidade_id'])) {
             return back()->withErrors([
                 'especialidade_id' => 'Esse profissional não atende essa especialidade neste endereço.',
             ])->withInput();

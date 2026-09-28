@@ -104,11 +104,11 @@ class PerfilController extends Controller
             'convenios'   => ['array'],
             'convenios.*' => ['integer', Rule::exists('convenios', 'id')->where('ativo', true)],
         ], [
-            'convenios.*.exists' => 'Um dos convenios escolhidos nao existe ou foi desativado.',
+            'convenios.*.exists' => 'Um dos convênios escolhidos não existe ou foi desativado.',
         ]);
 
         auth()->user()->medico->convenios()->sync($dados['convenios'] ?? []);
 
-        return back()->with('sucesso', 'Convenios atualizados.');
+        return back()->with('sucesso', 'Convênios atualizados.');
     }
 }

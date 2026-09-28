@@ -20,6 +20,16 @@ abstract class TestCase extends BaseTestCase
 
     protected bool $seed = true;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // 28/09: nos TESTES, campo que não está no $fillable dá erro em vez de
+        // ser descartado em silêncio. Foi assim que o bloqueio de conta ficava
+        // sem motivo gravado. Só nos testes: na demonstração, nada muda.
+        \Illuminate\Database\Eloquent\Model::preventSilentlyDiscardingAttributes(true);
+    }
+
     /** Loga com uma das contas do seed pelo e-mail (senha não importa aqui). */
     protected function comoUsuario(string $email): static
     {

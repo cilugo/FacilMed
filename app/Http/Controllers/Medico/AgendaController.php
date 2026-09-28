@@ -58,7 +58,7 @@ class AgendaController extends Controller
 
         $consulta->update(['status' => 'nao_compareceu']);
 
-        return back()->with('sucesso', 'Ausencia registrada.');
+        return back()->with('sucesso', 'Falta registrada: o paciente não compareceu.');
     }
 
     /**

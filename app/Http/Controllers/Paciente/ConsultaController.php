@@ -17,7 +17,9 @@ class ConsultaController extends Controller
                 ->with('medico.user', 'especialidade', 'vinculo.local', 'avaliacao')
                 ->when($request->status, fn ($q, $s) => $q->where('status', $s))
                 ->orderByDesc('data_consulta')->orderByDesc('horario')
-                ->paginate(15),
+                ->paginate(15)
+                // 28/09: sem isto, o filtro de status sumia ao trocar de página.
+                ->withQueryString(),
         ]);
     }
 

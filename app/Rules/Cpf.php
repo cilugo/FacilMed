@@ -29,7 +29,7 @@ class Cpf implements ValidationRule
         $cpf = preg_replace('/\D/', '', (string) $value);
 
         if (strlen($cpf) !== 11) {
-            $fail('O CPF deve ter 11 digitos.');
+            $fail('O CPF deve ter 11 dígitos.');
 
             return;
         }
@@ -37,7 +37,7 @@ class Cpf implements ValidationRule
         // 000.000.000-00, 111.111.111-11 etc passam no calculo dos
         // digitos, entao precisam ser barrados na mao.
         if (preg_match('/^(\d)\1{10}$/', $cpf)) {
-            $fail('Esse CPF nao e valido.');
+            $fail('Esse CPF não é válido.');
 
             return;
         }
@@ -53,7 +53,7 @@ class Cpf implements ValidationRule
             $digito = ($resto === 10) ? 0 : $resto;
 
             if ($digito !== (int) $cpf[$posicao]) {
-                $fail('Esse CPF nao e valido.');
+                $fail('Esse CPF não é válido.');
 
                 return;
             }

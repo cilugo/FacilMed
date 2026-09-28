@@ -23,7 +23,7 @@ class AgendaController extends Controller
             ->when($request->integer('local'), fn ($q, $id) => $q->whereIn('vinculo_id', Vinculo::where('local_id', $id)->select('id')))
             ->when($request->integer('medico'), fn ($q, $id) => $q->where('medico_id', $id))
             ->when($request->integer('especialidade'), fn ($q, $id) => $q->where('especialidade_id', $id))
-            ->with('paciente.user', 'medico.user', 'especialidade', 'vinculo.local', 'pacientePlano.plano.convenio')
+            ->with('paciente.user', 'paciente.acessibilidade', 'medico.user', 'especialidade', 'vinculo.local', 'pacientePlano.plano.convenio')
             ->orderBy('horario')->get();
 
         $vinculos = $clinica->vinculos()->where('vinculos.ativo', true)->with('medico.user', 'medico.especialidades')->get();

@@ -5,23 +5,22 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use App\Models\Medico;
+use App\Services\BaseSimulada;
 use Illuminate\Http\Request;
 
 class VerificacaoController extends Controller
 {
     /**
-     * Fila de verificacao de CRM.
+     * Verificação de CRM (28/09: texto atualizado).
      *
-     * A CONFERENCIA E MANUAL: a pessoa abre o portal do CFM, procura
-     * o CRM e a UF, confere o nome, e aprova aqui. A API oficial e
-     * paga (R$ 772/ano) e exige CNPJ com representante legal no SEI.
+     * Desde 24/09 o CRM é conferido AUTOMATICAMENTE no cadastro, na base
+     * simulada (base_crms, App\Services\BaseSimulada). A fila de pendentes
+     * costuma ficar vazia; a tela serve de histórico e para REJEITAR (tirar
+     * da plataforma) um médico — o que cancela as consultas futuras dele.
      *
-     * A TELA NUNCA PODE DIZER "validado junto ao CFM". Diz
-     * "verificado pela equipe FacilMed". Prometer validacao automatica
-     * e mentir sobre o que o sistema faz (AGENTS.md secao 6).
-     *
-     * Ajude quem confere: mostre um link direto para a busca do CFM
-     * com o CRM e a UF ja preenchidos.
+     * A TELA NUNCA PODE DIZER "validado junto ao CFM". Diz "conferido na
+     * base simulada do FacilMed" (AGENTS.md §3). A API real do CFM é paga
+     * (R$ 772/ano) e exige CNPJ — por isso a base simulada.
      */
     public function index()
     {
@@ -39,8 +38,15 @@ class VerificacaoController extends Controller
         ]);
     }
 
-    public function aprovar(Medico $medico)
+    public function aprovar(Medico $medico, BaseSimulada $base)
     {
+        // 28/09: aprovar também passa pela base simulada. Antes o admin
+        // aprovava sem conferir, e um CRM cassado ganhava a etiqueta
+        // "conferido na base simulada" — que aí seria mentira.
+        if ($erro = $base->conferirCrm($medico->crm, $medico->uf)) {
+            return back()->with('erro', "Não dá para aprovar {$medico->user->name}. {$erro}");
+        }
+
         $medico->update([
             'status_verificacao' => 'verificado',
             'verificado_por'     => auth()->id(),
@@ -52,7 +58,7 @@ class VerificacaoController extends Controller
         // e desde 24/09 a verificação é automática no cadastro. Se voltar a ser manual,
         // criar uma tabela de avisos de conta antes de mandar e-mail.
 
-        return back()->with('sucesso', "CRM de {$medico->user->name} verificado.");
+        return back()->with('sucesso', "CRM de {$medico->user->name} conferido na base simulada e aprovado.");
     }
 
     public function rejeitar(Request $request, Medico $medico)

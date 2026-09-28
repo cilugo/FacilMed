@@ -9,21 +9,6 @@ use Illuminate\Http\Request;
 class CarteirinhaController extends Controller
 {
     /**
-     * Conferencia de carteirinha.
-     *
-     * Tambem MANUAL. O paciente emite o comprovante COMPROVA no portal
-     * da ANS (com login gov.br proprio) e informa o codigo de controle.
-     * Quem confere valida esse codigo no site da ANS: 8 primeiros
-     * digitos do codigo + data de emissao.
-     *
-     * Nao existe API. A ANS nao compartilha dados de beneficiario com
-     * terceiros - so o proprio titular consulta.
-     *
-     * O comprovante prova que a pessoa e beneficiaria daquela
-     * operadora. NAO confirma o numero da carteirinha que ela digitou.
-     * A tela precisa deixar isso claro para quem confere.
-     */
-    /**
      * Desde 24/09 a carteirinha é conferida na hora pela base simulada, então
      * a fila de "pendentes" costuma estar vazia. A tela vira CONSULTA: as
      * carteirinhas mais recentes e a situação de cada uma.

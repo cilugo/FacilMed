@@ -23,8 +23,8 @@ class GarantirContaAtiva
 
         if ($user && ! $user->estaAtivo()) {
             $mensagem = $user->estaBloqueado()
-                ? 'Sua conta esta bloqueada. Entre em contato com o suporte.'
-                : 'Sua conta esta inativa. Entre em contato com o suporte.';
+                ? 'Sua conta está bloqueada. Entre em contato com o suporte.'
+                : 'Sua conta está inativa. Entre em contato com o suporte.';
 
             Auth::logout();
             $request->session()->invalidate();

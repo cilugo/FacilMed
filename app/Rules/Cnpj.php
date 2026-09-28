@@ -21,13 +21,13 @@ class Cnpj implements ValidationRule
         $cnpj = preg_replace('/\D/', '', (string) $value);
 
         if (strlen($cnpj) !== 14) {
-            $fail('O CNPJ deve ter 14 digitos.');
+            $fail('O CNPJ deve ter 14 dígitos.');
 
             return;
         }
 
         if (preg_match('/^(\d)\1{13}$/', $cnpj)) {
-            $fail('Esse CNPJ nao e valido.');
+            $fail('Esse CNPJ não é válido.');
 
             return;
         }
@@ -45,7 +45,7 @@ class Cnpj implements ValidationRule
             $digito = ($resto < 2) ? 0 : 11 - $resto;
 
             if ($digito !== (int) $cnpj[$posicao]) {
-                $fail('Esse CNPJ nao e valido.');
+                $fail('Esse CNPJ não é válido.');
 
                 return;
             }

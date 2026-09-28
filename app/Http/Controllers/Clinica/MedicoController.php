@@ -44,8 +44,9 @@ class MedicoController extends Controller
      * o medico e obrigado a trocar no primeiro login. A clinica nunca
      * fica sabendo a senha definitiva do profissional.
      *
-     * O medico entra como 'pendente' de verificacao de CRM, igual a
-     * quem se cadastra sozinho - clinica nao verifica CRM.
+     * O CRM de médico NOVO é conferido na base simulada pelo FormRequest
+     * (igual ao cadastro autônomo, desde 24/09): se chegou aqui, bateu, e
+     * ele já nasce 'verificado'. A clínica não "verifica" nada.
      *
      * Se o medico JA existe no sistema (mesmo CRM+UF), nao crie outro:
      * crie so o vinculo com a unidade.

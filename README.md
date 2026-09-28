@@ -222,7 +222,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 72 testes automáticos
+├── tests/Feature/         ← 108 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -312,7 +312,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **72 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **108 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -323,7 +323,7 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 24/09/2026.**
+**Atualizado em 28/09/2026.**
 
 **Junção de 25/09/2026:** a home que o grupo fez no protótipo depois da organização (slider do início com 9 fotos, fotos dos médicos, "Hospitais e Clínicas" e "Sobre") foi trazida para `resources/views/home.blade.php`, `public/css/home.css` e `public/javas/home.js`; fotos em `public/imgs/` (sliderinicio, medicos, sliderhospcli — estas comprimidas de 10,5 MB para 1 MB). Os 3 médicos fictícios ganharam foto (`foto` em `DadosFicticios::MEDICOS`). O `prototipo-antigo/` também foi atualizado com a versão do GitHub (a home agora é `paginas/index.html`). **27/09:** entrou o commit `c9faffe` (mudanças na home: slider em loop contínuo, menu que marca o item clicado, cores em azul-escuro, novo texto do topo, "Sobre nós" e nova foto `medico5`), no protótipo e na home em Laravel.
 
@@ -333,16 +333,62 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 - Back-end: **todas** as ações de paciente, médico, clínica e admin (nenhum TODO sobrando).
 - Telas: site público (home, busca, perfis), login e cadastros, agendamento completo, todas as
   telas do paciente, dashboards dos 4 tipos de conta, convênios (admin e clínica).
-- E-mails e lembretes. 72 testes automáticos.
+- **Telas do médico (28/09):** agenda, meus horários, ausências, onde atendo, preços, avaliações
+  e perfil (com o fluxo da senha provisória).
+- **Telas da clínica (28/09):** agenda (só leitura), meus médicos (com desvínculo confirmado),
+  cadastrar médico, unidades (com edição do horário de funcionamento), tabela de preços (mostra a
+  senha provisória do médico novo uma única vez), avaliações e perfil.
+- **Telas do admin (28/09):** usuários (bloquear com motivo / desbloquear), verificar CRM
+  (histórico + rejeitar; aprovar confere na base simulada), carteirinhas, clínicas e hospitais,
+  especialidades (criar/editar/destaque/desativar) e consultas (filtros, sem observações).
+- **Com isso, as 20 telas da seção 7 estão prontas.** Todo item de menu leva a uma tela.
+- **Revisão geral (28/09):** 8 problemas achados e corrigidos, com teste (ver §11, itens 19–26).
+- E-mails e lembretes. **108 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+  páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
-**Falta — só views (Blade):** 20 telas internas. O back-end delas está pronto; a seção 7 diz
-exatamente o que cada uma recebe e envia.
+**Telas internas — o que vale saber (28/09):**
+- Classes novas no fim de `public/css/crud.css` (filtros, agenda, semana, opções, preços,
+  avaliações, paginação). Só usam as variáveis `--fm-*` do `painel.css`.
+- Paginação: `{{ $lista->links('painel.parciais.paginacao') }}`. A padrão do Laravel usa classes
+  do Tailwind, que o projeto não tem — use essa nas telas de admin/clínica também.
+- **Preço sempre com vírgula na tela** (`250,00`): o `SalvarPrecoRequest` tira os pontos, então
+  `250.00` viraria 25000. Vale para a grade de preços da clínica.
+- Senha provisória: o `ExigirTrocaDeSenha` bloqueia todas as outras rotas, então o perfil mostra
+  **só** o formulário de senha até ela ser trocada.
+- Partes reaproveitáveis em `resources/views/painel/parciais/`: `senha` (trocar senha),
+  `horarios-funcionamento` (horários por dia) e `paginacao`.
+- Numa tela com vários formulários iguais (ex.: horário de cada unidade), cada um manda um campo
+  escondido `_form` para o `old()` e os erros voltarem só no formulário certo.
+- `TelasMedicoTest`, `TelasClinicaTest` e `TelasAdminTest` abrem as telas com a view real.
+- **"Pode receber agendamento?"** agora é UMA regra: `Vinculo::recebeAgendamento()` (vínculo e
+  local ativos, médico verificado e com conta ativa, clínica com conta ativa). A
+  `CalculadoraDeHorarios`, a tela de horário e a gravação usam a mesma. Especialidade oferecida
+  num lugar: `Vinculo::ofereceEspecialidade()` (preço ATIVO + especialidade ativa).
+- Nos testes, campo fora do `$fillable` dá erro em vez de sumir em silêncio
+  (`preventSilentlyDiscardingAttributes`, em `tests/TestCase.php`). Campo que não deve vir de
+  formulário (ex.: `motivo_bloqueio`) é gravado com `forceFill()`.
 
-| Médico (7) | Clínica (7) | Admin (6) |
-|---|---|---|
-| agenda, meus horários, ausências, onde atendo, preços, avaliações, perfil | agenda, meus médicos, cadastrar médico, unidades, preços, avaliações, perfil | usuários, verificar CRM, carteirinhas, clínicas, especialidades, consultas |
+**Próximos passos sugeridos:**
+1. Levar as branches para a `main` por Pull Request: `front/telas-admin` já contém as telas do
+   médico, da clínica e a revisão (as outras duas branches ficam dentro dela).
+2. Cada um rodar `composer install`, `php artisan migrate:fresh --seed` e `php artisan test` na
+   própria máquina (XAMPP) e commitar o `composer.lock` gerado.
+3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
-**Próximo passo sugerido:** telas do médico (sem elas o médico não vê a própria agenda).
+**Para o grupo olhar (não mexi porque é código de outra pessoa — README §10, regra 6):**
+- A vitrine "Hospitais e Clínicas" da home é uma lista fixa no Blade. O "Hospital Vale Sereno"
+  não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
+  diferentes dos cadastrados no banco. Na banca, procurar a clínica e achar outro endereço pega
+  mal. Sugestão: montar a lista a partir das clínicas do banco (o `HomeController` pode mandar).
+- O protótipo estático do admin (`facilmed_admin_telas.zip`, 26/09) tem "Resultados de exames",
+  status "Em acompanhamento" e idade de paciente — fora do escopo (AGENTS.md §1 e §3). As telas
+  do admin feitas aqui seguem o contrato da seção 7.3.
+
+**Pendente de decisão do grupo (28/09):** o PDF "Dashboard da Clínica" tira do menu a tabela
+de preços e o perfil, e pede documentação com upload, resultados de exames, status "remarcada",
+convênio vencido/renovado e unidade "em implantação". Nada disso existe no banco, e exames/upload
+de documento são fora do escopo (AGENTS.md §1). Até o grupo decidir, as telas da clínica seguem
+o contrato da seção 7 (a tabela de preços e o perfil foram mantidos).
 
 **Não reabrir sem motivo** (decisões já testadas):
 - `Consulta::cancelar()` é o ÚNICO jeito de cancelar — ele dispara o e-mail certo.
@@ -354,6 +400,9 @@ exatamente o que cada uma recebe e envia.
 ---
 
 ## 7. Contrato das telas que faltam
+
+> **28/09/2026: as 20 telas abaixo foram feitas.** O contrato continua valendo como documentação do
+> que cada controller manda para a view — se mudar um nome, mude aqui e no `TelasInternasTest`.
 
 Para cada tela: o arquivo a criar, as variáveis que o controller **já manda** e os formulários
 (rota + campos). `tests/Feature/TelasInternasTest.php` confere que os controllers entregam
@@ -679,6 +728,14 @@ e corrigidos 18 problemas — todos com teste automático hoje:
 | 16 | Médico não conseguia cancelar consulta futura |
 | 17 | Troca de senha aceitava mais de 72 caracteres |
 | 18 | Os testes quebravam com o `APP_URL` do XAMPP |
+| 19 | *(28/09)* Médico com a **conta bloqueada** continuava com horários livres e recebia consulta |
+| 20 | *(28/09)* Por convênio dava para marcar especialidade cujo preço estava **desativado** naquele lugar |
+| 21 | *(28/09)* O **motivo do bloqueio**, quem bloqueou e quando **nunca eram gravados** (campos fora do `$fillable`, descartados em silêncio) |
+| 22 | *(28/09)* "Aprovar" CRM no admin não conferia a base simulada — um CRM cassado ganhava a etiqueta "conferido" |
+| 23 | *(28/09)* Página pública da clínica listava médico bloqueado e especialidade sem preço (o paciente caía em "sem vaga") |
+| 24 | *(28/09)* Data inválida na URL (agendar pela clínica, filtro de consultas do admin) dava erro 500 |
+| 25 | *(28/09)* Especialidade com nome que gera o mesmo endereço de outra dava erro 500 |
+| 26 | *(28/09)* Mensagens de erro sem acento nos cadastros e no agendamento; filtro das consultas do paciente sumia ao trocar de página |
 
 ---
 

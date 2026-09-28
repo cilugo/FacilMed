@@ -82,7 +82,7 @@ class CadastroController extends Controller
             return $user;
         });
 
-        return $this->entrar($user, 'Conta criada! Se tiver plano de saúde, cadastre a carteirinha em "Meus planos".');
+        return $this->entrar($user, 'Conta criada! Se tiver plano de saúde, cadastre a carteirinha em "Meu plano".');
     }
 
     public function formMedico()

@@ -27,7 +27,14 @@ class EspecialidadeController extends Controller
             'destaque' => ['boolean'],
         ]);
 
-        Especialidade::create([...$dados, 'slug' => Str::slug($dados['nome']), 'ativo' => true]);
+        // 28/09: nomes diferentes podem dar o MESMO slug ("Clínica-Geral" e
+        // "Clínica Geral" viram clinica-geral) e o UNIQUE do banco dava erro 500.
+        $slug = Str::slug($dados['nome']);
+        if ($slug === '' || Especialidade::where('slug', $slug)->exists()) {
+            return back()->withErrors(['nome' => 'Já existe uma especialidade com esse nome.'])->withInput();
+        }
+
+        Especialidade::create([...$dados, 'slug' => $slug, 'ativo' => true]);
 
         return back()->with('sucesso', 'Especialidade criada.');
     }

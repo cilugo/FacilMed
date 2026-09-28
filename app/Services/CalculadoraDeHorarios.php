@@ -64,20 +64,14 @@ class CalculadoraDeHorarios
             return [];
         }
 
-        if (! $vinculo->ativo) {
+        // Vínculo/local ativos, médico verificado e com conta ativa, clínica
+        // com conta ativa. 28/09: antes o médico BLOQUEADO continuava com
+        // horários livres e recebia consulta. A regra toda mora no Model.
+        if (! $vinculo->recebeAgendamento()) {
             return [];
         }
 
         $local = $vinculo->local;
-
-        if ($local === null || ! $local->ativo) {
-            return [];
-        }
-
-        // Clínica com a conta bloqueada/inativa não recebe agendamento (24/09).
-        if ($local->clinica_id !== null && $local->clinica?->user?->status !== 'ativo') {
-            return [];
-        }
 
         // Feriado fecha o dia inteiro: nao adianta calcular o resto.
         if (Feriado::fecha($local, $dia)) {

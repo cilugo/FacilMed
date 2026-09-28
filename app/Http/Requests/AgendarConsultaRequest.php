@@ -87,15 +87,15 @@ class AgendarConsultaRequest extends FormRequest
     {
         return [
             'vinculo_id.required'       => 'Escolha onde a consulta vai acontecer.',
-            'vinculo_id.exists'         => 'Esse local de atendimento nao esta mais disponivel.',
+            'vinculo_id.exists'         => 'Esse local de atendimento não está mais disponível.',
             'especialidade_id.required' => 'Escolha a especialidade.',
             'data_consulta.required'    => 'Escolha uma data.',
-            'data_consulta.after_or_equal' => 'Nao da para marcar em data que ja passou.',
-            'horario.required'          => 'Escolha um horario.',
-            'horario.date_format'       => 'Horario invalido.',
-            'forma_pagamento.required'  => 'Escolha como a consulta sera paga.',
-            'paciente_plano_id.required_if' => 'Escolha qual carteirinha voce vai usar.',
-            'paciente_plano_id.exists'      => 'Essa carteirinha nao foi encontrada.',
+            'data_consulta.after_or_equal' => 'Não dá para marcar em data que já passou.',
+            'horario.required'          => 'Escolha um horário.',
+            'horario.date_format'       => 'Horário inválido.',
+            'forma_pagamento.required'  => 'Escolha como a consulta será paga.',
+            'paciente_plano_id.required_if' => 'Escolha qual carteirinha você vai usar.',
+            'paciente_plano_id.exists'      => 'Essa carteirinha não foi encontrada.',
         ];
     }
 }

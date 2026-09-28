@@ -77,15 +77,15 @@ class CadastroClinicaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required'      => 'Digite o nome do responsavel pela conta.',
-            'email.unique'       => 'Ja existe uma conta com esse e-mail.',
-            'password.confirmed' => 'As duas senhas nao sao iguais.',
-            'cnpj.unique'        => 'Ja existe uma clinica cadastrada com esse CNPJ.',
-            'razao_social.required'  => 'Digite a razao social, como esta no CNPJ.',
-            'nome_fantasia.required' => 'Digite o nome pelo qual a clinica e conhecida.',
-            'unidade_nome.required'  => 'De um nome para esta unidade (ex: "Unidade Centro").',
-            'unidade_cep.digits'     => 'O CEP deve ter 8 digitos.',
-            'unidade_uf.in'          => 'Escolha um estado valido (ex.: SP).',
+            'name.required'      => 'Digite o nome do responsável pela conta.',
+            'email.unique'       => 'Já existe uma conta com esse e-mail.',
+            'password.confirmed' => 'As duas senhas não são iguais.',
+            'cnpj.unique'        => 'Já existe uma clínica cadastrada com esse CNPJ.',
+            'razao_social.required'  => 'Digite a razão social, como está no CNPJ.',
+            'nome_fantasia.required' => 'Digite o nome pelo qual a clínica é conhecida.',
+            'unidade_nome.required'  => 'Dê um nome para esta unidade (ex.: "Unidade Centro").',
+            'unidade_cep.digits'     => 'O CEP deve ter 8 dígitos.',
+            'unidade_uf.in'          => 'Escolha um estado válido (ex.: SP).',
         ];
     }
 

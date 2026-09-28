@@ -49,11 +49,21 @@ class PerfilPublicoController extends Controller
     {
         abort_unless($clinica->user->estaAtivo(), 404);
 
-        $clinica->load(['locais.horarios', 'vinculos.medico.user', 'vinculos.precos.especialidade']);
+        $clinica->load(['locais.horarios']);
 
         return view('publico.clinica', [
             'clinica'        => $clinica,
-            'especialidades' => $clinica->especialidades()->get(),
+            'especialidades' => $clinica->especialidades()->orderBy('nome')->get(),
+            // 28/09: só médico VISÍVEL (CRM verificado + conta ativa) com vínculo
+            // ativo numa unidade ativa. Antes a lista só olhava o CRM, e médico
+            // com a conta bloqueada continuava aparecendo aqui.
+            'medicos' => Medico::visivel()
+                ->whereHas('vinculos', fn ($v) => $v->where('ativo', true)
+                    ->whereHas('local', fn ($l) => $l->where('clinica_id', $clinica->id)->where('ativo', true)))
+                ->with('user', 'especialidades')
+                ->get()
+                ->sortBy(fn ($m) => $m->user->name)
+                ->values(),
         ]);
     }
 }

@@ -44,7 +44,7 @@ class CadastroTest extends TestCase
 
     public function test_medico_com_crm_recusado_pela_base_nao_entra(): void
     {
-        foreach ([['998877', 'SP', 'cassado'], ['556677', 'RJ', 'suspenso'], ['123456', 'SP', 'não foi encontrado'], ['112233', 'SP', 'ja esta cadastrado']] as [$crm, $uf, $motivo]) {
+        foreach ([['998877', 'SP', 'cassado'], ['556677', 'RJ', 'suspenso'], ['123456', 'SP', 'não foi encontrado'], ['112233', 'SP', 'já está cadastrado']] as [$crm, $uf, $motivo]) {
             $this->post('/cadastro/medico', $this->medico(['crm' => $crm, 'uf' => $uf]))
                 ->assertSessionHasErrors();
             $this->assertStringContainsString($motivo, collect(session('errors')->all())->join(' '));
@@ -65,7 +65,7 @@ class CadastroTest extends TestCase
 
     public function test_clinica_com_cnpj_recusado_nao_entra(): void
     {
-        foreach (['43.300.002/0001-09' => 'baixada', '41.100.001/0001-95' => 'Ja existe', '11.111.111/1111-11' => 'nao e valido'] as $cnpj => $motivo) {
+        foreach (['43.300.002/0001-09' => 'baixada', '41.100.001/0001-95' => 'Já existe', '11.111.111/1111-11' => 'não é válido'] as $cnpj => $motivo) {
             $this->post('/cadastro/clinica', $this->clinica(['cnpj' => $cnpj]))->assertSessionHasErrors('cnpj');
             $this->assertStringContainsString($motivo, session('errors')->first('cnpj'));
         }

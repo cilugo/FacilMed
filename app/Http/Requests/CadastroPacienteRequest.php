@@ -81,15 +81,15 @@ class CadastroPacienteRequest extends FormRequest
         return [
             'name.required'  => 'Digite seu nome completo.',
             'name.min'       => 'O nome precisa ter pelo menos 3 letras.',
-            'email.email'    => 'Esse e-mail nao parece valido.',
-            'email.unique'   => 'Ja existe uma conta com esse e-mail.',
-            'password.confirmed' => 'As duas senhas nao sao iguais.',
+            'email.email'    => 'Esse e-mail não parece válido.',
+            'email.unique'   => 'Já existe uma conta com esse e-mail.',
+            'password.confirmed' => 'As duas senhas não são iguais.',
             'cpf.required'   => 'Digite seu CPF.',
-            'cpf.unique'     => 'Ja existe um cadastro com esse CPF.',
-            'telefone.digits_between' => 'O telefone deve ter DDD + numero, com 10 ou 11 digitos.',
+            'cpf.unique'     => 'Já existe um cadastro com esse CPF.',
+            'telefone.digits_between' => 'O telefone deve ter DDD + número, com 10 ou 11 dígitos.',
             'data_nascimento.before'  => 'A data de nascimento precisa ser no passado.',
-            'descricao_deficiencia.required_if' => 'Conte brevemente do que voce precisa, para prepararmos o atendimento.',
-            'consentimento_acessibilidade.accepted_if' => 'Precisamos da sua autorizacao para guardar essa informacao.',
+            'descricao_deficiencia.required_if' => 'Conte brevemente do que você precisa, para prepararmos o atendimento.',
+            'consentimento_acessibilidade.accepted_if' => 'Precisamos da sua autorização para guardar essa informação.',
         ];
     }
 }
