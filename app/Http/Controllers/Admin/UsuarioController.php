@@ -54,12 +54,16 @@ class UsuarioController extends Controller
         }
 
         DB::transaction(function () use ($user, $dados, $futuras) {
-            $user->update([
+            // 28/09: forceFill, e não update(). Esses três campos NÃO estão no
+            // $fillable do User (de propósito: ninguém deve preenchê-los por
+            // formulário), e o update() os descartava EM SILÊNCIO — o status
+            // mudava, mas o motivo, quem bloqueou e quando nunca eram gravados.
+            $user->forceFill([
                 'status'          => 'bloqueado',
                 'motivo_bloqueio' => $dados['motivo'],
                 'bloqueado_por'   => auth()->id(),
                 'bloqueado_em'    => now(),
-            ]);
+            ])->save();
 
             // O motivo do bloqueio NÃO vai para o paciente (AGENTS.md §6: sem detalhar).
             $futuras->each->cancelar(auth()->id(), 'Cancelada pela administração do FacilMed');
@@ -73,12 +77,12 @@ class UsuarioController extends Controller
     {
         abort_unless($user->status === 'bloqueado', 422, 'Essa conta não está bloqueada.');
 
-        $user->update([
+        $user->forceFill([   // forceFill: ver o comentário em bloquear()
             'status'          => 'ativo',
             'motivo_bloqueio' => null,
             'bloqueado_por'   => null,
             'bloqueado_em'    => null,
-        ]);
+        ])->save();
 
         return back()->with('sucesso', 'Conta reativada.');
     }

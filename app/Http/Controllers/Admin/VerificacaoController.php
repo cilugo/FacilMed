@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use App\Models\Medico;
+use App\Services\BaseSimulada;
 use Illuminate\Http\Request;
 
 class VerificacaoController extends Controller
@@ -37,8 +38,15 @@ class VerificacaoController extends Controller
         ]);
     }
 
-    public function aprovar(Medico $medico)
+    public function aprovar(Medico $medico, BaseSimulada $base)
     {
+        // 28/09: aprovar também passa pela base simulada. Antes o admin
+        // aprovava sem conferir, e um CRM cassado ganhava a etiqueta
+        // "conferido na base simulada" — que aí seria mentira.
+        if ($erro = $base->conferirCrm($medico->crm, $medico->uf)) {
+            return back()->with('erro', "Não dá para aprovar {$medico->user->name}. {$erro}");
+        }
+
         $medico->update([
             'status_verificacao' => 'verificado',
             'verificado_por'     => auth()->id(),
@@ -50,7 +58,7 @@ class VerificacaoController extends Controller
         // e desde 24/09 a verificação é automática no cadastro. Se voltar a ser manual,
         // criar uma tabela de avisos de conta antes de mandar e-mail.
 
-        return back()->with('sucesso', "CRM de {$medico->user->name} verificado.");
+        return back()->with('sucesso', "CRM de {$medico->user->name} conferido na base simulada e aprovado.");
     }
 
     public function rejeitar(Request $request, Medico $medico)

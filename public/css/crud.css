@@ -441,3 +441,39 @@
 
 /* Caixa de marcar dentro de .fm-campo não herda o visual de campo de texto. */
 .fm-campo .fm-marcar input { width: 18px; height: 18px; padding: 0; border-radius: 4px; }
+
+/* ==========================================================================
+   Telas do admin (28/09/2026) — linhas de conta (usuários, CRM,
+   carteirinhas, especialidades) com ações e formulário que abre embaixo.
+   ========================================================================== */
+
+.fm-conta { padding: 14px 0; }
+.fm-lista > .fm-conta + .fm-conta,
+.fm-painel > .fm-conta + .fm-conta { border-top: 1px solid #e7eff9; }
+.fm-conta.is-inativo .fm-conta__info strong { color: var(--fm-suave); }
+
+.fm-conta__linha {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 12px;
+}
+.fm-conta__info { display: grid; gap: 2px; min-width: 0; }
+.fm-conta__info strong { color: var(--fm-titulo); overflow-wrap: anywhere; }
+.fm-conta__info span { font-size: 13px; color: var(--fm-suave); overflow-wrap: anywhere; }
+.fm-conta__etiquetas, .fm-conta__acoes { grid-column: 2; }
+.fm-conta__acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.fm-conta__extra { margin: 10px 0 0 52px; }
+
+.fm-avatar--icone { background: var(--fm-azul-claro); color: var(--fm-azul); }
+.fm-avatar--icone .fm-icone { width: 20px; height: 20px; }
+
+@media (min-width: 900px) {
+    .fm-conta__linha { grid-template-columns: 40px minmax(0, 1fr) auto auto; }
+    .fm-conta__etiquetas, .fm-conta__acoes { grid-column: auto; }
+    .fm-conta__acoes { justify-content: flex-end; }
+}
+
+@media (max-width: 560px) {
+    .fm-conta__extra { margin-left: 0; }
+}

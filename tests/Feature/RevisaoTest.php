@@ -136,6 +136,27 @@ class RevisaoTest extends TestCase
             ->assertSee('status=realizada&amp;page=2', false);
     }
 
+    public function test_bloqueio_grava_motivo_autor_e_data_e_desbloqueio_limpa(): void
+    {
+        $admin  = User::where('email', 'admin@facilmed.test')->first();
+        $marcos = User::where('email', 'marcos@facilmed.test')->first();
+
+        $this->comoAdmin()->post("/admin/usuarios/{$marcos->id}/bloquear", [
+            'motivo' => 'Conta usada para marcar consultas falsas', 'cancelar_consultas' => 1,
+        ])->assertSessionHas('sucesso');
+
+        $marcos->refresh();
+        $this->assertSame('bloqueado', $marcos->status);
+        $this->assertSame('Conta usada para marcar consultas falsas', $marcos->motivo_bloqueio);
+        $this->assertSame($admin->id, (int) $marcos->bloqueado_por);
+        $this->assertNotNull($marcos->bloqueado_em);
+
+        $this->comoAdmin()->post("/admin/usuarios/{$marcos->id}/desbloquear")->assertSessionHas('sucesso');
+        $marcos->refresh();
+        $this->assertSame('ativo', $marcos->status);
+        $this->assertNull($marcos->motivo_bloqueio);
+    }
+
     public function test_mensagens_de_erro_tem_acento(): void
     {
         $this->post('/cadastro/paciente', [
