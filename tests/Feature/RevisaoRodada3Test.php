@@ -9,6 +9,8 @@ use App\Models\Especialidade;
 use App\Models\Local;
 use App\Models\Medico;
 use App\Models\PacienteAcessibilidade;
+use App\Models\PacientePlano;
+use App\Models\Plano;
 use App\Models\Preco;
 use App\Models\User;
 use App\Models\Vinculo;
@@ -330,6 +332,35 @@ class RevisaoRodada3Test extends TestCase
         $this->assertSame(1, Bloqueio::where('medico_id', $helena->id)->whereDate('inicio', $dia)->count());
         $this->assertSame('cancelada', $c->fresh()->status);
         $this->assertSame('Ausência do médico: Congresso', $c->fresh()->motivo_cancelamento);
+    }
+
+    // -----------------------------------------------------------------
+    // "Aprovar" carteirinha no admin confere a base simulada (item 37)
+    // -----------------------------------------------------------------
+
+    public function test_admin_so_aprova_carteirinha_que_bate_com_a_base(): void
+    {
+        $marcos = User::where('email', 'marcos@facilmed.test')->first()->paciente;
+        $pendente = fn (string $plano, string $numero) => PacientePlano::create([
+            'paciente_id' => $marcos->id, 'plano_id' => Plano::where('nome', $plano)->value('id'),
+            'numero_carteirinha' => $numero, 'validade' => now()->addYears(5)->toDateString(), 'status' => 'pendente',
+        ]);
+
+        // Número que não existe na base: antes o admin aprovava e ela virava "ativa".
+        $inventada = $pendente('Bem Viver Individual', '999999999999');
+        $this->comoAdmin()->post('/admin/carteirinhas/' . $inventada->id . '/aprovar')->assertSessionHas('erro');
+        $this->assertSame('pendente', $inventada->fresh()->status);
+
+        // Carteirinha de outra pessoa (outro CPF na base) na conta do Marcos: também não.
+        $deOutro = $pendente('SpSaúde Individual', '100000000005');
+        $this->comoAdmin()->post('/admin/carteirinhas/' . $deOutro->id . '/aprovar')
+            ->assertSessionHas('erro', 'Não dá para aprovar esta carteirinha. Essa carteirinha está em nome de outra pessoa.');
+
+        // A que bate com a base é aprovada, com a validade DA BASE (não a digitada).
+        $certa = $pendente('Bem Viver Individual', '300000000002');
+        $this->comoAdmin()->post('/admin/carteirinhas/' . $certa->id . '/aprovar')->assertSessionHas('sucesso');
+        $this->assertSame('ativa', $certa->fresh()->status);
+        $this->assertTrue($certa->fresh()->validade->lessThan(now()->addYears(5)->subDay()));
     }
 
     public function test_preco_do_consultorio_nao_multiplica_valor_com_ponto(): void

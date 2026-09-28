@@ -10,8 +10,15 @@ use Illuminate\Support\Facades\DB;
  * Importa as operadoras de plano de saude ATIVAS a partir do CSV de
  * dados abertos da ANS.
  *
- * E a unica validacao externa REAL deste projeto: garante que nao
- * existe convenio inventado no sistema. Por isso o comando le um
+ * ⚠ DESDE 24/09/2026 ESTE COMANDO E OPCIONAL (revisao de 28/09). O grupo
+ * decidiu que convenios e planos sao 100% FICTICIOS (AGENTS.md §3) e
+ * `operadora_ans_id` virou opcional: nenhum convenio do sistema depende
+ * desta tabela, e o `composer run setup` nao roda este comando. Ele fica
+ * so para quem quiser, no futuro, ligar um convenio a uma operadora real
+ * - o que exigiria contrato com ela. (O texto antigo dizia que o comando
+ * "garante que nao existe convenio inventado": isso deixou de valer.)
+ *
+ * Mesmo assim, operadora nunca e cadastrada a mao: o comando le o
  * arquivo oficial e nunca gera registro proprio.
  *
  * COMO OBTER O ARQUIVO

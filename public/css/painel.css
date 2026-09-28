@@ -779,6 +779,8 @@ a.fm-cartao--link:hover { border-color: var(--fm-borda-forte); }
 
 .fm-abas {
     display: inline-flex;
+    flex-wrap: wrap;        /* 28/09: no celular, 4 abas passavam da largura da tela */
+    max-width: 100%;
     gap: 2px;
     padding: 4px;
     background: #eef5ff;

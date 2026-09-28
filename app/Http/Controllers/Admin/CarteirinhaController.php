@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PacientePlano;
+use App\Services\BaseSimulada;
 use Illuminate\Http\Request;
 
 class CarteirinhaController extends Controller
@@ -25,16 +26,31 @@ class CarteirinhaController extends Controller
         ]);
     }
 
-    public function aprovar(PacientePlano $pacientePlano)
+    public function aprovar(PacientePlano $pacientePlano, BaseSimulada $base)
     {
+        // 28/09 (3ª revisão): aprovar confere a base simulada, como o
+        // "Aprovar" do CRM. Antes o admin aprovava qualquer número, e a
+        // carteirinha virava "ativa" (e servia para agendar por convênio)
+        // sem existir na base, ser da pessoa ou estar na validade.
+        [$erro, $registro] = $base->conferirCarteirinha(
+            $pacientePlano->plano_id,
+            $pacientePlano->numero_carteirinha,
+            $pacientePlano->paciente?->cpf,
+        );
+
+        if ($erro) {
+            return back()->with('erro', "Não dá para aprovar esta carteirinha. {$erro}");
+        }
+
         $pacientePlano->update([
             'status'        => 'ativa',
+            'validade'      => $registro->validade,   // a da base, não a digitada
             'conferido_por' => auth()->id(),
             'conferido_em'  => now(),
             'motivo_recusa' => null,
         ]);
 
-        return back()->with('sucesso', 'Carteirinha conferida.');
+        return back()->with('sucesso', 'Carteirinha conferida na base simulada e aprovada.');
     }
 
     public function recusar(Request $request, PacientePlano $pacientePlano)
