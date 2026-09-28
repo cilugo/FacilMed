@@ -1,5 +1,5 @@
 {{--
-    Bloco "Trocar senha" do perfil do médico (mesmo de paciente/perfil).
+    Bloco "Trocar senha" dos perfis de médico e clínica (mesmo de paciente/perfil).
     Rota do Breeze: password.update. Erros no bag "updatePassword".
     $destaque = true quando a senha ainda é a provisória da clínica.
 --}}

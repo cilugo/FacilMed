@@ -222,7 +222,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 80 testes automáticos
+├── tests/Feature/         ← 89 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -312,7 +312,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **80 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **89 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -334,10 +334,13 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 - Telas: site público (home, busca, perfis), login e cadastros, agendamento completo, todas as
   telas do paciente, dashboards dos 4 tipos de conta, convênios (admin e clínica).
 - **Telas do médico (28/09):** agenda, meus horários, ausências, onde atendo, preços, avaliações
-  e perfil (com o fluxo da senha provisória). Branch `front/telas-medico`.
-- E-mails e lembretes. 80 testes automáticos.
+  e perfil (com o fluxo da senha provisória).
+- **Telas da clínica (28/09):** agenda (só leitura), meus médicos (com desvínculo confirmado),
+  cadastrar médico, unidades (com edição do horário de funcionamento), tabela de preços (mostra a
+  senha provisória do médico novo uma única vez), avaliações e perfil.
+- E-mails e lembretes. 89 testes automáticos.
 
-**Telas do médico — o que vale saber (28/09):**
+**Telas internas — o que vale saber (28/09):**
 - Classes novas no fim de `public/css/crud.css` (filtros, agenda, semana, opções, preços,
   avaliações, paginação). Só usam as variáveis `--fm-*` do `painel.css`.
 - Paginação: `{{ $lista->links('painel.parciais.paginacao') }}`. A padrão do Laravel usa classes
@@ -346,23 +349,23 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   `250.00` viraria 25000. Vale para a grade de preços da clínica.
 - Senha provisória: o `ExigirTrocaDeSenha` bloqueia todas as outras rotas, então o perfil mostra
   **só** o formulário de senha até ela ser trocada.
-- `tests/Feature/TelasMedicoTest.php` abre as 7 telas com a view real.
+- Partes reaproveitáveis em `resources/views/painel/parciais/`: `senha` (trocar senha),
+  `horarios-funcionamento` (horários por dia) e `paginacao`.
+- Numa tela com vários formulários iguais (ex.: horário de cada unidade), cada um manda um campo
+  escondido `_form` para o `old()` e os erros voltarem só no formulário certo.
+- `TelasMedicoTest` e `TelasClinicaTest` abrem as telas com a view real.
 
-**Falta — só views (Blade):** 13 telas internas. O back-end delas está pronto; a seção 7 diz
-exatamente o que cada uma recebe e envia.
+**Falta — só views (Blade):** 6 telas do admin — usuários, verificar CRM, carteirinhas,
+clínicas, especialidades, consultas. O back-end delas está pronto; a seção 7.3 diz exatamente o
+que cada uma recebe e envia.
 
-| Clínica (7) | Admin (6) |
-|---|---|
-| agenda, meus médicos, cadastrar médico, unidades, preços, avaliações, perfil | usuários, verificar CRM, carteirinhas, clínicas, especialidades, consultas |
-
-**Próximo passo sugerido:** telas da clínica (sem a tabela de preços, médico de clínica novo
-fica sem preço e não aparece para agendamento particular).
+**Próximo passo sugerido:** telas do admin.
 
 **Pendente de decisão do grupo (28/09):** o PDF "Dashboard da Clínica" tira do menu a tabela
 de preços e o perfil, e pede documentação com upload, resultados de exames, status "remarcada",
 convênio vencido/renovado e unidade "em implantação". Nada disso existe no banco, e exames/upload
 de documento são fora do escopo (AGENTS.md §1). Até o grupo decidir, as telas da clínica seguem
-o contrato da seção 7.
+o contrato da seção 7 (a tabela de preços e o perfil foram mantidos).
 
 **Não reabrir sem motivo** (decisões já testadas):
 - `Consulta::cancelar()` é o ÚNICO jeito de cancelar — ele dispara o e-mail certo.

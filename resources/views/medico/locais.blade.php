@@ -17,9 +17,7 @@
 @php
     use App\Support\Formatador;
     use App\Support\Uf;
-    use App\Models\Disponibilidade;
     $tipos = ['clinica' => 'Clínica', 'hospital' => 'Hospital', 'consultorio' => 'Consultório próprio'];
-    $diasForm = array_merge(array_slice(Disponibilidade::DIAS, 1), [Disponibilidade::DIAS[0]]);
     $abrirForm = $errors->any() || $vinculos->isEmpty();
 @endphp
 
@@ -177,19 +175,7 @@
                 <p class="fm-campo__ajuda">Deixe tudo em branco para usar segunda a sexta, 08:00–18:00. Dia em branco = fechado.
                     Os seus horários de consulta são cadastrados depois, em "Meus horários".</p>
 
-                <div class="fm-funcionamento__grade">
-                    @foreach ($diasForm as $i => $dia)
-                        @php $idx = array_search($dia, Disponibilidade::DIAS, true); @endphp
-                        <div class="fm-funcionamento__dia {{ $errors->has("horarios.$dia.fecha") || $errors->has("horarios.$dia.abre") ? 'fm-campo--erro' : '' }}">
-                            <span>{{ Formatador::DIAS_CURTOS[$idx] }}</span>
-                            <input type="time" name="horarios[{{ $dia }}][abre]" value="{{ old("horarios.$dia.abre") }}" aria-label="{{ Formatador::DIAS[$idx] }}: abre">
-                            <input type="time" name="horarios[{{ $dia }}][fecha]" value="{{ old("horarios.$dia.fecha") }}" aria-label="{{ Formatador::DIAS[$idx] }}: fecha">
-                            @if ($errors->has("horarios.$dia.fecha") || $errors->has("horarios.$dia.abre"))
-                                <span class="fm-campo__erro">{{ $errors->first("horarios.$dia.fecha") ?: $errors->first("horarios.$dia.abre") }}</span>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
+                @include('painel.parciais.horarios-funcionamento')
             </fieldset>
 
             <div class="fm-form__acoes">

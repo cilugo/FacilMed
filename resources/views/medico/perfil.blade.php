@@ -55,7 +55,7 @@
             <span>Você entrou com a <strong>senha provisória</strong> que a clínica te passou. Crie uma senha sua para
                 liberar o resto do sistema — depois disso você completa o seu perfil aqui mesmo.</span>
         </p>
-        @include('medico.parciais.senha', ['destaque' => true])
+        @include('painel.parciais.senha', ['destaque' => true])
     @else
 
     {{-- ===================== DADOS PROFISSIONAIS ===================== --}}
@@ -196,7 +196,7 @@
         </form>
     </section>
 
-        @include('medico.parciais.senha', ['destaque' => false])
+        @include('painel.parciais.senha', ['destaque' => false])
     @endif
 
 @endsection
