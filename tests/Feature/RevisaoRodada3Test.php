@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Consulta;
 use App\Models\Local;
+use App\Models\PacienteAcessibilidade;
 use App\Models\Preco;
 use App\Models\User;
 use App\Models\Vinculo;
@@ -64,6 +66,63 @@ class RevisaoRodada3Test extends TestCase
         $this->comoClinica()->post('/clinica/precos', ['precos' => [$v->id => [$esp->id => '1,250.00']]])
             ->assertSessionHasErrors("precos.{$v->id}.{$esp->id}");
         $this->assertEquals(1250.00, (float) $valor());
+    }
+
+    // -----------------------------------------------------------------
+    // Acessibilidade só para o médico, só com consulta agendada (item 31)
+    // -----------------------------------------------------------------
+
+    /** Consulta agendada Ana + Helena, sozinha no dia, com acessibilidade preenchida. */
+    private function consultaDaAnaComAcessibilidade(): Consulta
+    {
+        $ana = User::where('email', 'ana@facilmed.test')->first()->paciente;
+        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
+
+        PacienteAcessibilidade::updateOrCreate(['paciente_id' => $ana->id], [
+            'possui_deficiencia' => true, 'descricao' => 'Uso cadeira de rodas',
+            'consentimento_em' => now(), 'consentimento_versao' => '1.0',
+        ]);
+
+        $c = Consulta::where('paciente_id', $ana->id)->where('medico_id', $helena->id)
+            ->where('status', 'agendada')->orderBy('data_consulta')->firstOrFail();
+
+        // Outras consultas dos dois no mesmo dia sairiam na mesma tela: tira do caminho.
+        Consulta::where('paciente_id', $ana->id)->where('medico_id', $helena->id)
+            ->whereDate('data_consulta', $c->data_consulta)->whereKeyNot($c->id)->delete();
+
+        return $c;
+    }
+
+    public function test_agenda_do_medico_so_mostra_acessibilidade_de_consulta_agendada(): void
+    {
+        $c = $this->consultaDaAnaComAcessibilidade();
+        $url = '/medico/agenda?data=' . $c->data_consulta->toDateString();
+
+        $this->comoMedico()->get($url)->assertOk()->assertSee('Uso cadeira de rodas');
+
+        // Antes: continuava aparecendo depois que a consulta saía de "agendada".
+        foreach (['cancelada', 'realizada', 'nao_compareceu'] as $status) {
+            $c->forceFill(['status' => $status])->save();
+            $this->comoMedico()->get($url)->assertOk()
+                ->assertSee($c->paciente->user->name)
+                ->assertDontSee('Uso cadeira de rodas');
+        }
+    }
+
+    public function test_clinica_nao_ve_acessibilidade_nem_com_consulta_agendada(): void
+    {
+        $c = $this->consultaDaAnaComAcessibilidade();
+        $clinica = User::where('email', 'contato@vidaplena.test')->first();
+        $this->assertSame($clinica->clinica->id, $c->vinculo->local->clinica_id, 'A consulta deveria ser na Vida Plena.');
+
+        // Antes: a agenda da clínica mostrava o texto, contra a Policy e o AGENTS.md §3.
+        $this->comoClinica()->get('/clinica/agenda?data=' . $c->data_consulta->toDateString())
+            ->assertOk()->assertSee($c->paciente->user->name)->assertDontSee('Uso cadeira de rodas');
+
+        $this->assertFalse($clinica->can('verAcessibilidade', $c));
+        $this->assertFalse($clinica->can('view', $c->paciente->acessibilidade));
+        $this->assertTrue(User::where('email', 'helena@facilmed.test')->first()->can('verAcessibilidade', $c));
+        $this->assertFalse(User::where('email', 'rafael@facilmed.test')->first()->can('verAcessibilidade', $c));
     }
 
     public function test_preco_do_consultorio_nao_multiplica_valor_com_ponto(): void

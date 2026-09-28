@@ -22,7 +22,7 @@ class TelasClinicaTest extends TestCase
         }
     }
 
-    public function test_agenda_mostra_consulta_com_medico_e_acessibilidade(): void
+    public function test_agenda_mostra_consulta_com_medico_e_sem_acessibilidade(): void
     {
         $clinica = User::where('email', 'contato@vidaplena.test')->first()->clinica;
         $consulta = Consulta::whereIn('vinculo_id', $clinica->vinculos()->select('vinculos.id'))
@@ -39,7 +39,9 @@ class TelasClinicaTest extends TestCase
             ->assertOk()
             ->assertSee($consulta->paciente->user->name)
             ->assertSee($consulta->medico->user->name)
-            ->assertSee('Uso cadeira de rodas')
+            // 28/09 (3ª revisão): a clínica não lê a acessibilidade — só o médico
+            // da consulta, enquanto ela está agendada (AGENTS.md §3).
+            ->assertDontSee('Uso cadeira de rodas')
             // A agenda da clínica é só leitura.
             ->assertDontSee('/agenda/' . $consulta->id . '/cancelar', false);
     }

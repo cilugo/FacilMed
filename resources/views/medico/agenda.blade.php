@@ -3,7 +3,8 @@
 
     Um dia por vez (‹ ›), com filtro por lugar. Cada consulta mostra o que o
     médico precisa para atender — inclusive a ACESSIBILIDADE do paciente, que
-    aqui pode aparecer porque é o médico daquela consulta (AGENTS.md §3).
+    aqui pode aparecer porque é o médico daquela consulta (AGENTS.md §3), e só
+    enquanto ela está agendada (ConsultaPolicy::verAcessibilidade).
 
     Botões (a regra está no Model/Policy; a view só esconde o que não cabe):
       - antes do horário: Cancelar (motivo obrigatório, vai no e-mail);
@@ -99,11 +100,15 @@
                             <span class="fm-etiqueta fm-etiqueta--{{ $st['tom'] }}">{{ $st['rotulo'] }}</span>
                         </div>
 
-                        @if ($c->paciente->acessibilidade?->descricao)
-                            <p class="fm-aviso fm-consulta__extra">
-                                <strong>Acessibilidade:</strong> {{ $c->paciente->acessibilidade->descricao }}
-                            </p>
-                        @endif
+                        {{-- Dado sensível (LGPD art. 11): só nesta consulta e só enquanto
+                             ela está agendada. A regra está na ConsultaPolicy. --}}
+                        @can('verAcessibilidade', $c)
+                            @if ($c->paciente->acessibilidade?->descricao)
+                                <p class="fm-aviso fm-consulta__extra">
+                                    <strong>Acessibilidade:</strong> {{ $c->paciente->acessibilidade->descricao }}
+                                </p>
+                            @endif
+                        @endcan
 
                         @if ($c->observacoes)
                             <p class="fm-consulta__extra fm-campo__ajuda"><strong>Observações do paciente:</strong> {{ $c->observacoes }}</p>

@@ -5,8 +5,10 @@
     médico e especialidade. É SÓ LEITURA: quem marca realizada/falta ou
     cancela é o médico, na agenda dele (não existe rota da clínica para isso).
 
-    Acessibilidade do paciente aparece: é a clínica daquela consulta
-    (README §5.4). Observações do paciente também, para a recepção.
+    Acessibilidade do paciente NÃO aparece (28/09, 3ª revisão): só o médico
+    da consulta lê, e só enquanto ela está agendada — AGENTS.md §3 e o que o
+    paciente autorizou no cadastro. Observações do paciente aparecem, para a
+    recepção.
 --}}
 @extends('layouts.painel')
 
@@ -115,9 +117,8 @@
                             <span class="fm-etiqueta fm-etiqueta--{{ $st['tom'] }}">{{ $st['rotulo'] }}</span>
                         </div>
 
-                        @if ($c->paciente->acessibilidade?->descricao)
-                            <p class="fm-aviso fm-consulta__extra"><strong>Acessibilidade:</strong> {{ $c->paciente->acessibilidade->descricao }}</p>
-                        @endif
+                        {{-- Sem acessibilidade aqui (28/09, 3ª revisão): quem lê é só o médico
+                             da consulta (ConsultaPolicy::verAcessibilidade, AGENTS.md §3). --}}
                         @if ($c->observacoes)
                             <p class="fm-consulta__extra fm-campo__ajuda"><strong>Observações do paciente:</strong> {{ $c->observacoes }}</p>
                         @endif

@@ -11,7 +11,8 @@ class AgendaController extends Controller
     /**
      * Agenda do dia (?data=AAAA-MM-DD, ?vinculo=id). Traz também a
      * acessibilidade do paciente: aqui PODE, porque é o médico daquela
-     * consulta (AGENTS.md §6).
+     * consulta (AGENTS.md §3) — mas a tela só mostra nas consultas ainda
+     * AGENDADAS (ConsultaPolicy::verAcessibilidade).
      */
     public function index(Request $request)
     {

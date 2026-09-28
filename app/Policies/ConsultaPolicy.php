@@ -103,6 +103,26 @@ class ConsultaPolicy
     }
 
     /**
+     * Ver, NA AGENDA, o texto de acessibilidade do paciente desta consulta.
+     *
+     * So o medico da consulta, e so enquanto ela esta 'agendada' - e o
+     * que o AGENTS.md §3 manda, o que a PacienteAcessibilidadePolicy diz
+     * (regra 3: "a janela fecha sozinha") e o que o paciente autorizou no
+     * cadastro ("mostra-la so aos profissionais com quem eu tiver
+     * consulta"). A clinica nao le: ela nao atende, e o paciente nao
+     * autorizou. Consulta cancelada, realizada ou falta: a janela fechou.
+     *
+     * 28/09 (3a revisao): antes a agenda do medico mostrava o texto em
+     * qualquer consulta do dia, e a agenda da clinica mostrava sempre.
+     */
+    public function verAcessibilidade(User $user, Consulta $consulta): bool
+    {
+        return $user->ehMedico()
+            && $user->medico?->id === $consulta->medico_id
+            && $consulta->status === 'agendada';
+    }
+
+    /**
      * Avaliar.
      *
      * So o paciente da consulta, so se ela estiver 'realizada', e so
