@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Paciente;
 use App\Http\Controllers\Controller;
 use App\Models\Avaliacao;
 use App\Models\Consulta;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class AvaliacaoController extends Controller
@@ -38,12 +39,27 @@ class AvaliacaoController extends Controller
             'comentario' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        Avaliacao::create([
-            'consulta_id' => $consulta->id,
-            'paciente_id' => $consulta->paciente_id,
-            'medico_id'   => $consulta->medico_id,
-            ...$dados,
-        ]);
+        try {
+            Avaliacao::create([
+                'consulta_id' => $consulta->id,
+                'paciente_id' => $consulta->paciente_id,
+                'medico_id'   => $consulta->medico_id,
+                ...$dados,
+            ]);
+        } catch (QueryException $e) {
+            // 28/09 (2ª revisão): duplo clique em "Enviar avaliação". As duas
+            // requisições passam pela Policy antes de qualquer uma gravar, e o
+            // UNIQUE em avaliacoes.consulta_id recusa a segunda (erro 23000) -
+            // a pessoa via erro 500 com a avaliação já salva. Se a avaliação
+            // desta consulta existe, é esse o caso: responde como sucesso.
+            // Qualquer outro erro de banco continua subindo.
+            if ($e->getCode() === '23000' && Avaliacao::where('consulta_id', $consulta->id)->exists()) {
+                return redirect()->route('paciente.consultas')
+                    ->with('sucesso', 'Sua avaliação já estava registrada. Obrigado!');
+            }
+
+            throw $e;
+        }
 
         // A media do medico se recalcula sozinha (evento no model).
 

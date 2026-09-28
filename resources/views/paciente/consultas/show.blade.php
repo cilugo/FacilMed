@@ -70,6 +70,11 @@
                             @if ($consulta->pacientePlano)
                                 <span class="fm-info__nota">{{ $consulta->pacientePlano->plano->convenio->nome }} — {{ $consulta->pacientePlano->plano->nome }}</span>
                             @endif
+                            {{-- Aviso OBRIGATÓRIO (AGENTS.md §3): o convênio é aceito pelo médico,
+                                 não pelo endereço. Esta é a tela que abre logo depois de agendar. --}}
+                            @if ($consulta->status === 'agendada')
+                                <span class="fm-info__nota">Confirme na recepção se o seu plano é aceito neste endereço.</span>
+                            @endif
                         @else
                             <strong class="fm-info__valor">Particular · R$ {{ number_format((float) $consulta->valor, 2, ',', '.') }}</strong>
                         @endif

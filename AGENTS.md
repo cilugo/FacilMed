@@ -28,7 +28,7 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
   `http://localhost/FacilMed`. Fuso `America/Sao_Paulo`.
 - **Não instalar dependência nova** (Composer ou npm) sem registrar a decisão no README §6 e ter aprovação.
 - "Estado bom": `php artisan migrate:fresh --seed` roda limpo **e** `php artisan test` passa
-  (108 testes, banco `facilmed_testes` — nunca o `facilmed`).
+  (111 testes, banco `facilmed_testes` — nunca o `facilmed`).
 
 ## 3. Regras invioláveis de negócio e de dados
 

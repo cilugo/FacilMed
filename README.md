@@ -222,7 +222,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 108 testes automáticos
+├── tests/Feature/         ← 111 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -312,7 +312,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **108 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **111 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -343,7 +343,12 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   especialidades (criar/editar/destaque/desativar) e consultas (filtros, sem observações).
 - **Com isso, as 20 telas da seção 7 estão prontas.** Todo item de menu leva a uma tela.
 - **Revisão geral (28/09):** 8 problemas achados e corrigidos, com teste (ver §11, itens 19–26).
-- E-mails e lembretes. **108 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+- **Revisão geral, 2ª rodada (28/09):** mais 3 corrigidos, com teste no `RevisaoTest` (§11, itens
+  27–29). O `AlocadorDeMedico` agora usa a mesma regra `Vinculo::ofereceEspecialidade()`; o
+  duplo envio da avaliação responde "já estava registrada"; a tela da consulta por convênio
+  repete o aviso da recepção. Esta rodada foi feita sem PHP na máquina: **rodar `php artisan
+  test` no XAMPP antes do merge** (esperado: 111 passando).
+- E-mails e lembretes. **111 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**
@@ -380,6 +385,11 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
   diferentes dos cadastrados no banco. Na banca, procurar a clínica e achar outro endereço pega
   mal. Sugestão: montar a lista a partir das clínicas do banco (o `HomeController` pode mandar).
+- *(28/09, 2ª rodada)* Contadores do topo da home: "médicos verificados" é o único texto público
+  sem o "conferido na base simulada" (sugestão: "médicos com CRM conferido"; a troca por
+  "verificados pela equipe", sugerida no PR #1, ficou desatualizada em 24/09). E "clínicas e
+  hospitais" conta todos os locais ativos, incluindo consultório próprio de médico e unidade de
+  clínica bloqueada.
 - O protótipo estático do admin (`facilmed_admin_telas.zip`, 26/09) tem "Resultados de exames",
   status "Em acompanhamento" e idade de paciente — fora do escopo (AGENTS.md §1 e §3). As telas
   do admin feitas aqui seguem o contrato da seção 7.3.
@@ -736,6 +746,9 @@ e corrigidos 18 problemas — todos com teste automático hoje:
 | 24 | *(28/09)* Data inválida na URL (agendar pela clínica, filtro de consultas do admin) dava erro 500 |
 | 25 | *(28/09)* Especialidade com nome que gera o mesmo endereço de outra dava erro 500 |
 | 26 | *(28/09)* Mensagens de erro sem acento nos cadastros e no agendamento; filtro das consultas do paciente sumia ao trocar de página |
+| 27 | *(28/09, 2ª rodada)* Agendar **pela clínica** mostrava horários de especialidade **desativada** pelo admin; o paciente só era barrado na confirmação |
+| 28 | *(28/09, 2ª rodada)* Duplo clique em "Enviar avaliação" dava **erro 500** (o UNIQUE recusava o segundo envio, com a avaliação já salva) |
+| 29 | *(28/09, 2ª rodada)* A tela da consulta por convênio, que abre logo depois de agendar, não repetia o aviso "Confirme na recepção..." |
 
 ---
 

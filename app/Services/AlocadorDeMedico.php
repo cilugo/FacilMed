@@ -44,6 +44,13 @@ class AlocadorDeMedico
      *   - o preco define o que aparece na tela de confirmacao;
      *   - sem a especialidade, o medico nao atende esse caso.
      *
+     * 28/09 (2ª revisão): o filtro final é Vinculo::ofereceEspecialidade(),
+     * a MESMA regra do agendamento e de Clinica::especialidades(). Antes o
+     * alocador tinha regra própria, sem olhar se a especialidade estava
+     * ativa: com a especialidade desativada pelo admin, ele achava médico e
+     * mostrava horários, e o paciente só era barrado na confirmação ("não
+     * atende essa especialidade neste endereço"). Agora cai em "sem vaga".
+     *
      * @return \Illuminate\Support\Collection<int, Vinculo>
      */
     public function candidatos(Clinica $clinica, Especialidade $especialidade)
@@ -56,8 +63,12 @@ class AlocadorDeMedico
             ->whereHas('medico.especialidades', fn ($e) => $e->where('especialidades.id', $especialidade->id))
             ->whereHas('precos', fn ($p) => $p->where('especialidade_id', $especialidade->id)
                                               ->where('ativo', true))
-            ->with(['medico.user', 'local', 'precos'])
-            ->get();
+            // precos.especialidade: o ofereceEspecialidade() lê a especialidade
+            // de cada preço; carregando junto, evita uma consulta por vínculo.
+            ->with(['medico.user', 'local', 'precos.especialidade'])
+            ->get()
+            ->filter(fn (Vinculo $vinculo) => $vinculo->ofereceEspecialidade($especialidade->id))
+            ->values();
     }
 
     /**

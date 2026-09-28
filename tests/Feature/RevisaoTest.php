@@ -167,4 +167,97 @@ class RevisaoTest extends TestCase
             'password' => 'As duas senhas não são iguais.',
         ]);
     }
+
+    // -----------------------------------------------------------------
+    // 2ª rodada da revisão de 28/09 (README §11, itens 27 a 29)
+    // -----------------------------------------------------------------
+
+    public function test_agendar_pela_clinica_nao_oferece_especialidade_desativada(): void
+    {
+        $clinica = User::where('email', 'contato@vidaplena.test')->first()->clinica;
+        $cardio  = \App\Models\Especialidade::where('slug', 'cardiologia')->first();
+
+        // Com a especialidade ativa, a clínica encaixa um médico e mostra horários.
+        $this->comoPaciente()->get('/agendar/clinica/' . $clinica->id . '/cardiologia')
+            ->assertOk()
+            ->assertViewIs('agendamento.horario');
+
+        // O admin desativa a especialidade.
+        $cardio->update(['ativo' => false]);
+
+        // Antes o alocador ainda achava a Helena e mostrava horários; o paciente
+        // só era barrado na confirmação. Agora não há candidato: tela "sem vaga".
+        $this->assertTrue(app(\App\Services\AlocadorDeMedico::class)->candidatos($clinica, $cardio->fresh())->isEmpty());
+
+        $this->comoPaciente()->get('/agendar/clinica/' . $clinica->id . '/cardiologia')
+            ->assertOk()
+            ->assertViewIs('agendamento.sem-vaga');
+    }
+
+    public function test_avaliacao_enviada_duas_vezes_nao_da_erro_500(): void
+    {
+        $paciente = User::where('email', 'ana@facilmed.test')->first()->paciente;
+        $base = Consulta::where('paciente_id', $paciente->id)->first();
+
+        $consulta = Consulta::create($base->only(['paciente_id', 'medico_id', 'vinculo_id', 'especialidade_id', 'forma_pagamento', 'valor'])
+            + ['data_consulta' => now()->subYear()->toDateString(), 'horario' => '07:00',
+               'duracao_minutos' => 30, 'status' => 'realizada', 'origem' => 'medico']);
+
+        // Duplo clique: a PRIMEIRA requisição grava a avaliação enquanto esta
+        // (a segunda) já passou pela Policy e está a caminho do INSERT. O evento
+        // "creating" roda bem nesse intervalo, então simula a outra requisição.
+        \App\Models\Avaliacao::creating(function (\App\Models\Avaliacao $avaliacao) {
+            \Illuminate\Support\Facades\DB::table('avaliacoes')->insert([
+                'consulta_id' => $avaliacao->consulta_id,
+                'paciente_id' => $avaliacao->paciente_id,
+                'medico_id'   => $avaliacao->medico_id,
+                'estrelas'    => $avaliacao->estrelas,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
+        });
+
+        // Antes: o UNIQUE recusava o segundo INSERT e a pessoa via erro 500.
+        $this->comoPaciente()->post('/paciente/consultas/' . $consulta->id . '/avaliar', ['estrelas' => 5])
+            ->assertRedirect('/paciente/consultas')
+            ->assertSessionHas('sucesso', 'Sua avaliação já estava registrada. Obrigado!');
+
+        $this->assertSame(1, \App\Models\Avaliacao::where('consulta_id', $consulta->id)->count());
+    }
+
+    public function test_detalhe_da_consulta_por_convenio_mostra_o_aviso_da_recepcao(): void
+    {
+        $aviso = 'Confirme na recepção se o seu plano é aceito neste endereço.';
+
+        $ana = User::where('email', 'ana@facilmed.test')->first();
+        $carteirinha = PacientePlano::where('paciente_id', $ana->paciente->id)->where('status', 'ativa')->with('plano')->first();
+
+        $vinculo = Vinculo::where('ativo', true)->where('aceita_convenio', true)->with('medico.convenios', 'precos')->get()
+            ->first(fn ($v) => $v->medico->convenios->contains('id', $carteirinha->plano->convenio_id));
+        $this->assertNotNull($vinculo, 'Deveria haver médico que aceita o convênio da Ana.');
+
+        $esp = $vinculo->precos->where('ativo', true)->first()->especialidade_id;
+        [$data, $hora] = $this->primeiraVaga($vinculo);
+
+        $this->comoPaciente()->post('/agendar', [
+            'vinculo_id' => $vinculo->id, 'especialidade_id' => $esp,
+            'data_consulta' => $data, 'horario' => $hora,
+            'forma_pagamento' => 'convenio', 'paciente_plano_id' => $carteirinha->id,
+        ])->assertSessionHasNoErrors();
+
+        $consulta = Consulta::where('paciente_id', $ana->paciente->id)->where('vinculo_id', $vinculo->id)
+            ->whereDate('data_consulta', $data)->where('horario', $hora . ':00')->firstOrFail();
+
+        // A tela que abre logo depois de agendar precisa repetir o aviso (AGENTS.md §3).
+        $this->comoPaciente()->get('/paciente/consultas/' . $consulta->id)
+            ->assertOk()
+            ->assertSee($aviso);
+
+        // Consulta particular não recebe o aviso.
+        $consulta->update(['forma_pagamento' => 'particular', 'paciente_plano_id' => null, 'valor' => 250]);
+
+        $this->comoPaciente()->get('/paciente/consultas/' . $consulta->id)
+            ->assertOk()
+            ->assertDontSee($aviso);
+    }
 }
