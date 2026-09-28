@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BaseCrm;
+use App\Models\Bloqueio;
 use App\Models\Consulta;
 use App\Models\Especialidade;
 use App\Models\Local;
@@ -302,6 +303,33 @@ class RevisaoRodada3Test extends TestCase
         foreach (['especialidade[]=x', 'cidade[]=y', 'convenio[]=1'] as $q) {
             $this->get('/buscar?' . $q)->assertOk();
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Ausência registrada de novo não duplica (item 36)
+    // -----------------------------------------------------------------
+
+    public function test_ausencia_registrada_de_novo_para_cancelar_nao_duplica(): void
+    {
+        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
+        $c = Consulta::where('medico_id', $helena->id)->where('status', 'agendada')
+            ->whereDate('data_consulta', '>', now()->addDay())->orderBy('data_consulta')->firstOrFail();
+        $dia = $c->data_consulta->toDateString();
+        $dados = ['inicio' => $dia . 'T00:00', 'fim' => $dia . 'T23:59', 'motivo' => 'Congresso'];
+
+        // 1ª vez, sem "cancelar consultas": a ausência entra, a consulta fica, e o
+        // formulário volta preenchido para marcar a caixa e mandar de novo.
+        $this->comoMedico()->post('/medico/ausencias', $dados)
+            ->assertSessionHas('erro')->assertSessionHasInput('inicio', $dados['inicio']);
+        $this->assertSame('agendada', $c->fresh()->status);
+
+        // 2ª vez, como a mensagem manda: marcando a caixa.
+        $this->comoMedico()->post('/medico/ausencias', $dados + ['cancelar_consultas' => '1'])->assertSessionHas('sucesso');
+
+        // Antes: ficavam DUAS ausências iguais na lista.
+        $this->assertSame(1, Bloqueio::where('medico_id', $helena->id)->whereDate('inicio', $dia)->count());
+        $this->assertSame('cancelada', $c->fresh()->status);
+        $this->assertSame('Ausência do médico: Congresso', $c->fresh()->motivo_cancelamento);
     }
 
     public function test_preco_do_consultorio_nao_multiplica_valor_com_ponto(): void

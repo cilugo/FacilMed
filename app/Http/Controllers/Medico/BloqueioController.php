@@ -30,13 +30,20 @@ class BloqueioController extends Controller
         $medico = $request->user()->medico;
         $dados  = $request->validated();
 
-        $bloqueio = Bloqueio::create([
+        // 28/09 (3ª revisão): a mensagem lá embaixo manda "registrar de novo
+        // marcando cancelar consultas" - e antes isso criava uma SEGUNDA
+        // ausência igual à primeira. Agora a mesma ausência (mesmo lugar,
+        // mesmo início e fim) é reaproveitada.
+        $bloqueio = Bloqueio::firstOrNew([
             'medico_id'  => $medico->id,
             'vinculo_id' => $dados['vinculo_id'] ?? null,
             'inicio'     => Carbon::parse($dados['inicio']),
             'fim'        => Carbon::parse($dados['fim']),
-            'motivo'     => $dados['motivo'] ?? null,
         ]);
+        if (! $bloqueio->exists || ! empty($dados['motivo'])) {
+            $bloqueio->motivo = $dados['motivo'] ?? null;
+        }
+        $bloqueio->save();
 
         $conflitos = $bloqueio->consultasAgendadasNoPeriodo()->get();
 
@@ -51,7 +58,10 @@ class BloqueioController extends Controller
                 ($conflitos->count() === 1 ? 'consulta cancelada' : 'consultas canceladas') . ' (os pacientes são avisados por e-mail).');
         }
 
+        // withInput: o formulário volta preenchido; para cancelar, basta
+        // marcar a caixa e enviar de novo (a ausência não duplica).
         return back()
+            ->withInput()
             ->with('sucesso', 'Ausência registrada.')
             ->with('erro', "Há {$conflitos->count()} " . ($conflitos->count() === 1 ? 'consulta marcada' : 'consultas marcadas')
                 . ' nesse período. Elas NÃO foram canceladas: cancele pela agenda ou registre a ausência de novo marcando "cancelar consultas".')
