@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Clinica;
 
 use App\Http\Controllers\Controller;
+use App\Support\Dinheiro;
 use Illuminate\Support\Facades\DB;
 use App\Models\Preco;
 use Illuminate\Http\Request;
@@ -51,9 +52,10 @@ class PrecoController extends Controller
                 }
 
                 $texto = trim((string) $valor);
-                $numero = $texto === '' ? null : str_replace(',', '.', str_replace(['R$', ' ', '.'], '', $texto));
+                // "250,00", "1.250,00" e "150.00" (antes virava 15000: ver App\Support\Dinheiro).
+                $numero = $texto === '' ? null : Dinheiro::lerDigitado($texto);
 
-                if ($numero !== null && (! is_numeric($numero) || $numero < 0 || $numero > 99999)) {
+                if ($texto !== '' && ($numero === null || $numero > 99999)) {
                     $erros["precos.$vinculoId.$espId"] = "Valor inválido: \"{$texto}\".";
                     continue;
                 }

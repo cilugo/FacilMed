@@ -5,9 +5,9 @@
     próprio; em unidade de clínica quem define é a clínica (a Policy devolve
     403) — aqui o valor aparece só para leitura.
 
-    ⚠ O back-end tira os PONTOS do valor e troca vírgula por ponto
-    ("1.250,00" → 1250.00). Por isso o valor é sempre mostrado com vírgula:
-    "250.00" viraria 25000.
+    O valor é lido por App\Support\Dinheiro: aceita "1.250,00", "250,00" e
+    "150.00" (até 28/09 o ponto era sempre apagado e "150.00" virava 15000).
+    Na tela, continue mostrando com vírgula, que é o jeito brasileiro.
 --}}
 @extends('layouts.painel')
 

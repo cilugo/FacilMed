@@ -5,8 +5,9 @@
     Salva A GRADE INTEIRA de uma vez: precos[VINCULO_ID][ESPECIALIDADE_ID] = "250,00".
     Campo vazio = a especialidade deixa de ser oferecida naquele lugar.
 
-    ⚠ O back-end tira os PONTOS do valor ("1.250,00" → 1250). Por isso o
-    valor é sempre mostrado com vírgula: "250.00" viraria 25000.
+    O valor é lido por App\Support\Dinheiro: aceita "1.250,00", "250,00" e
+    "150.00" (até 28/09 o ponto era sempre apagado e "150.00" virava 15000).
+    Na tela, continue mostrando com vírgula, que é o jeito brasileiro.
 
     Depois de cadastrar médico novo, a clínica cai aqui com
     session('senha_temporaria'): mostrar em destaque, UMA vez.

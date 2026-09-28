@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Medico;
 
 use App\Models\Vinculo;
+use App\Support\Dinheiro;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -25,9 +26,11 @@ class SalvarPrecoRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        // "250,00" -> 250.00
-        $valor = str_replace(['R$', ' ', '.'], '', (string) $this->input('valor'));
-        $this->merge(['valor' => str_replace(',', '.', $valor)]);
+        // "250,00" -> 250.00 e "150.00" -> 150.00 (antes virava 15000: ver
+        // App\Support\Dinheiro). Se não der para entender o valor, fica o
+        // texto original e a regra "numeric" recusa com a mensagem certa.
+        $digitado = (string) $this->input('valor');
+        $this->merge(['valor' => Dinheiro::lerDigitado($digitado) ?? $digitado]);
     }
 
     public function rules(): array
