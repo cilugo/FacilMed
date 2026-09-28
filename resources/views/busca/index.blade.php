@@ -86,8 +86,9 @@
             <div class="lista-medicos">
                 @foreach ($medicos as $i => $medico)
                     @php
-                        $vinculos = $medico->vinculos->filter(fn ($v) => $v->ativo && $v->local?->ativo);
-                        $menorPreco = $vinculos->flatMap->precos->where('ativo', true)->min('valor');
+                        // Já vêm só os lugares que recebem agendamento (BuscaController).
+                        $vinculos = $medico->vinculos;
+                        $menorPreco = $vinculos->flatMap->precosOferecidos()->min('valor');
                         $aceitaConvenio = $vinculos->contains('aceita_convenio', true);
                     @endphp
                     <article class="card-medico">

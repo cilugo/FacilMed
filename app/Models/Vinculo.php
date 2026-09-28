@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -93,6 +94,50 @@ class Vinculo extends Model
         $preco = $this->precos->first(fn ($p) => (int) $p->especialidade_id === $especialidadeId && $p->ativo);
 
         return $preco !== null && (bool) $preco->especialidade?->ativo;
+    }
+
+    /**
+     * Os preços que o paciente pode ver e marcar aqui: preço ATIVO de
+     * especialidade ATIVA (a mesma regra de ofereceEspecialidade). 28/09,
+     * 3ª revisão: o perfil público e a busca mostravam preço de
+     * especialidade desativada pelo admin.
+     */
+    public function precosOferecidos(): \Illuminate\Support\Collection
+    {
+        return $this->precos
+            ->filter(fn ($p) => $p->ativo && $p->especialidade?->ativo)
+            ->sortBy(fn ($p) => $p->especialidade->nome)
+            ->values();
+    }
+
+    /**
+     * recebeAgendamento() em forma de CONSULTA AO BANCO (28/09, 3ª revisão),
+     * para a busca e o perfil público filtrarem antes de mostrar. As duas
+     * precisam dizer a mesma coisa: se mudar uma, mude a outra.
+     *
+     *   Vinculo::agendaveis()->get()   // só os vínculos que dá para agendar
+     *
+     * (Método "scope": o Laravel tira o "scope" do nome na hora de chamar.
+     * Tem outro nome porque recebeAgendamento() já é a versão de UM vínculo.)
+     */
+    public function scopeAgendaveis(Builder $q): Builder
+    {
+        return $q->where('vinculos.ativo', true)
+            ->whereHas('medico', fn ($m) => $m->visivel())
+            ->whereHas('local', fn ($l) => $l->where('ativo', true)
+                ->where(fn ($dono) => $dono->whereNull('clinica_id')
+                    ->orWhereHas('clinica.user', fn ($u) => $u->where('status', 'ativo'))));
+    }
+
+    /**
+     * Oferece alguma especialidade aqui (preço ativo + especialidade ativa)?
+     * Com $slug, oferece ESSA especialidade? Mesma regra de ofereceEspecialidade().
+     */
+    public function scopeOferece(Builder $q, ?string $slug = null): Builder
+    {
+        return $q->whereHas('precos', fn ($p) => $p->where('ativo', true)
+            ->whereHas('especialidade', fn ($e) => $e->where('ativo', true)
+                ->when($slug, fn ($e2) => $e2->where('slug', $slug))));
     }
 
     /** As especialidades oferecidas aqui (mesma regra de ofereceEspecialidade). */

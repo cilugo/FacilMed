@@ -12,7 +12,8 @@
 
 @php
     $moeda = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
-    $vinculos = $medico->vinculos->filter(fn ($v) => $v->ativo && $v->local?->ativo)->values();
+    // Já vêm só os lugares que recebem agendamento (PerfilPublicoController).
+    $vinculos = $medico->vinculos;
     $ordemDias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
     $nomeDia = ['segunda' => 'Segunda', 'terca' => 'Terça', 'quarta' => 'Quarta', 'quinta' => 'Quinta', 'sexta' => 'Sexta', 'sabado' => 'Sábado', 'domingo' => 'Domingo'];
     $usuario = auth()->user();
@@ -83,7 +84,7 @@
                             @endif
                         </div>
 
-                        @php $precos = $v->precos->where('ativo', true); @endphp
+                        @php $precos = $v->precosOferecidos(); @endphp
                         @if ($precos->isNotEmpty())
                             <table class="tabela-precos">
                                 @foreach ($precos as $preco)

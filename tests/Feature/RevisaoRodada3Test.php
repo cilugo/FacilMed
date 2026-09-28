@@ -233,6 +233,77 @@ class RevisaoRodada3Test extends TestCase
         $this->assertSame('rejeitado', $medico->fresh()->status_verificacao);
     }
 
+    // -----------------------------------------------------------------
+    // Perfil público e busca só mostram onde dá para agendar (itens 34 e 35)
+    // -----------------------------------------------------------------
+
+    public function test_perfil_publico_nao_oferece_clinica_bloqueada(): void
+    {
+        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
+        $naVidaPlena = $helena->vinculos()->whereHas('local', fn ($l) => $l->where('nome', 'Vida Plena - Centro'))->firstOrFail();
+
+        $this->get('/medico/' . $helena->id)->assertOk()
+            ->assertSee('Vida Plena - Centro')->assertSee(route('agendamento.horario', $naVidaPlena, false));
+
+        User::where('email', 'contato@vidaplena.test')->update(['status' => 'bloqueado']);
+
+        // Antes: o "Agendar aqui" continuava na tela e levava para uma página 404.
+        $this->get('/medico/' . $helena->id)->assertOk()
+            ->assertDontSee('Vida Plena - Centro')
+            ->assertDontSee(route('agendamento.horario', $naVidaPlena, false))
+            ->assertSee('Santa Clara');                 // o outro lugar dela continua
+        $this->comoPaciente('marcos@facilmed.test')->get('/agendar/' . $naVidaPlena->id)->assertNotFound();
+
+        // Na busca, o card também não lista mais a Vida Plena.
+        auth()->logout();
+        $this->get('/buscar?especialidade=cardiologia')->assertOk()
+            ->assertSee('Helena Navarro')->assertDontSee('Vida Plena - Centro');
+    }
+
+    public function test_perfil_publico_nao_mostra_especialidade_desativada(): void
+    {
+        $rafael = User::where('email', 'rafael@facilmed.test')->first()->medico;
+        $this->get('/medico/' . $rafael->id)->assertOk()->assertSee('Dermatologia');
+
+        Especialidade::where('slug', 'dermatologia')->update(['ativo' => false]);
+
+        // Antes: o preço de Dermatologia continuava na tabela do perfil.
+        $this->get('/medico/' . $rafael->id)->assertOk()
+            ->assertDontSee('Dermatologia')
+            ->assertSee('Clínica Geral');
+    }
+
+    public function test_busca_so_mostra_medico_com_onde_ser_agendado(): void
+    {
+        // Médico novo, com CRM conferido, mas ainda sem consultório nem clínica.
+        $this->post('/cadastro/medico', $this->cadastroDeMedico('Paulo Yamada'))->assertSessionHasNoErrors();
+        auth()->logout();
+
+        // Antes: aparecia na busca e o paciente não tinha onde agendar.
+        $this->get('/buscar')->assertOk()->assertDontSee('Paulo Yamada')->assertSee('Helena Navarro');
+        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertDontSee('Paulo Yamada');
+    }
+
+    public function test_busca_por_especialidade_exige_preco_ativo_em_algum_lugar(): void
+    {
+        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
+        $cardio = Especialidade::where('slug', 'cardiologia')->first();
+
+        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertSee('Helena Navarro');
+
+        // A clínica apaga o preço de Cardiologia da Helena em todos os lugares:
+        // ela ainda TEM a especialidade, mas não oferece em lugar nenhum.
+        Preco::whereIn('vinculo_id', $helena->vinculos()->pluck('id'))->where('especialidade_id', $cardio->id)
+            ->update(['ativo' => false]);
+
+        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertDontSee('Helena Navarro');
+        $this->get('/buscar?especialidade=clinica-geral')->assertOk()->assertSee('Helena Navarro');
+        // URL montada à mão com lista no lugar de texto: antes dava erro 500.
+        foreach (['especialidade[]=x', 'cidade[]=y', 'convenio[]=1'] as $q) {
+            $this->get('/buscar?' . $q)->assertOk();
+        }
+    }
+
     public function test_preco_do_consultorio_nao_multiplica_valor_com_ponto(): void
     {
         $this->comoMedico()->post('/medico/locais', [

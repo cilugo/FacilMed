@@ -20,10 +20,15 @@ class PerfilPublicoController extends Controller
         abort_unless($medico->status_verificacao === 'verificado', 404);
         abort_unless($medico->user->estaAtivo(), 404);
 
+        // 28/09 (3ª revisão): só os lugares que recebem agendamento e só
+        // especialidade ativa. Antes aparecia "Agendar aqui" em clínica
+        // bloqueada (o paciente caía numa página 404) e o preço de
+        // especialidade desativada pelo admin.
         $medico->load([
             'user',
-            'especialidades',
+            'especialidades' => fn ($e) => $e->where('ativo', true),
             'convenios',
+            'vinculos' => fn ($v) => $v->agendaveis(),
             'vinculos.local.horarios',
             'vinculos.precos.especialidade',
         ]);
