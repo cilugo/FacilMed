@@ -126,6 +126,7 @@ fim deve aparecer "22 consultas de demonstracao criadas".
 | `SQLSTATE[HY000] [2002]` | o MySQL do XAMPP está desligado |
 | `No application encryption key` | `php artisan key:generate` |
 | página em branco / erro 500 | última linha de `storage/logs/laravel.log` |
+| `migrate:rollback` ou `migrate:refresh` falha em `convenios_e_planos_ficticios` ("Data truncated for column 'operadora_ans_id'") | é de propósito: convênio fictício não tem operadora e o `down()` não apaga dado. O banco fica pela metade: rode `composer run banco-do-zero` (nunca use rollback/refresh) |
 | `migrate` falha na coluna virtual de `consultas` | troque `VIRTUAL` por `PERSISTENT` na migration. **Não remova o índice único** |
 | mudei algo em `config/` e não fez efeito | `php artisan optimize:clear` |
 | `localhost/FacilMed` dá "Not Found" do Apache | em `C:\xampp\apache\conf\httpd.conf`, `LoadModule rewrite_module` sem `#` na frente; reinicie o Apache |
@@ -161,7 +162,8 @@ Convênios fictícios: **SpSaúde**, **Horizonte Med**, **Bem Viver Saúde** (3 
 
 | CRM / UF | Resultado |
 |---|---|
-| 445566 / SP | ✅ aceito — entra verificado |
+| 445566 / SP, nome **Paulo Yamada** | ✅ aceito — entra verificado |
+| 445566 / SP, outro nome | ❌ em nome de outra pessoa (desde 28/09 o nome é conferido; "Dr./Dra.", acento e maiúscula não contam) |
 | 998877 / SP | ❌ cassado |
 | 556677 / RJ | ❌ suspenso |
 | 123456 / SP | ❌ não existe na base |
@@ -222,7 +224,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 111 testes automáticos
+├── tests/Feature/         ← 128 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -288,7 +290,11 @@ horário mesmo se clicarem juntas.
 - **Nenhuma consulta é cancelada em silêncio:** ausência do médico, desvincular médico e
   bloquear conta pedem confirmação explícita.
 - Comentário de avaliação é privado (só médico, clínica e admin veem). A nota é pública.
-- Acessibilidade do paciente só aparece para o médico/clínica **daquela consulta**.
+- Acessibilidade do paciente só aparece para o **médico daquela consulta**, e só enquanto ela está
+  agendada (`ConsultaPolicy::verAcessibilidade`). A clínica não vê.
+- CRM é conferido **junto com o nome**. Médico rejeitado pelo admin só volta pelo "Desfazer rejeição".
+- Busca e perfil público só mostram lugar onde dá para agendar (`Vinculo::agendaveis()`, a mesma
+  regra do `recebeAgendamento()`) e só preço ativo de especialidade ativa (`precosOferecidos()`).
 - Conta bloqueada é deslogada na próxima página. Médico cadastrado pela clínica troca a senha
   temporária antes de usar o sistema.
 - Várias regras também estão travadas **no próprio banco** (preço negativo, horário que termina
@@ -312,7 +318,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **111 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **128 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -346,9 +352,14 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 - **Revisão geral, 2ª rodada (28/09):** mais 3 corrigidos, com teste no `RevisaoTest` (§11, itens
   27–29). O `AlocadorDeMedico` agora usa a mesma regra `Vinculo::ofereceEspecialidade()`; o
   duplo envio da avaliação responde "já estava registrada"; a tela da consulta por convênio
-  repete o aviso da recepção. Esta rodada foi feita sem PHP na máquina: **rodar `php artisan
-  test` no XAMPP antes do merge** (esperado: 111 passando).
-- E-mails e lembretes. **111 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+  repete o aviso da recepção. *(Conferida na 3ª rodada: os testes passam.)*
+- **Revisão geral, 3ª rodada (28/09):** mais 10 problemas corrigidos, com teste no
+  `RevisaoRodada3Test` (§11, itens 30–39). Rodado de verdade (PHP + MariaDB e pelo Apache, como no
+  XAMPP): `migrate:fresh --seed` limpo e **128 testes passando**. Decisões tomadas nesta rodada
+  (dá para reverter se o grupo quiser): a **acessibilidade só aparece para o médico** da consulta e só
+  enquanto ela está agendada (a clínica não vê — é o que o AGENTS §3 e o consentimento do cadastro
+  dizem); a **base simulada confere o nome junto com o CRM**.
+- E-mails e lembretes. **128 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**
@@ -356,8 +367,8 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   avaliações, paginação). Só usam as variáveis `--fm-*` do `painel.css`.
 - Paginação: `{{ $lista->links('painel.parciais.paginacao') }}`. A padrão do Laravel usa classes
   do Tailwind, que o projeto não tem — use essa nas telas de admin/clínica também.
-- **Preço sempre com vírgula na tela** (`250,00`): o `SalvarPrecoRequest` tira os pontos, então
-  `250.00` viraria 25000. Vale para a grade de preços da clínica.
+- **Preço digitado** passa por `App\Support\Dinheiro::lerDigitado()`: aceita `250,00`, `1.250,00` e
+  `150.00` (até 28/09 o ponto era apagado e `150.00` virava 15000). Na tela, continue mostrando com vírgula.
 - Senha provisória: o `ExigirTrocaDeSenha` bloqueia todas as outras rotas, então o perfil mostra
   **só** o formulário de senha até ela ser trocada.
 - Partes reaproveitáveis em `resources/views/painel/parciais/`: `senha` (trocar senha),
@@ -374,13 +385,22 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   formulário (ex.: `motivo_bloqueio`) é gravado com `forceFill()`.
 
 **Próximos passos sugeridos:**
-1. Levar as branches para a `main` por Pull Request: `front/telas-admin` já contém as telas do
-   médico, da clínica e a revisão (as outras duas branches ficam dentro dela).
-2. Cada um rodar `composer install`, `php artisan migrate:fresh --seed` e `php artisan test` na
-   própria máquina (XAMPP) e commitar o `composer.lock` gerado.
+1. Subir esta versão numa branch (ex.: `revisao/28-09`) e abrir Pull Request para a `main`. *(O PR #2
+   e o `composer.lock` já entraram. As branches `front/telas-*` e `claude/...` já estão na `main` e podem
+   ser apagadas.)*
+2. Cada um: **Pull**, `composer install`, `composer run banco-do-zero` e `php artisan test`.
 3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
 **Para o grupo olhar (não mexi porque é código de outra pessoa — README §10, regra 6):**
+- *(28/09, 3ª rodada)* **Paciente pode marcar duas consultas no mesmo horário** com médicos
+  diferentes, e os dados de demonstração já vêm assim (a Ana aparece com duas consultas no mesmo dia e
+  hora em "Minhas consultas"). Sugestão: recusar na confirmação ("você já tem consulta nesse horário") e
+  espalhar os horários no `ConsultaSeeder`. É regra nova de agendamento: precisa do OK do grupo.
+- *(28/09)* O commit "Cadastros" (Mari) redesenhou os cadastros **só no `prototipo-antigo/`**, que o
+  sistema não usa. Para levar ao Laravel (como foi feito com a home), decidir antes: a tela de escolha
+  tirou o "Sou médico"; o cadastro de clínica pede CNES, cargo e "usuário" (o sistema entra por e-mail e
+  esses campos não existem no banco); o JS do cadastro de paciente ficou em outra pasta e não carrega.
+- *(28/09)* "Cadastros" e "Create composer.lock" foram commitados **direto na `main`** (regra 1 do §10).
 - A vitrine "Hospitais e Clínicas" da home é uma lista fixa no Blade. O "Hospital Vale Sereno"
   não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
   diferentes dos cadastrados no banco. Na banca, procurar a clínica e achar outro endereço pega
@@ -432,7 +452,7 @@ sozinhas no layout; erro de campo com `@error('campo')`. Todo formulário tem `@
 | `$data` | Carbon do dia mostrado |
 | `$anterior`, `$seguinte` | `'AAAA-MM-DD'` para os botões ‹ › |
 | `$vinculos` | lugares onde atende (`->local->nome`) — filtro |
-| `$consultas` | do dia, por horário. Cada uma: `horario`, `status`, `paciente->user->name`, `paciente->acessibilidade?->descricao`, `especialidade->nome`, `vinculo->local->nome`, `forma_pagamento`, `pacientePlano?->plano->convenio->nome`, `observacoes`, `inicio` |
+| `$consultas` | do dia, por horário. Cada uma: `horario`, `status`, `paciente->user->name`, `paciente->acessibilidade?->descricao` (só dentro de `@can('verAcessibilidade', $c)`), `especialidade->nome`, `vinculo->local->nome`, `forma_pagamento`, `pacientePlano?->plano->convenio->nome`, `observacoes`, `inicio` |
 | `$resumo` | `['agendadas','realizadas','canceladas','faltas']` (números) |
 
 Ações por consulta (botões só quando fizer sentido: realizada/falta depois do horário;
@@ -514,7 +534,7 @@ Para esconder botão: `$c->podeSerCancelada()` e `! $c->inicio->isFuture()`.
 | Variável | O quê |
 |---|---|
 | `$data`, `$anterior`, `$seguinte` | como na agenda do médico |
-| `$consultas` | como na do médico + `medico->user->name` |
+| `$consultas` | como na do médico + `medico->user->name` — **sem** acessibilidade (só o médico lê) |
 | `$filtros` | os filtros usados (para manter os selects) |
 | `$unidades`, `$medicos`, `$especialidades` | opções dos selects |
 | `$resumo` | `['agendadas','realizadas','canceladas','faltas']` |
@@ -749,6 +769,16 @@ e corrigidos 18 problemas — todos com teste automático hoje:
 | 27 | *(28/09, 2ª rodada)* Agendar **pela clínica** mostrava horários de especialidade **desativada** pelo admin; o paciente só era barrado na confirmação |
 | 28 | *(28/09, 2ª rodada)* Duplo clique em "Enviar avaliação" dava **erro 500** (o UNIQUE recusava o segundo envio, com a avaliação já salva) |
 | 29 | *(28/09, 2ª rodada)* A tela da consulta por convênio, que abre logo depois de agendar, não repetia o aviso "Confirme na recepção..." |
+| 30 | *(28/09, 3ª rodada)* Preço digitado com ponto (`150.00`) era salvo como **R$ 15.000,00** (preço do médico e grade da clínica) |
+| 31 | *(28/09, 3ª rodada)* A **acessibilidade** do paciente aparecia na agenda da clínica e, na do médico, até em consulta cancelada ou realizada |
+| 32 | *(28/09, 3ª rodada)* Dava para se cadastrar com o **CRM de outra pessoa** (a base simulada não conferia o nome) |
+| 33 | *(28/09, 3ª rodada)* Médico **rejeitado** pelo admin voltava a "verificado" trocando o CRM no perfil e reaparecia na busca |
+| 34 | *(28/09, 3ª rodada)* Perfil público mostrava "Agendar aqui" em **clínica bloqueada** (caía em 404) e preço de especialidade desativada |
+| 35 | *(28/09, 3ª rodada)* A busca mostrava médico **sem lugar para agendar** (ou sem preço da especialidade buscada); filtro em lista na URL dava erro 500 |
+| 36 | *(28/09, 3ª rodada)* Ausência registrada de novo para cancelar as consultas (como a mensagem manda) ficava **duplicada** |
+| 37 | *(28/09, 3ª rodada)* "Aprovar" carteirinha no admin não conferia a base simulada |
+| 38 | *(28/09, 3ª rodada)* **Caixas de marcar quebradas** no cadastro de médico (só aparecia "C", "D"...), no de paciente e no de médico pela clínica (marcada parecia desmarcada) |
+| 39 | *(28/09, 3ª rodada)* No celular, as abas de "Minhas consultas" passavam da largura da tela; comentários antigos no código contradiziam o AGENTS (senha "6 a 10", convênio "não pode ser inventado") |
 
 ---
 
