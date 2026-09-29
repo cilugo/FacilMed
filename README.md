@@ -273,7 +273,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 132 testes automáticos
+├── tests/Feature/         ← 141 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -336,6 +336,9 @@ horário mesmo se clicarem juntas.
 - Por convênio, só se o médico aceita aquele convênio; sempre com o aviso
   "Confirme na recepção se o seu plano é aceito neste endereço".
 - Cancelar é sempre permitido; com menos de 24h fica marcado como tardio.
+- **O paciente não fica em dois lugares ao mesmo tempo** (29/09): não marca consulta que se
+  sobrepõe a outra consulta agendada dele, mesmo com outro médico (`Paciente::consultaNoHorario`).
+  A tela de confirmação já avisa qual consulta atrapalha; a gravação confere de novo.
 - **Nenhuma consulta é cancelada em silêncio:** ausência do médico, desvincular médico e
   bloquear conta pedem confirmação explícita.
 - Comentário de avaliação é privado (só médico, clínica e admin veem). A nota é pública.
@@ -367,7 +370,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **132 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **141 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -379,6 +382,37 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > **Atualize ao terminar cada etapa.**
 
 **Atualizado em 29/09/2026.**
+
+**29/09 (tarde) — paciente em dois lugares e tela de escolha do cadastro:**
+- **O mesmo paciente não marca mais duas consultas no mesmo horário** (era o primeiro item do "Para o
+  grupo olhar"; OK do Sidney em 29/09). Vale para qualquer sobreposição, não só o mesmo minuto: uma
+  consulta de 60 min às 9h barra outra às 9h30; uma que termina 9h30 não barra outra às 9h30.
+  - Regra em `Paciente::consultaNoHorario()` (model). O `AgendamentoController` chama em dois lugares:
+    `confirmar()` volta para a tela de horários com "Você já tem uma consulta nesse horário: 02/10 às
+    09:00, com Dra. Helena Navarro, em Vida Plena - Centro. Escolha outro horário."; `salvar()` confere
+    de novo dentro da transação.
+  - Em `salvar()`, `lockForUpdate()` na linha do paciente: se ele mandar dois agendamentos no mesmo
+    segundo (duas abas), o segundo espera o primeiro gravar e aí enxerga o conflito. O índice único do
+    banco não cobre isso porque é por médico. **Sem migration nova.**
+  - Na remarcação, a consulta antiga não conta (ela é cancelada na mesma operação).
+  - `ConsultaSeeder`: o paciente continua sorteado, mas o horário agora é o primeiro livre para o
+    médico **e** para o paciente (`horarioLivre()`). Continuam 22 consultas. Como o horário depende do
+    que já está marcado, ele **não roda de novo** num banco que já tem consultas (os outros seeders
+    continuam podendo rodar de novo) — para recriar, `composer run banco-do-zero`.
+  - 8 testes novos no `AgendamentoTest` (mesmo horário, horário no meio da outra, logo depois pode,
+    outro paciente pode, cancelada libera, a confirmação avisa, remarcação, e os dados de demonstração
+    sem paciente em dois lugares).
+- **Tela "Como você deseja se cadastrar?" com o visual que o grupo fez** (`style1.css`, conversa do
+  grupo com o Claude em 29/09, "medidas tiradas da tela de login"): título maior, botões de 54 px,
+  círculos em `vh` (não se encostam em tela grande), logo um pouco abaixo do centro. Fica em
+  `public/css/cadastro.css`, bloco `.pagina--escolha`, que só vale nessa tela (o layout ganhou
+  `@section('pagina_classe')`). Paciente e clínica continuam com o visual da Mari. Cores: as da marca
+  (§8) no lugar dos tons aproximados do `style1.css`. Botões com "Sou Paciente" / "Sou Clínica/Hospital",
+  como no protótipo.
+- O commit "login e cadastro" (`900ed0c`, 29/09) mexeu só no `prototipo-antigo/`; o sistema em Laravel
+  já tinha o que ele trouxe (escolha só com paciente e clínica, logo oficial com link para o início).
+- Conferido: **141 testes** passando, `migrate:fresh --seed` limpo (5 vezes, sem paciente em dois
+  lugares), e as telas de escolha, login e cadastro de paciente abertas no navegador (computador e celular).
 
 **29/09 — `composer.lock` de volta:** o commit `cee1442` ("sla") apagou o `composer.lock` da `main`.
 Foi confusão: a instrução era apagar só a cópia local, que travava o Pull (§2.6). Sem o arquivo, o
@@ -454,7 +488,7 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
   (dá para reverter se o grupo quiser): a **acessibilidade só aparece para o médico** da consulta e só
   enquanto ela está agendada (a clínica não vê — é o que o AGENTS §3 e o consentimento do cadastro
   dizem); a **base simulada confere o nome junto com o CRM**.
-- E-mails e lembretes. **132 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+- E-mails e lembretes. **141 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**
@@ -487,11 +521,8 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
 3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
 **Para o grupo olhar (não mexi porque é código de outra pessoa — README §10, regra 6):**
-- *(28/09, 3ª rodada)* **Paciente pode marcar duas consultas no mesmo horário** com médicos
-  diferentes, e os dados de demonstração já vêm assim (a Ana aparece com duas consultas no mesmo dia e
-  hora em "Minhas consultas"). Sugestão: recusar na confirmação ("você já tem consulta nesse horário") e
-  espalhar os horários no `ConsultaSeeder`. É regra nova de agendamento: precisa do OK do grupo.
-- *(28/09)* "Cadastros" e "Create composer.lock" foram commitados **direto na `main`** (regra 1 do §10).
+- *(28/09 e 29/09)* "Cadastros", "Create composer.lock", "sla" e "login e cadastro" foram commitados
+  **direto na `main`** (regra 1 do §10). O "sla" apagou o `composer.lock` e derrubou a publicação.
 - A vitrine "Hospitais e Clínicas" da home é uma lista fixa no Blade. O "Hospital Vale Sereno"
   não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
   diferentes dos cadastrados no banco. Na banca, procurar a clínica e achar outro endereço pega
@@ -760,7 +791,8 @@ nunca como cor de marca.
 **Onde está o visual:**
 - Site público → `public/css/home.css` (a home que o grupo fez) + `site.css`
 - Login → `public/css/login.css` (o login que o grupo fez)
-- Cadastro → `public/css/cadastro.css` + `public/javas/cadastro.js` (o cadastro que a Mari fez, 29/09)
+- Cadastro → `public/css/cadastro.css` + `public/javas/cadastro.js` (o cadastro que a Mari fez, 29/09;
+  a tela de escolha com o `style1.css` do grupo, bloco `.pagina--escolha`)
 - Painéis → `public/css/painel.css` + `crud.css` + `agendamento.css`
 - Menus de cada tipo de conta → `config/navegacao.php`. **Item de menu sem tela é link morto:**
   exames, receitas, atestados, prontuário, "resumo da saúde", financeiro e relatórios foram
@@ -792,6 +824,7 @@ foi processado com sucesso".
 | Comentário de avaliação **privado** | reduz risco jurídico de comentário público sobre profissional de saúde |
 | Acessibilidade em **texto**, sem upload de laudo | guardar laudo tornaria o projeto depositário de dado sensível de saúde |
 | Sem pagamento, SUS e teleconsulta | fora do que um TCC consegue fazer direito até 20/10 |
+| Paciente **não marca duas consultas que se sobrepõem** (29/09) | ninguém está em dois consultórios ao mesmo tempo; a vaga presa numa das duas era perdida para outro paciente |
 | Médico **não se cadastra sozinho**: entra pela clínica (29/09) | plano do app de 28/09; a clínica já cadastrava o médico conferindo o CRM na base simulada, então nada de regra mudou — só sumiu um caminho a mais |
 
 **Becos sem saída (não repita):** validar CRM de graça por código; validar carteirinha por
@@ -881,6 +914,7 @@ e corrigidos 18 problemas — todos com teste automático hoje:
 | 38 | *(28/09, 3ª rodada)* **Caixas de marcar quebradas** no cadastro de médico (só aparecia "C", "D"...), no de paciente e no de médico pela clínica (marcada parecia desmarcada) |
 | 39 | *(28/09, 3ª rodada)* No celular, as abas de "Minhas consultas" passavam da largura da tela; comentários antigos no código contradiziam o AGENTS (senha "6 a 10", convênio "não pode ser inventado") |
 | 40 | *(29/09)* Pelo XAMPP (`/FacilMed`), `/register` e `/cadastro/medico` redirecionavam para `http://localhost/cadastro` (404): o `Route::redirect` perde a subpasta. Agora usam `redirect()->route()` |
+| 41 | *(29/09)* O mesmo paciente podia marcar duas consultas no mesmo horário com médicos diferentes, e os dados de demonstração já vinham assim (a Ana aparecia em dois lugares no mesmo dia e hora) |
 
 ---
 
