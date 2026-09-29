@@ -71,10 +71,10 @@
                     <div class="local">
                         <div class="local__topo">
                             <div>
-                                <h3>{{ $v->local->nome }}</h3>
+                                <h3><a href="{{ route('publico.local', $v->local) }}" style="text-decoration: underline;">{{ $v->local->nome }}</a></h3>
                                 <p class="local__endereco">{{ $v->local->endereco_completo }}</p>
                                 <div class="chips">
-                                    <span class="chip chip--cinza">{{ $v->local->tipo === 'hospital' ? 'Hospital' : 'Clínica' }}</span>
+                                    <span class="chip chip--cinza">{{ ['hospital' => 'Hospital', 'consultorio' => 'Consultório'][$v->local->tipo] ?? 'Clínica' }}</span>
                                     @if ($v->aceita_particular)<span class="chip">Particular</span>@endif
                                     @if ($v->aceita_convenio)<span class="chip chip--verde">Convênio</span>@endif
                                 </div>

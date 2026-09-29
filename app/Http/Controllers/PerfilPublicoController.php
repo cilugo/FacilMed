@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Clinica;
+use App\Models\Especialidade;
+use App\Models\Local;
 use App\Models\Medico;
+use App\Support\Localizacao;
+use Illuminate\Http\Request;
 
 class PerfilPublicoController extends Controller
 {
@@ -69,6 +73,68 @@ class PerfilPublicoController extends Controller
                 ->get()
                 ->sortBy(fn ($m) => $m->user->name)
                 ->values(),
+        ]);
+    }
+
+    /**
+     * Página do local (29/09/2026, plano do app): uma unidade de clínica, um
+     * hospital ou o consultório de um médico. Endereço, telefone, horários,
+     * nota média, formas de pagamento, especialidades com preço e os médicos
+     * disponíveis - cada um com "Ver horários", que leva ao agendamento.
+     *
+     * ?especialidade=slug filtra os médicos (vem da busca de locais).
+     * ?lat=&lng= ou ?cidade= mostram a distância (Localizacao::origem).
+     *
+     * A nota do local sai das avaliações das consultas feitas aqui
+     * (Local::notas). Comentário NUNCA aparece (AGENTS.md §3).
+     */
+    public function local(Request $request, Local $local)
+    {
+        abort_unless($local->estaPublico(), 404);
+
+        $slug = is_string($s = $request->query('especialidade')) && $s !== '' ? $s : null;
+        $cidade = is_string($c = $request->query('cidade')) && $c !== '' ? $c : null;
+        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade);
+
+        $local->load(['horarios', 'clinica', 'medico.user']);
+
+        // Mesma regra da busca: só vínculo que recebe agendamento e oferece
+        // alguma especialidade (preço ativo de especialidade ativa).
+        $vinculos = $local->vinculos()->agendaveis()->oferece()
+            ->with([
+                'medico.user',
+                'medico.convenios' => fn ($c) => $c->where('ativo', true),
+                'precos.especialidade',
+            ])
+            ->get()
+            ->sortBy(fn ($v) => $v->medico->user->name)
+            ->values();
+
+        // Cada especialidade uma vez, com o menor preço particular daqui.
+        $especialidades = $vinculos
+            ->flatMap(fn ($v) => $v->precosOferecidos()->map(fn ($p) => ['preco' => $p, 'particular' => $v->aceita_particular]))
+            ->groupBy(fn ($item) => $item['preco']->especialidade_id)
+            ->map(fn ($itens) => (object) [
+                'especialidade' => $itens->first()['preco']->especialidade,
+                'aPartirDe'     => $itens->where('particular', true)->min(fn ($item) => (float) $item['preco']->valor),
+            ])
+            ->sortBy(fn ($e) => $e->especialidade->nome)
+            ->values();
+
+        return view('publico.local', [
+            'local'          => $local,
+            'nota'           => Local::notas([$local->id])->get($local->id),
+            'especialidades' => $especialidades,
+            'escolhida'      => $slug ? Especialidade::where('slug', $slug)->first() : null,
+            'slug'           => $slug,
+            'medicos'        => $slug
+                ? $vinculos->filter(fn ($v) => $v->especialidadesOferecidas()->contains('slug', $slug))->values()
+                : $vinculos,
+            'particular'     => $vinculos->contains('aceita_particular', true),
+            'convenios'      => $vinculos->where('aceita_convenio', true)
+                ->flatMap(fn ($v) => $v->medico->convenios)->unique('id')->sortBy('nome')->values(),
+            'distancia'      => $origem ? $local->distanciaAte($origem['lat'], $origem['lng']) : null,
+            'origem'         => $origem,
         ]);
     }
 }

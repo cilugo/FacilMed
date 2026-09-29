@@ -71,6 +71,7 @@
                         <option value="nome" @selected($ordem === 'nome')>Nome</option>
                     </select>
                 </form>
+                <a href="{{ route('busca.locais', array_filter(['especialidade' => $filtros['especialidade'] ?? null, 'cidade' => $filtros['cidade'] ?? null])) }}" class="limpar-filtros">Ver locais perto de você</a>
                 @if ($temFiltro)
                     <a href="{{ route('busca.index') }}" class="limpar-filtros">Limpar filtros</a>
                 @endif

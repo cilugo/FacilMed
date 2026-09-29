@@ -40,6 +40,12 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // controller usa o scope Medico::visivel().
 Route::get('/buscar', [BuscaController::class, 'index'])->name('busca.index');
 
+// 29/09/2026 (plano do app): clínicas, hospitais e consultórios do mais perto
+// para o mais longe, e a página de cada local com os médicos disponíveis.
+Route::get('/locais', [BuscaController::class, 'locais'])->name('busca.locais');
+Route::get('/local/{local}', [PerfilPublicoController::class, 'local'])
+    ->whereNumber('local')->name('publico.local');
+
 // Perfis públicos
 // whereNumber: sem ele, /medico/{medico} captura /medico/agenda, /medico/perfil etc.
 // (declarado antes do grupo do painel) e todas as telas do médico e da clínica davam 404.
