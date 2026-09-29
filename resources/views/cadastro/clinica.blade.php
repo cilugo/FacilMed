@@ -1,42 +1,94 @@
-@extends('layouts.publico')
+{{--
+    Cadastro de CLÍNICA ou HOSPITAL. Visual da Mariana (protótipo
+    cadpac/cadastro-clinica.html), com os campos que o banco usa.
+    Validação: CadastroClinicaRequest (CNPJ conferido na base simulada).
+
+    Diferenças do protótipo, de propósito:
+    - Saem CNES, cargo e usuário: não existem no banco, e o login é pelo e-mail.
+    - O "Endereço" único virou o cartão da PRIMEIRA UNIDADE (CEP, rua,
+      número, bairro, cidade, UF): é o local onde os médicos vão atender.
+    - Entra o nome fantasia (é o nome que o paciente vê na busca).
+--}}
+@extends('layouts.cadastro')
+
 @section('titulo', 'Cadastro de clínica ou hospital')
+
 @section('conteudo')
-    <section class="fm-painel">
-        <header class="fm-painel__topo"><h1 class="fm-painel__titulo"><x-icone nome="building" /> Cadastro de clínica ou hospital</h1></header>
+    <form method="POST" action="{{ route('cadastro.clinica') }}" class="formulario formulario--largo" novalidate>
+        @csrf
 
-        <p class="fm-dica"><x-icone nome="lightbulb" />
-            <span>O CNPJ é <strong>conferido na hora na base simulada do FacilMed</strong> (projeto acadêmico: não consulta a Receita Federal de verdade). CNPJ não encontrado ou baixado não é aceito.</span></p>
+        <h1>Cadastro de clínica ou hospital</h1>
+        <p class="subtitulo">Preencha os dados abaixo para criar sua conta na plataforma. Depois, você cadastra os seus médicos.</p>
 
-        <form method="POST" action="{{ route('cadastro.clinica') }}" class="fm-form fm-form--duas" novalidate style="margin-top:14px">
-            @csrf
-            @include('cadastro._conta', ['rotuloNome' => 'Nome do responsável pela conta'])
+        @include('cadastro._avisos')
 
-            <p class="fm-secao-form">Empresa</p>
-            @include('cadastro._campo', ['nome' => 'cnpj', 'rotulo' => 'CNPJ', 'obrigatorio' => true, 'atributos' => 'inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"'])
-            @include('cadastro._campo', ['nome' => 'telefone', 'rotulo' => 'Telefone', 'tipo' => 'tel', 'atributos' => 'maxlength="15"'])
-            @include('cadastro._campo', ['nome' => 'razao_social', 'rotulo' => 'Razão social', 'obrigatorio' => true, 'atributos' => 'maxlength="150"'])
-            @include('cadastro._campo', ['nome' => 'nome_fantasia', 'rotulo' => 'Nome fantasia', 'obrigatorio' => true, 'atributos' => 'maxlength="150"'])
-            @include('cadastro._campo', ['nome' => 'descricao', 'rotulo' => 'Descrição', 'tipo' => 'textarea', 'largo' => true, 'atributos' => 'maxlength="2000"'])
-
-            <p class="fm-secao-form">Primeira unidade</p>
-            @include('cadastro._campo', ['nome' => 'unidade_nome', 'rotulo' => 'Nome da unidade', 'obrigatorio' => true, 'atributos' => 'maxlength="150" placeholder="Ex.: Unidade Centro"'])
-            <div class="fm-campo {{ $errors->has('unidade_tipo') ? 'fm-campo--erro' : '' }}">
-                <label for="c-unidade_tipo">Tipo *</label>
-                <select id="c-unidade_tipo" name="unidade_tipo" required>
-                    <option value="clinica" @selected(old('unidade_tipo', 'clinica') === 'clinica')>Clínica</option>
-                    <option value="hospital" @selected(old('unidade_tipo') === 'hospital')>Hospital</option>
-                </select>
-                @error('unidade_tipo') <span class="fm-campo__erro">{{ $message }}</span> @enderror
+        <x-cadastro.card titulo="Tipo de estabelecimento" icone="predio" :grade="false">
+            @php $tipoEscolhido = old('unidade_tipo', 'clinica'); @endphp
+            <div class="tipos {{ $errors->has('unidade_tipo') ? 'tipos--invalido' : '' }}" role="radiogroup" aria-label="Tipo de estabelecimento">
+                <label class="tipo">
+                    <input type="radio" name="unidade_tipo" value="clinica" @checked($tipoEscolhido === 'clinica')>
+                    <span class="tipo__conteudo">
+                        @include('cadastro._icone', ['nome' => 'clinica', 'classe' => 'tipo__icone'])
+                        <span><strong>Clínica</strong><small>Consultórios, clínicas e centros médicos</small></span>
+                    </span>
+                </label>
+                <label class="tipo">
+                    <input type="radio" name="unidade_tipo" value="hospital" @checked($tipoEscolhido === 'hospital')>
+                    <span class="tipo__conteudo">
+                        @include('cadastro._icone', ['nome' => 'hospital', 'classe' => 'tipo__icone'])
+                        <span><strong>Hospital</strong><small>Hospitais, prontos-socorros e similares</small></span>
+                    </span>
+                </label>
             </div>
-            @include('cadastro._campo', ['nome' => 'unidade_cep', 'rotulo' => 'CEP', 'obrigatorio' => true, 'atributos' => 'inputmode="numeric" maxlength="9"'])
-            @include('cadastro._campo', ['nome' => 'unidade_endereco', 'rotulo' => 'Endereço', 'obrigatorio' => true, 'atributos' => 'maxlength="255"'])
-            @include('cadastro._campo', ['nome' => 'unidade_numero', 'rotulo' => 'Número', 'obrigatorio' => true, 'atributos' => 'maxlength="20"'])
-            @include('cadastro._campo', ['nome' => 'unidade_complemento', 'rotulo' => 'Complemento', 'atributos' => 'maxlength="100"'])
-            @include('cadastro._campo', ['nome' => 'unidade_bairro', 'rotulo' => 'Bairro', 'obrigatorio' => true, 'atributos' => 'maxlength="100"'])
-            @include('cadastro._campo', ['nome' => 'unidade_cidade', 'rotulo' => 'Cidade', 'obrigatorio' => true, 'atributos' => 'maxlength="100"'])
-            @include('cadastro._campo', ['nome' => 'unidade_uf', 'rotulo' => 'UF', 'obrigatorio' => true, 'atributos' => 'maxlength="2" placeholder="SP"'])
+            @error('unidade_tipo') <p class="erro">{{ $message }}</p> @enderror
+        </x-cadastro.card>
 
-            <div class="fm-form__acoes"><button type="submit" class="fm-botao">Criar conta</button></div>
-        </form>
-    </section>
+        <x-cadastro.card titulo="Dados da instituição" icone="instituicao">
+            @include('cadastro._campo', ['nome' => 'razao_social', 'rotulo' => 'Razão social', 'icone' => 'instituicao', 'obrigatorio' => true,
+                'atributos' => 'placeholder="Como está no CNPJ" maxlength="150"'])
+            @include('cadastro._campo', ['nome' => 'cnpj', 'rotulo' => 'CNPJ', 'icone' => 'lista', 'obrigatorio' => true, 'mascara' => 'cnpj',
+                'ajuda' => 'Conferido na base simulada do FacilMed.',
+                'atributos' => 'inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18"'])
+            @include('cadastro._campo', ['nome' => 'nome_fantasia', 'rotulo' => 'Nome fantasia', 'icone' => 'predio', 'obrigatorio' => true,
+                'ajuda' => 'É o nome que o paciente vê na busca.', 'atributos' => 'placeholder="Ex.: Hospital São Lucas" maxlength="150"'])
+            @include('cadastro._campo', ['nome' => 'telefone', 'rotulo' => 'Telefone', 'icone' => 'telefone', 'tipo' => 'tel', 'mascara' => 'telefone',
+                'atributos' => 'placeholder="(12) 3333-4444" maxlength="15" autocomplete="tel"'])
+            @include('cadastro._campo', ['nome' => 'descricao', 'rotulo' => 'Descrição', 'icone' => 'texto', 'tipo' => 'textarea', 'inteiro' => true,
+                'atributos' => 'maxlength="2000" placeholder="Opcional. Aparece na página pública da clínica."'])
+        </x-cadastro.card>
+
+        <x-cadastro.card titulo="Primeira unidade" nota="Onde os médicos vão atender. Outras unidades você cadastra depois." icone="local">
+            @include('cadastro._campo', ['nome' => 'unidade_nome', 'rotulo' => 'Nome da unidade', 'icone' => 'predio', 'obrigatorio' => true,
+                'atributos' => 'placeholder="Ex.: Unidade Centro" maxlength="150"'])
+            @include('cadastro._campo', ['nome' => 'unidade_cep', 'rotulo' => 'CEP', 'icone' => 'local', 'obrigatorio' => true, 'mascara' => 'cep',
+                'atributos' => 'inputmode="numeric" placeholder="00000-000" maxlength="9" autocomplete="postal-code"'])
+            @include('cadastro._campo', ['nome' => 'unidade_endereco', 'rotulo' => 'Endereço', 'icone' => 'local', 'obrigatorio' => true, 'inteiro' => true,
+                'atributos' => 'placeholder="Rua, avenida..." maxlength="255" autocomplete="address-line1"'])
+            @include('cadastro._campo', ['nome' => 'unidade_numero', 'rotulo' => 'Número', 'obrigatorio' => true, 'atributos' => 'maxlength="20"'])
+            @include('cadastro._campo', ['nome' => 'unidade_complemento', 'rotulo' => 'Complemento', 'atributos' => 'maxlength="100" placeholder="Opcional"'])
+            @include('cadastro._campo', ['nome' => 'unidade_bairro', 'rotulo' => 'Bairro', 'obrigatorio' => true, 'atributos' => 'maxlength="100"'])
+            @include('cadastro._campo', ['nome' => 'unidade_cidade', 'rotulo' => 'Cidade', 'obrigatorio' => true, 'atributos' => 'maxlength="100" autocomplete="address-level2"'])
+            @include('cadastro._campo', ['nome' => 'unidade_uf', 'rotulo' => 'UF', 'tipo' => 'select', 'obrigatorio' => true, 'padrao' => 'SP',
+                'opcoes' => array_combine(\App\Support\Uf::TODAS, \App\Support\Uf::TODAS)])
+        </x-cadastro.card>
+
+        <x-cadastro.card titulo="Responsável e acesso" nota="É com este e-mail e esta senha que a clínica entra no FacilMed." icone="cadeado">
+            @include('cadastro._campo', ['nome' => 'name', 'rotulo' => 'Nome do responsável', 'icone' => 'pessoa', 'obrigatorio' => true, 'inteiro' => true,
+                'atributos' => 'placeholder="Ex.: Maria Silva Santos" autocomplete="name" maxlength="255"'])
+            @include('cadastro._campo', ['nome' => 'email', 'rotulo' => 'E-mail', 'icone' => 'email', 'tipo' => 'email', 'obrigatorio' => true, 'inteiro' => true,
+                'atributos' => 'placeholder="contato@instituicao.com.br" autocomplete="email"'])
+            @include('cadastro._campo', ['nome' => 'password', 'rotulo' => 'Senha', 'icone' => 'cadeado', 'tipo' => 'password', 'obrigatorio' => true,
+                'ajuda' => 'Mínimo de 8 caracteres.', 'atributos' => 'placeholder="Digite a senha" autocomplete="new-password" minlength="8" maxlength="72"'])
+            @include('cadastro._campo', ['nome' => 'password_confirmation', 'rotulo' => 'Confirmar senha', 'icone' => 'cadeado', 'tipo' => 'password', 'obrigatorio' => true,
+                'atributos' => 'placeholder="Confirme a senha" autocomplete="new-password" maxlength="72"'])
+        </x-cadastro.card>
+
+        <div class="rodape">
+            <p class="entrar">Já tem uma conta? <a href="{{ route('login') }}">Entrar</a></p>
+            <button type="submit" class="botao">
+                Criar conta
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"/></svg>
+            </button>
+        </div>
+    </form>
 @endsection

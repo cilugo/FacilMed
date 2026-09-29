@@ -1,0 +1,367 @@
+/*
+ * CADASTRO (escolha, paciente, clínica/hospital) — 29/09/2026.
+ *
+ * Visual feito pela Mariana no protótipo (prototipo-antigo/paginas/cadpac,
+ * commit "Cadastros" de 28/09), trazido para o Laravel. Mudanças em
+ * relação ao protótipo:
+ *   - cores da marca (README §8) no lugar dos tons aproximados;
+ *   - logo oficial (imgs/marca/logocomslogan.png) no lugar do logo.svg;
+ *   - estilos a mais para o que o banco pede e o protótipo não tinha:
+ *     caixa de marcar (acessibilidade), texto longo, lista de UF, aviso
+ *     de erro vindo do servidor.
+ * Usado só por resources/views/layouts/cadastro.blade.php.
+ */
+
+:root {
+  --azul-escuro: #183E9F;   /* marinho da marca */
+  --azul: #2350d0;          /* início do degradê dos botões (protótipo) */
+  --azul-claro: #1C9CE5;    /* azul-claro da marca */
+  --texto-suave: #4f6fb8;
+  --placeholder: #8fa3c9;
+  --borda: #d6e2f5;
+  --fundo: #f7faff;
+  --fundo-cabecalho: #edf3fd;
+  --erro: #c62828;
+  --ok: #1b7a43;
+  --painel-1: #eaf2fd;
+  --painel-2: #d4e4fb;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+/* A página ocupa a altura da tela; quem rola é só o lado do formulário */
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--fundo);
+  color: var(--azul-escuro);
+}
+
+.pagina {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* 50% marca | 50% formulário */
+}
+
+/* ---------- Painel da marca ---------- */
+.marca {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--painel-1) 0%, var(--painel-2) 100%);
+}
+
+.circulo { position: absolute; border-radius: 50%; pointer-events: none; }
+.circulo--1 { width: 360px; height: 360px; top: -130px; left: -140px; background: rgba(255,255,255,.5); }
+.circulo--2 { width: 160px; height: 160px; top: 22%; right: -60px; background: rgba(255,255,255,.45); }
+.circulo--3 { width: 300px; height: 300px; bottom: -120px; left: -70px; background: rgba(170,200,245,.4); }
+
+.marca__link { position: relative; display: block; border-radius: 12px; }
+.marca__link:focus-visible { outline: 3px solid var(--azul-claro); outline-offset: 6px; }
+.marca__logo { display: block; width: 260px; max-width: 70vw; height: auto; }
+
+/* ---------- Lado do formulário ---------- */
+.conteudo {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 32px;
+}
+.conteudo--centro { align-items: center; background: #fff; }
+
+.formulario { width: 100%; max-width: 760px; }
+.formulario--largo { max-width: 900px; }
+.escolha { width: 100%; max-width: 400px; }
+
+h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+
+.subtitulo {
+  margin-top: 8px;
+  font-size: .9rem;
+  color: var(--texto-suave);
+}
+
+/* Avisos (sessão e resumo dos erros do servidor) */
+.aviso {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: .88rem;
+  line-height: 1.4;
+}
+.aviso--erro { background: #fdeceb; border: 1px solid #f3c2bf; color: var(--erro); }
+.aviso--ok { background: #e8f6ee; border: 1px solid #b9e2c9; color: var(--ok); }
+
+/* ---------- Card ---------- */
+.card {
+  min-width: 0;
+  margin-top: 20px;
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card__cabecalho {
+  float: left;              /* faz a legend se comportar como bloco dentro do fieldset */
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--fundo-cabecalho);
+}
+.card__cabecalho + * { clear: both; }
+.card__icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+}
+.card__titulo { display: block; font-size: 1rem; font-weight: 700; }
+.card__nota { display: block; font-size: .78rem; font-weight: 400; color: var(--texto-suave); }
+
+.card__corpo { padding: 20px; }
+
+.grade {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+.grade--3 { grid-template-columns: 2fr 1fr 1fr; }
+
+/* ---------- Campos ---------- */
+.campo { min-width: 0; }
+.campo--inteiro { grid-column: 1 / -1; }
+
+.campo label,
+.campo .rotulo {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.entrada {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.entrada:focus-within {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(35, 80, 208, .12);
+}
+.campo--invalido .entrada { border-color: var(--erro); }
+
+.entrada input,
+.entrada select,
+.entrada textarea {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: .85rem;
+  color: var(--azul-escuro);
+}
+.entrada input::placeholder,
+.entrada textarea::placeholder { color: var(--placeholder); }
+
+.entrada--texto { height: auto; align-items: flex-start; padding: 10px 12px; }
+.entrada--texto textarea { min-height: 72px; resize: vertical; line-height: 1.4; }
+.entrada--texto .icone { margin-top: 1px; }
+
+.entrada--select select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 24px;
+}
+.entrada--select option { color: var(--azul-escuro); }
+.icone--seta { position: absolute; right: 12px; pointer-events: none; }
+
+.icone {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--azul-escuro);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.card__cabecalho .icone { width: 20px; height: 20px; }
+
+.mostrar-senha {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.mostrar-senha .icone { stroke: var(--placeholder); }
+.mostrar-senha[aria-pressed="true"] .icone { stroke: var(--azul); }
+.mostrar-senha:focus-visible { outline: 2px solid var(--azul); }
+
+.ajuda {
+  margin-bottom: 6px;
+  padding-top: 3px;
+  font-size: .75rem;
+  color: var(--texto-suave);
+}
+
+.erro {
+  min-height: 18px;
+  padding-top: 3px;
+  font-size: .75rem;
+  color: var(--erro);
+}
+
+/* Caixa de marcar (acessibilidade e consentimento) */
+.marcar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: .85rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.marcar input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--azul);
+  cursor: pointer;
+}
+.marcar--forte { font-weight: 700; }
+.marcar + .erro { padding-left: 28px; }
+
+/* ---------- Tipo de estabelecimento (clínica / hospital) ---------- */
+.tipos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tipo { position: relative; cursor: pointer; }
+.tipo input { position: absolute; opacity: 0; pointer-events: none; }
+
+.tipo__conteudo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 14px 16px;
+  background: var(--fundo);
+  border: 1.5px solid var(--borda);
+  border-radius: 8px;
+  transition: border-color .15s, background-color .15s, box-shadow .15s;
+}
+.tipo__conteudo strong { display: block; font-size: .95rem; }
+.tipo__conteudo small { display: block; margin-top: 3px; font-size: .78rem; color: var(--texto-suave); }
+.tipo__icone { width: 26px; height: 26px; }
+
+.tipo:hover .tipo__conteudo { border-color: #9dbbee; }
+.tipo input:checked + .tipo__conteudo {
+  border-color: var(--azul);
+  background: #eef3ff;
+  box-shadow: 0 0 0 3px rgba(35, 80, 208, .12);
+}
+.tipo input:checked + .tipo__conteudo .tipo__icone { stroke: var(--azul); }
+.tipo input:focus-visible + .tipo__conteudo { outline: 2px solid var(--azul); outline-offset: 2px; }
+.tipos--invalido .tipo__conteudo { border-color: var(--erro); }
+
+/* ---------- Rodapé do formulário ---------- */
+.rodape {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 32px;
+}
+
+.entrar { font-size: .85rem; color: var(--texto-suave); }
+.entrar a { color: var(--azul-escuro); font-weight: 700; }
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--azul) 0%, var(--azul-escuro) 100%);
+  color: #fff;
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(24, 62, 159, .18);
+  transition: filter .15s;
+}
+.botao:hover { filter: brightness(1.1); }
+.botao:focus-visible { outline: 3px solid var(--azul-claro); outline-offset: 3px; }
+.botao svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ---------- Escolha do tipo de cadastro ---------- */
+.opcoes {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.opcoes .botao { width: 100%; height: 48px; }
+.escolha .entrar { margin-top: 26px; text-align: center; }
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 900px) {
+  /* No celular volta a rolar a página inteira */
+  body { height: auto; overflow: visible; }
+  .pagina { grid-template-columns: 1fr; grid-template-rows: auto 1fr; min-height: 100vh; min-height: 100dvh; }
+  .conteudo--centro { align-items: flex-start; }
+  .marca { min-height: 180px; padding: 28px 0; }
+  .marca__logo { width: 170px; }
+  .conteudo { overflow: visible; padding: 28px 16px; }
+}
+
+@media (max-width: 600px) {
+  .grade, .grade--3, .tipos { grid-template-columns: 1fr; }
+  .rodape { flex-direction: column-reverse; gap: 16px; }
+  .rodape .botao { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

@@ -50,6 +50,27 @@ class CadastroTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('/cadastro/medico');
     }
 
+    /** Visual da Mariana (29/09): as telas abrem e o erro do servidor volta embaixo do campo. */
+    public function test_telas_de_cadastro_no_visual_novo_mostram_o_erro_do_servidor(): void
+    {
+        $this->get('/cadastro/paciente')->assertOk()
+            ->assertSee('css/cadastro.css')
+            ->assertSee('Crie sua conta')
+            ->assertSee('name="consentimento_acessibilidade"', false);
+
+        // AGENTS §3: a tela diz que o CNPJ é conferido na BASE SIMULADA, nunca "na Receita".
+        $this->get('/cadastro/clinica')->assertOk()
+            ->assertSee('Conferido na base simulada do FacilMed.')
+            ->assertDontSee('Receita Federal')
+            ->assertSee('name="unidade_tipo" value="clinica" checked', false);
+
+        $this->from('/cadastro/clinica')->followingRedirects()
+            ->post('/cadastro/clinica', $this->clinica(['cnpj' => '11.111.111/1111-11', 'unidade_tipo' => 'hospital']))
+            ->assertSee('Confira os campos marcados abaixo.')
+            ->assertSee('campo--invalido')
+            ->assertSee('name="unidade_tipo" value="hospital" checked', false);
+    }
+
     public function test_crm_recusado_pela_base_quando_a_clinica_cadastra_o_medico(): void
     {
         $unidade = User::where('email', 'contato@vidaplena.test')->first()->clinica->locais()->first();
