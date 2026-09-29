@@ -136,27 +136,30 @@ class RevisaoRodada3Test extends TestCase
     // CRM de outra pessoa (item 32) e médico rejeitado (item 33)
     // -----------------------------------------------------------------
 
-    private function cadastroDeMedico(string $nome): array
+    /**
+     * 445566/SP está livre na base simulada e é do "Paulo Yamada".
+     * Desde 29/09 o médico só entra pela clínica (Meus médicos → Cadastrar).
+     */
+    private function clinicaCadastraMedico(string $nome)
     {
-        // 445566/SP está livre na base simulada e é do "Paulo Yamada".
-        return [
-            'name' => $nome, 'email' => 'novo.medico@facilmed.test',
-            'password' => 'senha-segura-1', 'password_confirmation' => 'senha-segura-1',
-            'cpf' => '529.982.247-25', 'crm' => '445566', 'uf' => 'SP',
+        $unidade = User::where('email', 'contato@vidaplena.test')->first()->clinica->locais()->first();
+
+        return $this->comoClinica()->post('/clinica/medicos', [
+            'name' => $nome, 'email' => 'novo.medico@facilmed.test', 'cpf' => '529.982.247-25',
+            'crm' => '445566', 'uf' => 'SP', 'local_id' => $unidade->id, 'aceita_particular' => '1',
             'especialidades' => [Especialidade::where('slug', 'cardiologia')->value('id')],
-        ];
+        ]);
     }
 
     public function test_cadastro_de_medico_confere_o_nome_do_crm(): void
     {
         // Antes: "Fulano" entrava verificado com o CRM do Paulo Yamada.
-        $this->post('/cadastro/medico', $this->cadastroDeMedico('Fulano Qualquer'))
+        $this->clinicaCadastraMedico('Fulano Qualquer')
             ->assertSessionHasErrors(['crm' => 'Esse CRM está registrado em nome de outra pessoa na base simulada do FacilMed. Confira se o nome completo está igual ao do CRM.']);
         $this->assertFalse(Medico::where('crm', '445566')->exists());
-        $this->assertGuest();
 
         // Título, acento e maiúscula não importam.
-        $this->post('/cadastro/medico', $this->cadastroDeMedico('dr. PAULO YAMADA'))->assertSessionHasNoErrors();
+        $this->clinicaCadastraMedico('dr. PAULO YAMADA')->assertSessionHasNoErrors();
         $this->assertSame('verificado', Medico::where('crm', '445566')->first()->status_verificacao);
     }
 
@@ -278,9 +281,11 @@ class RevisaoRodada3Test extends TestCase
 
     public function test_busca_so_mostra_medico_com_onde_ser_agendado(): void
     {
-        // Médico novo, com CRM conferido, mas ainda sem consultório nem clínica.
-        $this->post('/cadastro/medico', $this->cadastroDeMedico('Paulo Yamada'))->assertSessionHasNoErrors();
+        // Médico novo, com CRM conferido e vinculado à clínica, mas a clínica
+        // ainda não pôs preço: não tem especialidade oferecida em lugar nenhum.
+        $this->clinicaCadastraMedico('Paulo Yamada')->assertSessionHasNoErrors();
         auth()->logout();
+        $this->flushSession(); // a mensagem de sucesso da clínica cita o nome dele
 
         // Antes: aparecia na busca e o paciente não tinha onde agendar.
         $this->get('/buscar')->assertOk()->assertDontSee('Paulo Yamada')->assertSee('Helena Navarro');

@@ -223,11 +223,11 @@
     <section class="chamada">
         <div class="container">
             <div>
-                <h2>É médico, clínica ou hospital?</h2>
-                <p>Cadastre-se, informe onde e quando atende e receba agendamentos pelo FacilMed.</p>
+                <h2>É clínica ou hospital?</h2>
+                {{-- 29/09: o médico não se cadastra sozinho; a clínica cadastra os médicos dela. --}}
+                <p>Cadastre a sua clínica ou hospital, depois os seus médicos, e receba agendamentos pelo FacilMed.</p>
             </div>
             <div class="acoes">
-                <a href="{{ route('cadastro.medico') }}" class="btn btn-outline btn-grande">Sou médico</a>
                 <a href="{{ route('cadastro.clinica') }}" class="btn btn-azul btn-grande">Sou clínica ou hospital</a>
             </div>
         </div>

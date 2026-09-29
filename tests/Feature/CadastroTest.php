@@ -13,14 +13,6 @@ class CadastroTest extends TestCase
 {
     private const SENHA = ['password' => 'SenhaForte2026', 'password_confirmation' => 'SenhaForte2026'];
 
-    private function medico(array $extra = []): array
-    {
-        return array_merge([
-            'name' => 'Dr. Paulo Yamada', 'email' => 'novo.medico@teste.test', 'cpf' => '529.982.247-25',
-            'crm' => '445566', 'uf' => 'SP', 'especialidades' => [1],
-        ], self::SENHA, $extra);
-    }
-
     private function clinica(array $extra = []): array
     {
         return array_merge([
@@ -32,22 +24,43 @@ class CadastroTest extends TestCase
         ], self::SENHA, $extra);
     }
 
-    public function test_medico_com_crm_ativo_na_base_entra_verificado(): void
+    /**
+     * 29/09/2026: o médico não se cadastra mais sozinho. Ele entra pela
+     * clínica (Meus médicos → Cadastrar médico), que confere o CRM na
+     * mesma base simulada. O endereço antigo volta para a escolha.
+     */
+    public function test_autocadastro_de_medico_nao_existe_mais(): void
     {
-        $this->post('/cadastro/medico', $this->medico())->assertRedirect(route('medico.dashboard'));
+        $this->get('/cadastro/medico')->assertRedirect('/cadastro');
+        $this->post('/cadastro/medico', ['name' => 'Paulo Yamada', 'crm' => '445566', 'uf' => 'SP'] + self::SENHA)
+            ->assertRedirect('/cadastro');
 
-        $medico = Medico::where('crm', '445566')->firstOrFail();
-        $this->assertSame('verificado', $medico->status_verificacao);
-        $this->assertSame(0, (int) $medico->anos_atuacao, 'anos_atuacao em branco vira 0 (coluna NOT NULL)');
-        $this->assertAuthenticatedAs($medico->user);
+        $this->assertFalse(Medico::where('crm', '445566')->exists());
+        $this->assertGuest();
     }
 
-    public function test_medico_com_crm_recusado_pela_base_nao_entra(): void
+    public function test_escolha_de_cadastro_tem_so_paciente_e_clinica(): void
     {
-        foreach ([['998877', 'SP', 'cassado'], ['556677', 'RJ', 'suspenso'], ['123456', 'SP', 'não foi encontrado'], ['112233', 'SP', 'já está cadastrado']] as [$crm, $uf, $motivo]) {
-            $this->post('/cadastro/medico', $this->medico(['crm' => $crm, 'uf' => $uf]))
-                ->assertSessionHasErrors();
-            $this->assertStringContainsString($motivo, collect(session('errors')->all())->join(' '));
+        $this->get('/cadastro')->assertOk()
+            ->assertSee(route('cadastro.paciente'))
+            ->assertSee(route('cadastro.clinica'))
+            ->assertDontSee('/cadastro/medico')
+            ->assertDontSee('Sou médico');
+
+        $this->get('/')->assertOk()->assertDontSee('/cadastro/medico');
+    }
+
+    public function test_crm_recusado_pela_base_quando_a_clinica_cadastra_o_medico(): void
+    {
+        $unidade = User::where('email', 'contato@vidaplena.test')->first()->clinica->locais()->first();
+
+        foreach ([['998877', 'SP', 'cassado'], ['556677', 'RJ', 'suspenso'], ['123456', 'SP', 'não foi encontrado']] as [$crm, $uf, $motivo]) {
+            $this->comoClinica()->post('/clinica/medicos', [
+                'crm' => $crm, 'uf' => $uf, 'local_id' => $unidade->id, 'aceita_particular' => '1',
+                'name' => 'Dr. Paulo Yamada', 'email' => 'novo.medico@teste.test', 'cpf' => '529.982.247-25', 'especialidades' => [1],
+            ])->assertSessionHasErrors('crm');
+
+            $this->assertStringContainsString($motivo, session('errors')->first('crm'));
             $this->assertNull(User::where('email', 'novo.medico@teste.test')->first());
         }
     }

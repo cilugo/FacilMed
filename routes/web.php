@@ -48,19 +48,21 @@ Route::get('/medico/{medico}', [PerfilPublicoController::class, 'medico'])
 Route::get('/clinica/{clinica}', [PerfilPublicoController::class, 'clinica'])
     ->whereNumber('clinica')->name('publico.clinica');
 
-// Cadastro dos três tipos. O Breeze cuida de login, logout e senha.
+// Cadastro de paciente e de clínica/hospital. O Breeze cuida de login, logout e senha.
+// 29/09/2026: o médico não se cadastra mais sozinho - entra pela clínica
+// (Meus médicos → Cadastrar médico), que confere o CRM na base simulada.
 Route::middleware('guest')->group(function () {
     Route::get('/cadastro', [CadastroController::class, 'escolher'])->name('cadastro.escolher');
 
     Route::get('/cadastro/paciente', [CadastroController::class, 'formPaciente'])->name('cadastro.paciente');
     Route::post('/cadastro/paciente', [CadastroController::class, 'salvarPaciente']);
 
-    Route::get('/cadastro/medico', [CadastroController::class, 'formMedico'])->name('cadastro.medico');
-    Route::post('/cadastro/medico', [CadastroController::class, 'salvarMedico']);
-
     Route::get('/cadastro/clinica', [CadastroController::class, 'formClinica'])->name('cadastro.clinica');
     Route::post('/cadastro/clinica', [CadastroController::class, 'salvarClinica']);
 });
+
+// Endereço antigo do cadastro de médico (link salvo, protótipo): volta para a escolha.
+Route::redirect('/cadastro/medico', '/cadastro');
 
 // ---------------------------------------------------------------------
 // Agendamento (paciente logado)

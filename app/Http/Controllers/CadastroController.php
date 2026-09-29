@@ -3,13 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CadastroClinicaRequest;
-use App\Http\Requests\CadastroMedicoRequest;
 use App\Http\Requests\CadastroPacienteRequest;
 use App\Models\Clinica;
-use App\Models\Especialidade;
 use App\Models\HorarioFuncionamento;
 use App\Models\Local;
-use App\Models\Medico;
 use App\Models\Paciente;
 use App\Models\PacienteAcessibilidade;
 use App\Models\User;
@@ -20,7 +17,12 @@ use Illuminate\Support\Facades\DB;
 class CadastroController extends Controller
 {
     /**
-     * Cadastro dos tres tipos de usuario.
+     * Cadastro de PACIENTE e de CLINICA/HOSPITAL.
+     *
+     * 29/09/2026: o autocadastro de medico saiu (plano do grupo de 28/09).
+     * O medico entra pela clinica - Clinica\MedicoController@salvar - que
+     * confere o CRM na mesma base simulada e cria a conta com senha
+     * temporaria. O endereco /cadastro/medico so redireciona (routes/web.php).
      *
      * TODA validacao mora em FormRequest - nunca so no JavaScript.
      * O prototipo antigo validava senha apenas no JS: quem desabilitava
@@ -29,9 +31,8 @@ class CadastroController extends Controller
      * Senha: minimo 8, maximo 72 (limite do bcrypt). NAO existe limite
      * de 10 caracteres - limitar o maximo enfraquece sem ganho nenhum.
      *
-     * 24/09: os tres salvar* foram implementados. CRM e CNPJ sao
-     * conferidos na BASE SIMULADA dentro dos FormRequests (Rules
-     * CrmNaBaseSimulada e CnpjNaBaseSimulada): se chegou aqui, ja bateu.
+     * O CNPJ e conferido na BASE SIMULADA dentro do FormRequest (Rule
+     * CnpjNaBaseSimulada): se chegou aqui, ja bateu.
      *
      * Transacao em todos: user + perfil nascem juntos. Sem isso, um erro
      * no meio deixa conta orfa (user sem paciente) que trava o login.
@@ -83,58 +84,6 @@ class CadastroController extends Controller
         });
 
         return $this->entrar($user, 'Conta criada! Se tiver plano de saúde, cadastre a carteirinha em "Meu plano".');
-    }
-
-    public function formMedico()
-    {
-        return view('cadastro.medico', [
-            'especialidades' => Especialidade::where('ativo', true)->orderBy('nome')->get(),
-        ]);
-    }
-
-    /**
-     * Medico AUTONOMO. O CRM ja foi conferido na base simulada pelo
-     * FormRequest, entao ele nasce 'verificado' e aparece na busca.
-     * verificado_por fica NULL: quem verificou foi a base, nao um admin.
-     */
-    public function salvarMedico(CadastroMedicoRequest $request)
-    {
-        $dados = $request->validated();
-
-        $user = DB::transaction(function () use ($dados) {
-            $user = User::create([
-                'name'     => $dados['name'],
-                'email'    => $dados['email'],
-                'password' => $dados['password'],
-                'tipo'     => User::TIPO_MEDICO,
-                'status'   => 'ativo',
-            ]);
-
-            $medico = Medico::create([
-                'user_id'               => $user->id,
-                'cpf'                   => $dados['cpf'],
-                'crm'                   => $dados['crm'],
-                'uf'                    => $dados['uf'],
-                'status_verificacao'    => 'verificado',
-                'verificado_em'         => now(),
-                'bio'                   => $dados['bio'] ?? null,
-                'anos_atuacao'          => $dados['anos_atuacao'] ?? 0, // coluna NOT NULL default 0: null explícito dava erro 500
-                'telefone_profissional' => ($dados['telefone_profissional'] ?? '') ?: null,
-            ]);
-
-            // A primeira especialidade marcada vira a principal.
-            $medico->especialidades()->sync(
-                collect($dados['especialidades'])->values()
-                    ->mapWithKeys(fn ($id, $i) => [$id => ['principal' => $i === 0]])
-                    ->all()
-            );
-
-            return $user;
-        });
-
-        return $this->entrar($user,
-            'Cadastro concluído! Seu CRM foi conferido na base simulada do FacilMed. '
-            . 'Para receber agendamentos, você precisa estar vinculado a um local de atendimento.');
     }
 
     public function formClinica()

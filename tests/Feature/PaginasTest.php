@@ -9,7 +9,7 @@ class PaginasTest extends TestCase
 {
     public function test_paginas_publicas(): void
     {
-        foreach (['/', '/buscar', '/buscar?especialidade=cardiologia&convenio=1', '/medico/1', '/clinica/1', '/login', '/cadastro', '/cadastro/paciente', '/cadastro/medico', '/cadastro/clinica', '/forgot-password'] as $url) {
+        foreach (['/', '/buscar', '/buscar?especialidade=cardiologia&convenio=1', '/medico/1', '/clinica/1', '/login', '/cadastro', '/cadastro/paciente', '/cadastro/clinica', '/forgot-password'] as $url) {
             $this->get($url)->assertOk();
         }
     }
