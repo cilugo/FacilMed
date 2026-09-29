@@ -108,6 +108,10 @@
         @case('pause')
             <circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>
             @break
+        @case('localizar')
+            {{-- 29/09: "Usar minha localização" (mira) --}}
+            <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+            @break
         @case('pin')
             <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>
             @break

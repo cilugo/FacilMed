@@ -38,6 +38,15 @@
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary btn-grande"><x-icone nome="search" /> Buscar</button>
+
+                    {{-- 29/09: leva para "Locais perto de você" com a posição do navegador
+                         (public/javas/localizacao.js). O navegador pede a permissão. --}}
+                    <div class="busca-localizacao">
+                        <button type="button" class="busca-localizacao__botao" data-localizacao="{{ route('busca.locais') }}">
+                            <x-icone nome="localizar" /> Usar minha localização
+                        </button>
+                        <span data-localizacao-status class="localizacao-aviso">e ver clínicas e hospitais perto de você</span>
+                    </div>
                 </form>
 
                 <div class="hero-numeros">
@@ -237,4 +246,5 @@
 
 @push('scripts')
     <script src="{{ asset('javas/home.js') }}"></script>
+    <script src="{{ asset('javas/localizacao.js') }}" defer></script>
 @endpush

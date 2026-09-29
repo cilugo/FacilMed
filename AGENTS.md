@@ -7,7 +7,7 @@
 > telas — está no `README.md`.** Leia o README (principalmente §4, §5 e §6) antes de editar.
 > Se algo aqui conflitar com outro arquivo, **este vence**.
 >
-> Última revisão: 28/09/2026.
+> Última revisão: 29/09/2026.
 
 ## 1. Escopo — o que este projeto NÃO é
 
@@ -28,7 +28,7 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
   `http://localhost/FacilMed`. Fuso `America/Sao_Paulo`.
 - **Não instalar dependência nova** (Composer ou npm) sem registrar a decisão no README §6 e ter aprovação.
 - "Estado bom": `php artisan migrate:fresh --seed` roda limpo **e** `php artisan test` passa
-  (132 testes, banco `facilmed_testes` — nunca o `facilmed`).
+  (154 testes, banco `facilmed_testes` — nunca o `facilmed`).
 
 ## 3. Regras invioláveis de negócio e de dados
 
@@ -77,6 +77,9 @@ intenção de quem escreveu a tela.
   real, não aceitar o plano em um dos endereços, **toda tela de confirmação de consulta por
   convênio exibe o aviso** "Confirme na recepção se o seu plano é aceito neste endereço."
   Esse aviso é obrigatório, não decorativo.
+- **Nunca** deixar o mesmo paciente com duas consultas agendadas que se sobrepõem no tempo, mesmo
+  com médicos diferentes (29/09/2026). A regra é `Paciente::consultaNoHorario()`, conferida na
+  confirmação e de novo na gravação, com a linha do paciente travada (`lockForUpdate`).
 - Cancelamento é **sempre permitido**. Abaixo de 24h ele é registrado como cancelamento tardio,
   mas nunca bloqueado — bloquear só transforma cancelamento em falta.
 
@@ -90,6 +93,10 @@ intenção de quem escreveu a tela.
   busca, exportação nem log.
 - **Nunca** permitir avaliação de consulta cujo `status` não seja `realizada`, nem por quem não
   é o paciente daquela consulta.
+- **Nunca** salvar a localização do paciente (banco, sessão, log). Ela vai só na URL da busca de
+  locais, arredondada, e serve só para ordenar por distância (29/09/2026).
+- **Nunca** apresentar a distância como exata: a coordenada do local é aproximada (bairro ou centro
+  da cidade) e a conta é em linha reta. O texto da tela diz "aproximada, em linha reta".
 
 **E-mail**
 

@@ -48,14 +48,15 @@ body { background-color: var(--site-fundo); }
 }
 .site-menu-celular a { padding: 14px 5%; font-weight: 600; color: var(--site-marinho); border-bottom: 1px solid #eef1f3; }
 
-/* Com 6 itens o menu não cabe numa linha abaixo de ~1160px: a partir
-   daí ele vira o botão de menu (antes só virava abaixo de 800px). */
+/* Com 7 itens (29/09: "Perto de você") o menu não cabe numa linha abaixo de
+   ~1300px: a partir daí ele vira o botão de menu (com 6 itens era 1160px;
+   antes disso, só virava abaixo de 800px). */
 .menu-link { white-space: nowrap; }
-@media (max-width: 1160px) {
+@media (max-width: 1300px) {
     .header .menu { display: none; }
     .site-menu-botao { display: inline-flex; }
 }
-@media (min-width: 1161px) {
+@media (min-width: 1301px) {
     .site-menu-celular { display: none !important; }
 }
 @media (max-width: 500px) {
@@ -244,3 +245,31 @@ body { background-color: var(--site-fundo); }
 .lista-simples .avatar { width: 44px; height: 44px; font-size: 15px; }
 .lista-simples strong { display: block; color: var(--site-marinho); font-size: 15px; }
 .lista-simples small { color: var(--site-suave); }
+
+/* ---------- Locais perto de você e página do local (29/09/2026) ---------- */
+.busca-caixa--local { grid-template-columns: 1.2fr 1fr auto auto; margin-top: 0; }
+.localizacao-aviso { grid-column: 1 / -1; font-size: 12px; color: var(--site-suave); line-height: 1.5; padding: 0 2px; }
+.localizacao-aviso--erro { color: #9b2c2c; font-weight: 600; }
+.distancia { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; color: var(--site-marinho); }
+.distancia .fm-icone { width: 16px; height: 16px; color: var(--site-azul); }
+.local-nota { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.local-subtitulo { margin-top: 14px; font-size: 14px; font-weight: 700; color: var(--site-marinho); }
+.lista-local-medicos { display: grid; gap: 12px; }
+.local-medico { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding: 14px; border: 1px solid var(--site-borda); border-radius: 12px; }
+.local-medico .avatar { width: 48px; height: 48px; font-size: 16px; }
+.local-medico strong { color: var(--site-marinho); font-size: 16px; }
+.local-medico strong a:hover { text-decoration: underline; }
+.local-medico .chips { margin: 8px 0 0; }
+
+@media (max-width: 800px) {
+    .busca-caixa--local { grid-template-columns: 1fr; }
+    .local-medico { grid-template-columns: auto 1fr; }
+    .local-medico .btn { grid-column: 1 / -1; }
+}
+/* Home: "Usar minha localização" embaixo da busca, sem mudar a linha principal */
+.busca-localizacao { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 2px; }
+.busca-localizacao .localizacao-aviso { grid-column: auto; padding: 0; }
+.busca-localizacao__botao { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--site-azul); cursor: pointer; }
+.busca-localizacao__botao:hover { text-decoration: underline; }
+.busca-localizacao__botao:disabled { opacity: .6; cursor: wait; }
+.busca-localizacao__botao .fm-icone { width: 16px; height: 16px; }

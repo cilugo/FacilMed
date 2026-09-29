@@ -71,7 +71,7 @@
                 <h2><x-icone nome="pin" /> Unidades</h2>
                 @foreach ($unidades as $u)
                     <div class="local">
-                        <h3>{{ $u->nome }}</h3>
+                        <h3><a href="{{ route('publico.local', $u) }}" style="text-decoration: underline;">{{ $u->nome }}</a></h3>
                         <p class="local__endereco">{{ $u->endereco_completo }}</p>
                         @if ($u->telefone)
                             <p class="local__endereco">Telefone: {{ \App\Support\Formatador::telefone($u->telefone) }}</p>

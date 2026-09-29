@@ -6,6 +6,7 @@ use App\Http\Requests\AgendarConsultaRequest;
 use App\Models\Clinica;
 use App\Models\Consulta;
 use App\Models\Especialidade;
+use App\Models\Paciente;
 use App\Models\PacientePlano;
 use App\Models\Vinculo;
 use App\Services\AlocadorDeMedico;
@@ -162,6 +163,20 @@ class AgendamentoController extends Controller
 
         $paciente = $request->user()->paciente;
 
+        // 29/09: o paciente já tem outra consulta nesse horário (com outro médico)?
+        // Avisa já aqui, antes da tela de confirmação. salvar() confere de novo.
+        $conflito = $paciente?->consultaNoHorario(
+            $this->juntar($data, $dados['horario']),
+            $this->duracaoDoBloco($vinculo, $data, $dados['horario']),
+            (int) $request->input('remarcar_consulta_id') ?: null,
+        );
+
+        if ($conflito !== null) {
+            return redirect()
+                ->route('agendamento.horario', array_filter(['vinculo' => $vinculo->id, 'remarcar' => $request->input('remarcar_consulta_id')]))
+                ->withErrors(['horario' => $this->mensagemDeConflito($conflito)]);
+        }
+
         return view('agendamento.confirmar', [
             'vinculo'       => $vinculo->load('medico.user', 'local'),
             'especialidade' => $especialidade,
@@ -266,8 +281,29 @@ class AgendamentoController extends Controller
             }
         }
 
+        $duracao  = $this->duracaoDoBloco($vinculo, $data, $dados['horario']);
+        $conflito = null;   // preenchido lá dentro da transação (o "&$conflito" do use)
+
         try {
-            $consulta = DB::transaction(function () use ($antiga, $paciente, $vinculo, $dados, $data, $planoId, $valor, $request) {
+            $consulta = DB::transaction(function () use ($antiga, $paciente, $vinculo, $dados, $data, $duracao, $planoId, $valor, $request, &$conflito) {
+            /**
+             * 29/09: o paciente não pode ter duas consultas no mesmo horário.
+             *
+             * lockForUpdate() = "SELECT ... FOR UPDATE": segura a linha deste
+             * paciente até o fim da transação. Se ele mandar dois agendamentos
+             * no mesmo segundo (duas abas, médicos diferentes), o segundo ESPERA
+             * o primeiro gravar e só então confere — e aí enxerga a consulta nova.
+             * Sem a trava, os dois conferiam juntos, não viam conflito e gravavam.
+             * (O índice único do banco não ajuda aqui: ele é por médico.)
+             */
+            Paciente::whereKey($paciente->id)->lockForUpdate()->first();
+
+            $conflito = $paciente->consultaNoHorario($this->juntar($data, $dados['horario']), $duracao, $antiga?->id);
+
+            if ($conflito !== null) {
+                return null;
+            }
+
             $nova = Consulta::create([
                 'paciente_id'       => $paciente->id,
                 'medico_id'         => $vinculo->medico_id,
@@ -275,7 +311,7 @@ class AgendamentoController extends Controller
                 'especialidade_id'  => (int) $dados['especialidade_id'],
                 'data_consulta'     => $data->toDateString(),
                 'horario'           => $dados['horario'],
-                'duracao_minutos'   => $this->duracaoDoBloco($vinculo, $data, $dados['horario']),
+                'duracao_minutos'   => $duracao,
                 'forma_pagamento'   => $dados['forma_pagamento'],
                 'paciente_plano_id' => $planoId,
                 'valor'             => $valor,
@@ -301,6 +337,10 @@ class AgendamentoController extends Controller
             }
 
             throw $e;
+        }
+
+        if ($consulta === null) {
+            return back()->withErrors(['horario' => $this->mensagemDeConflito($conflito)])->withInput();
         }
 
         /**
@@ -419,5 +459,26 @@ class AgendamentoController extends Controller
 
         return (int) ($bloco->duracao_consulta_minutos
             ?? config('agendamento.duracao_padrao_minutos'));
+    }
+
+    /** Data do dia + "HH:MM" num Carbon só. */
+    private function juntar(Carbon $data, string $horario): Carbon
+    {
+        return Carbon::parse($data->toDateString() . ' ' . $horario);
+    }
+
+    /**
+     * 29/09: diz QUAL consulta atrapalha, para o paciente decidir (trocar o
+     * horário ou cancelar a outra). Tom do README §8: direto, frase curta.
+     */
+    private function mensagemDeConflito(Consulta $outra): string
+    {
+        return sprintf(
+            'Você já tem uma consulta nesse horário: %s às %s, com %s, em %s. Escolha outro horário.',
+            $outra->inicio->format('d/m'),
+            $outra->inicio->format('H:i'),
+            $outra->medico->user->name,
+            $outra->vinculo->local->nome,
+        );
     }
 }

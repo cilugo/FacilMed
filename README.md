@@ -129,6 +129,7 @@ fim deve aparecer "22 consultas de demonstracao criadas".
 | `migrate:rollback` ou `migrate:refresh` falha em `convenios_e_planos_ficticios` ("Data truncated for column 'operadora_ans_id'") | é de propósito: convênio fictício não tem operadora e o `down()` não apaga dado. O banco fica pela metade: rode `composer run banco-do-zero` (nunca use rollback/refresh) |
 | `migrate` falha na coluna virtual de `consultas` | troque `VIRTUAL` por `PERSISTENT` na migration. **Não remova o índice único** |
 | mudei algo em `config/` e não fez efeito | `php artisan optimize:clear` |
+| "Usar minha localização" não funciona | o navegador só libera a localização em `localhost` ou `https`: abra por `http://localhost/FacilMed` (não pelo IP da rede). Se você negou a permissão, libere no cadeado da barra de endereço — ou escolha a cidade na lista |
 | `localhost/FacilMed` dá "Not Found" do Apache | em `C:\xampp\apache\conf\httpd.conf`, `LoadModule rewrite_module` sem `#` na frente; reinicie o Apache |
 | `localhost/FacilMed` abre sem estilo | a pasta não se chama `FacilMed` ou não está direto no `htdocs`: use o jeito B |
 | Pull dá erro `untracked working tree files would be overwritten by merge: composer.lock` | o seu `composer.lock` foi criado antes de ele entrar no Git. Apague só o **seu** (`del composer.lock` na pasta do projeto) e faça o Pull de novo. **Não apague o do GitHub** |
@@ -204,6 +205,14 @@ Convênios fictícios: **SpSaúde**, **Horizonte Med**, **Bem Viver Saúde** (3 
 **Vale Saúde** (desativado, para demonstrar). Todos os dados estão em
 `database/seeders/DadosFicticios.php`.
 
+### Para testar a distância (Locais perto de você)
+
+- **Pela cidade:** `/locais?cidade=Jacareí` → São Lucas (Jacareí) primeiro, Santa Clara (Taubaté) por último.
+- **Pela localização:** clique em "Usar minha localização" e permita no navegador (funciona em
+  `localhost` e no site no ar, que é `https`). Quem está em São José vê as três clínicas de lá primeiro.
+- **Com especialidade:** `/locais?especialidade=pediatria` → só Aurora e Esperança (Dra. Camila).
+- **Página do local:** clique no nome ou em "Ver local". As clínicas de São José têm nota (das consultas realizadas); o comentário não aparece.
+
 ### Para testar as bases simuladas
 
 **Cadastro de médico pela clínica** (entre como clínica → **Meus médicos → Cadastrar médico**).
@@ -272,8 +281,9 @@ FacilMed/
 ├── public/                ← o que o navegador baixa: css/, javas/, imgs/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
-├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 132 testes automáticos
+├── config/                ← configurações (agendamento.php, navegacao.php = menus,
+│                             localizacao.php = coordenadas aproximadas das cidades)
+├── tests/Feature/         ← 154 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -336,6 +346,9 @@ horário mesmo se clicarem juntas.
 - Por convênio, só se o médico aceita aquele convênio; sempre com o aviso
   "Confirme na recepção se o seu plano é aceito neste endereço".
 - Cancelar é sempre permitido; com menos de 24h fica marcado como tardio.
+- **O paciente não fica em dois lugares ao mesmo tempo** (29/09): não marca consulta que se
+  sobrepõe a outra consulta agendada dele, mesmo com outro médico (`Paciente::consultaNoHorario`).
+  A tela de confirmação já avisa qual consulta atrapalha; a gravação confere de novo.
 - **Nenhuma consulta é cancelada em silêncio:** ausência do médico, desvincular médico e
   bloquear conta pedem confirmação explícita.
 - Comentário de avaliação é privado (só médico, clínica e admin veem). A nota é pública.
@@ -365,9 +378,32 @@ enviar** — o `UNIQUE (consulta_id, tipo)` garante que o mesmo aviso nunca sai 
 Em desenvolvimento (`MAIL_MAILER=log`) nada sai da máquina. **Enviar para caixa real só com
 aprovação do grupo, e só para e-mail de integrante.**
 
-### 5.6 Testes automáticos
+### 5.6 Locais perto de você (busca por distância)
 
-`php artisan test` → **132 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+Sem Google, Nominatim nem ViaCEP (precisariam de internet e chave na hora da banca):
+
+```
+onde fica o LOCAL    → coordenada APROXIMADA do bairro ou do centro da cidade,
+                       de config/localizacao.php. O Local preenche sozinho ao salvar
+                       (Local::booted) — seeder, cadastro da clínica, unidades e consultório.
+onde está o PACIENTE → o navegador informa (botão "Usar minha localização"; é ele que pede
+                       a permissão) ou o centro da cidade escolhida na lista.
+distância            → linha reta (Haversine, App\Support\Localizacao), calculada em PHP.
+```
+
+- `/locais` (`BuscaController@locais`): só local que dá para agendar (`Local::agendaveis()`, a mesma
+  regra da busca de médicos), do mais perto para o mais longe. Sem origem, em ordem alfabética.
+  Cidade fora de `config/localizacao.php` → local sem coordenada, no fim da lista, sem distância.
+- `/local/{id}` (`PerfilPublicoController@local`): endereço, horários, nota média, formas de pagamento
+  (com o aviso da recepção), especialidades com preço e os médicos disponíveis, cada um com
+  "Ver horários" (o agendamento de sempre). Local inativo ou de dono bloqueado → 404.
+- **Nota do local** = média das avaliações das consultas feitas ali (`Local::notas()`). Sem tabela
+  nova: a avaliação é por consulta, a consulta sabe o vínculo e o vínculo sabe o local.
+- A posição do paciente **não é salva**: vai só na URL da busca, arredondada (~100 m).
+
+### 5.7 Testes automáticos
+
+`php artisan test` → **154 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -379,6 +415,57 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > **Atualize ao terminar cada etapa.**
 
 **Atualizado em 29/09/2026.**
+
+**29/09 (noite) — Locais perto de você e página do local** (plano do app; escolhas do Sidney em
+29/09: tela nova de locais, localização do navegador ou cidade, botão na home):
+- **`/locais`** — clínicas, hospitais e consultórios do mais perto para o mais longe, com filtro de
+  especialidade, nota do local, preço "a partir de" e se aceita convênio. A busca de médicos
+  (`/buscar`) continua igual, com um link para cá.
+- **`/local/{id}`** — a página do local (§5.6), com os médicos disponíveis e "Ver horários".
+- **"Usar minha localização"** (`public/javas/localizacao.js`) na tela de locais e embaixo da busca da
+  home: o navegador pergunta se a pessoa permite; se ela negar, aparece o aviso para escolher a cidade.
+  Na home foi só acrescentado o botão, sem mexer no resto (OK do Sidney).
+- **Banco:** migration nova `2026_09_29_000100_add_coordenadas_to_locais_table` (latitude e longitude
+  aproximadas, nulas se a cidade não estiver na lista). Ela mesma preenche os locais que já existem —
+  inclusive os do site no ar, que não roda o seeder de novo.
+- **Menu:** item novo "Perto de você". Com 7 itens, o menu vira o botão ☰ abaixo de 1300 px (era 1160).
+- Links novos: o nome de cada unidade (página da clínica) e de cada lugar (página do médico) abre a
+  página do local. Na página do médico, consultório próprio aparecia como "Clínica"; agora "Consultório".
+- `BuscaController`: o filtro de texto da URL virou o método `texto()`, usado pelas duas buscas.
+- 13 testes novos no `LocaisTest`. Conferido: **154 testes**, `migrate:fresh --seed` limpo, a migration
+  rodada também num banco que já tinha dados, e no navegador: permitir a localização (Taubaté → Santa
+  Clara a 600 m primeiro), negar (aparece o aviso), computador e celular.
+
+**29/09 (tarde) — paciente em dois lugares e tela de escolha do cadastro:**
+- **O mesmo paciente não marca mais duas consultas no mesmo horário** (era o primeiro item do "Para o
+  grupo olhar"; OK do Sidney em 29/09). Vale para qualquer sobreposição, não só o mesmo minuto: uma
+  consulta de 60 min às 9h barra outra às 9h30; uma que termina 9h30 não barra outra às 9h30.
+  - Regra em `Paciente::consultaNoHorario()` (model). O `AgendamentoController` chama em dois lugares:
+    `confirmar()` volta para a tela de horários com "Você já tem uma consulta nesse horário: 02/10 às
+    09:00, com Dra. Helena Navarro, em Vida Plena - Centro. Escolha outro horário."; `salvar()` confere
+    de novo dentro da transação.
+  - Em `salvar()`, `lockForUpdate()` na linha do paciente: se ele mandar dois agendamentos no mesmo
+    segundo (duas abas), o segundo espera o primeiro gravar e aí enxerga o conflito. O índice único do
+    banco não cobre isso porque é por médico. **Sem migration nova.**
+  - Na remarcação, a consulta antiga não conta (ela é cancelada na mesma operação).
+  - `ConsultaSeeder`: o paciente continua sorteado, mas o horário agora é o primeiro livre para o
+    médico **e** para o paciente (`horarioLivre()`). Continuam 22 consultas. Como o horário depende do
+    que já está marcado, ele **não roda de novo** num banco que já tem consultas (os outros seeders
+    continuam podendo rodar de novo) — para recriar, `composer run banco-do-zero`.
+  - 8 testes novos no `AgendamentoTest` (mesmo horário, horário no meio da outra, logo depois pode,
+    outro paciente pode, cancelada libera, a confirmação avisa, remarcação, e os dados de demonstração
+    sem paciente em dois lugares).
+- **Tela "Como você deseja se cadastrar?" com o visual que o grupo fez** (`style1.css`, conversa do
+  grupo com o Claude em 29/09, "medidas tiradas da tela de login"): título maior, botões de 54 px,
+  círculos em `vh` (não se encostam em tela grande), logo um pouco abaixo do centro. Fica em
+  `public/css/cadastro.css`, bloco `.pagina--escolha`, que só vale nessa tela (o layout ganhou
+  `@section('pagina_classe')`). Paciente e clínica continuam com o visual da Mari. Cores: as da marca
+  (§8) no lugar dos tons aproximados do `style1.css`. Botões com "Sou Paciente" / "Sou Clínica/Hospital",
+  como no protótipo.
+- O commit "login e cadastro" (`900ed0c`, 29/09) mexeu só no `prototipo-antigo/`; o sistema em Laravel
+  já tinha o que ele trouxe (escolha só com paciente e clínica, logo oficial com link para o início).
+- Conferido: **141 testes** passando, `migrate:fresh --seed` limpo (5 vezes, sem paciente em dois
+  lugares), e as telas de escolha, login e cadastro de paciente abertas no navegador (computador e celular).
 
 **29/09 — `composer.lock` de volta:** o commit `cee1442` ("sla") apagou o `composer.lock` da `main`.
 Foi confusão: a instrução era apagar só a cópia local, que travava o Pull (§2.6). Sem o arquivo, o
@@ -430,7 +517,7 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
 
 **Pronto e testado:**
 - Estrutura: o repositório é o projeto Laravel completo; roda pelo XAMPP (`/FacilMed`) ou `composer run dev`.
-- Banco: 28 migrations, seed completo, travas e índices.
+- Banco: 29 migrations, seed completo, travas e índices.
 - Back-end: **todas** as ações de paciente, médico, clínica e admin (nenhum TODO sobrando).
 - Telas: site público (home, busca, perfis), login e cadastros, agendamento completo, todas as
   telas do paciente, dashboards dos 4 tipos de conta, convênios (admin e clínica).
@@ -454,7 +541,7 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
   (dá para reverter se o grupo quiser): a **acessibilidade só aparece para o médico** da consulta e só
   enquanto ela está agendada (a clínica não vê — é o que o AGENTS §3 e o consentimento do cadastro
   dizem); a **base simulada confere o nome junto com o CRM**.
-- E-mails e lembretes. **132 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+- E-mails e lembretes. **154 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**
@@ -487,11 +574,8 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
 3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
 **Para o grupo olhar (não mexi porque é código de outra pessoa — README §10, regra 6):**
-- *(28/09, 3ª rodada)* **Paciente pode marcar duas consultas no mesmo horário** com médicos
-  diferentes, e os dados de demonstração já vêm assim (a Ana aparece com duas consultas no mesmo dia e
-  hora em "Minhas consultas"). Sugestão: recusar na confirmação ("você já tem consulta nesse horário") e
-  espalhar os horários no `ConsultaSeeder`. É regra nova de agendamento: precisa do OK do grupo.
-- *(28/09)* "Cadastros" e "Create composer.lock" foram commitados **direto na `main`** (regra 1 do §10).
+- *(28/09 e 29/09)* "Cadastros", "Create composer.lock", "sla" e "login e cadastro" foram commitados
+  **direto na `main`** (regra 1 do §10). O "sla" apagou o `composer.lock` e derrubou a publicação.
 - A vitrine "Hospitais e Clínicas" da home é uma lista fixa no Blade. O "Hospital Vale Sereno"
   não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
   diferentes dos cadastrados no banco. Na banca, procurar a clínica e achar outro endereço pega
@@ -508,10 +592,9 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
 **Plano do app (PDF de 28/09) — o que já foi decidido (Sidney, 29/09):** cadastro aberto só para
 paciente e clínica (feito); **o agendamento continua** — a tela "médicos disponíveis" leva aos
 horários; **a avaliação continua por consulta realizada**, com comentário privado (AGENTS §3), e a
-nota do local e a do médico saem dessas avaliações. **Ainda por fazer/decidir:** busca por
-distância (locais sem latitude/longitude hoje; sugestão: localização do navegador + tabela de
-cidades com coordenadas no seeder, sem serviço externo); página do local; exclusão de conta
-(LGPD); CNES fica de fora.
+nota do local e a do médico saem dessas avaliações. **Feito em 29/09:** busca por distância e
+página do local (§5.6). **Ainda por fazer:** exclusão de conta (LGPD). Fora: CNES, fotos do local
+(upload) e comentário público.
 
 **Pendente de decisão do grupo (28/09):** o PDF "Dashboard da Clínica" tira do menu a tabela
 de preços e o perfil, e pede documentação com upload, resultados de exames, status "remarcada",
@@ -758,9 +841,11 @@ login, `simbolo.png`/`logosemslogan.png` no rodapé e favicon).
 nunca como cor de marca.
 
 **Onde está o visual:**
-- Site público → `public/css/home.css` (a home que o grupo fez) + `site.css`
+- Site público → `public/css/home.css` (a home que o grupo fez) + `site.css` (no fim, o bloco
+  "Locais perto de você" e o do botão de localização da home; o JS é `public/javas/localizacao.js`)
 - Login → `public/css/login.css` (o login que o grupo fez)
-- Cadastro → `public/css/cadastro.css` + `public/javas/cadastro.js` (o cadastro que a Mari fez, 29/09)
+- Cadastro → `public/css/cadastro.css` + `public/javas/cadastro.js` (o cadastro que a Mari fez, 29/09;
+  a tela de escolha com o `style1.css` do grupo, bloco `.pagina--escolha`)
 - Painéis → `public/css/painel.css` + `crud.css` + `agendamento.css`
 - Menus de cada tipo de conta → `config/navegacao.php`. **Item de menu sem tela é link morto:**
   exames, receitas, atestados, prontuário, "resumo da saúde", financeiro e relatórios foram
@@ -792,6 +877,9 @@ foi processado com sucesso".
 | Comentário de avaliação **privado** | reduz risco jurídico de comentário público sobre profissional de saúde |
 | Acessibilidade em **texto**, sem upload de laudo | guardar laudo tornaria o projeto depositário de dado sensível de saúde |
 | Sem pagamento, SUS e teleconsulta | fora do que um TCC consegue fazer direito até 20/10 |
+| Paciente **não marca duas consultas que se sobrepõem** (29/09) | ninguém está em dois consultórios ao mesmo tempo; a vaga presa numa das duas era perdida para outro paciente |
+| Distância **sem serviço externo**: coordenada aproximada do bairro/cidade + localização do navegador (29/09) | Google e Nominatim precisam de internet e chave na banca, e o ViaCEP não dá coordenadas; em linha reta e "aproximada" para não prometer o caminho de carro |
+| Locais por distância numa **tela nova** (`/locais`) (29/09) | a busca de médicos já funcionava e tinha teste; as duas se ligam por link |
 | Médico **não se cadastra sozinho**: entra pela clínica (29/09) | plano do app de 28/09; a clínica já cadastrava o médico conferindo o CRM na base simulada, então nada de regra mudou — só sumiu um caminho a mais |
 
 **Becos sem saída (não repita):** validar CRM de graça por código; validar carteirinha por
@@ -881,6 +969,7 @@ e corrigidos 18 problemas — todos com teste automático hoje:
 | 38 | *(28/09, 3ª rodada)* **Caixas de marcar quebradas** no cadastro de médico (só aparecia "C", "D"...), no de paciente e no de médico pela clínica (marcada parecia desmarcada) |
 | 39 | *(28/09, 3ª rodada)* No celular, as abas de "Minhas consultas" passavam da largura da tela; comentários antigos no código contradiziam o AGENTS (senha "6 a 10", convênio "não pode ser inventado") |
 | 40 | *(29/09)* Pelo XAMPP (`/FacilMed`), `/register` e `/cadastro/medico` redirecionavam para `http://localhost/cadastro` (404): o `Route::redirect` perde a subpasta. Agora usam `redirect()->route()` |
+| 41 | *(29/09)* O mesmo paciente podia marcar duas consultas no mesmo horário com médicos diferentes, e os dados de demonstração já vinham assim (a Ana aparecia em dois lugares no mesmo dia e hora) |
 
 ---
 
