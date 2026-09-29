@@ -393,6 +393,8 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
   tempo, outra conta em outra aba). Agora o `bootstrap/app.php` devolve a pessoa para a mesma página
   com o aviso "A página ficou desatualizada..." e os campos preenchidos (menos a senha); na segunda
   tentativa entra. `layouts/auth` passou a mostrar `session('erro')`. Teste em `SegurancaTest`.
+- **Publicação automática (29/09):** `.github/workflows/deploy-render.yml` + segredo
+  `RENDER_DEPLOY_HOOK` no GitHub. Todo push na `main` publica no Render (§2.7).
 
 **29/09 — cadastro (branch `front/cadastro`, feita em cima da `revisao/28-09`):**
 - **Conferência antes de mexer:** subi a `revisao/28-09` com MariaDB e abri 209 páginas no navegador
