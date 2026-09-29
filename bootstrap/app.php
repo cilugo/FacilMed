@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // No Render o site fica atrás de um proxy que cuida do HTTPS. Sem
+        // isto o Laravel acha que a visita é http:// e gera links de CSS/JS
+        // em http, que o navegador bloqueia. No XAMPP não muda nada.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'ativa' => \App\Http\Middleware\GarantirContaAtiva::class,
             'tipo'  => \App\Http\Middleware\GarantirTipoUsuario::class,

@@ -13,7 +13,7 @@ Entrega: **20/10/2026**.
 ## Sumário
 
 1. [O que é o FacilMed](#1-o-que-é-o-facilmed)
-2. [Como rodar](#2-como-rodar)
+2. [Como rodar](#2-como-rodar) · [2.7 No servidor](#27-no-servidor-render--aiven--site-no-ar)
 3. [Contas e dados de teste](#3-contas-e-dados-de-teste)
 4. [Organização das pastas](#4-organização-das-pastas)
 5. [Como o sistema funciona](#5-como-o-sistema-funciona)
@@ -134,6 +134,45 @@ fim deve aparecer "22 consultas de demonstracao criadas".
 
 Não vão para o Git (e está certo): `vendor/`, `.env`, `storage/logs/`. Quem rodar o
 `composer install` primeiro pode commitar o **`composer.lock`**, para todos terem as mesmas versões.
+
+### 2.7 No servidor (Render + Aiven) — site no ar
+
+O sistema fica publicado no **Render** (site) com o banco **MySQL no Aiven**. Os dois são grátis e
+nenhum pede cartão. O Render está ligado a este repositório: **cada push na `main` atualiza o site
+sozinho** em uns 5 minutos. Se o build der erro, a versão anterior continua no ar.
+
+Arquivos do deploy (não mexem no XAMPP): `Dockerfile`, `docker/entrypoint.sh`, `render.yaml`,
+`.dockerignore`. A cada vez que o servidor liga, o `entrypoint.sh`:
+1. roda `php artisan migrate --force` (só aplica migration nova; não apaga nada);
+2. se o banco estiver **vazio**, roda os seeders (as contas da §3 passam a existir no site);
+3. faz o cache de config, rotas e telas.
+
+**Por que MySQL no Aiven e não o Postgres do Render?** O projeto usa SQL do MySQL (`DAYOFWEEK`,
+`HOUR`, coluna virtual `horario_ativo`) e o Postgres grátis do Render é apagado depois de 30 dias.
+
+**Montar do zero (só uma vez):**
+1. **Aiven** — em aiven.io, crie conta → *Create service* → **MySQL** → plano **Free**. Quando ficar
+   *Running*, na página do serviço copie o **Service URI** (`mysql://avnadmin:...`) e, em
+   *CA certificate*, clique em **Show** e copie o texto inteiro (de `-----BEGIN` até `END-----`).
+2. **Render** — em render.com, entre com o GitHub → **New → Blueprint** → escolha o repositório
+   `cilugo/FacilMed` (se não aparecer, clique em *Configure GitHub* e libere o acesso). O Render lê o
+   `render.yaml` e pede 3 valores:
+   - `APP_KEY`: a chave do Laravel (`base64:...`). Gerar: `php artisan key:generate --show`.
+   - `DB_URL`: o *Service URI* do Aiven.
+   - `MYSQL_CA_CERT`: o texto do certificado do Aiven.
+3. **Apply**. O primeiro build leva uns 5–10 minutos. O endereço aparece no topo
+   (`https://facilmed-xxxx.onrender.com`). Aba **Logs** mostra os erros, se houver.
+
+**Limites do plano grátis (bom saber antes da banca):**
+- O site **dorme depois de 15 minutos** sem visita; a primeira visita depois disso leva ~1 minuto.
+  Abra o site uns 2 minutos antes de apresentar.
+- O Aiven pode desligar o banco grátis depois de muito tempo **sem nenhum uso** (avisa por e-mail
+  antes). Basta religar no painel.
+- E-mail continua em `MAIL_MAILER=log` (não sai de verdade) e o agendador dos lembretes não roda.
+- **Nunca** coloque senha do banco ou `APP_KEY` em arquivo do Git: elas ficam só no painel do Render.
+
+**Apagar tudo e recriar os dados de demonstração no servidor:** no Render, aba **Shell**:
+`php artisan migrate:fresh --seed --force` (⚠ apaga o que foi cadastrado no site).
 
 ---
 
@@ -331,6 +370,17 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > **Atualize ao terminar cada etapa.**
 
 **Atualizado em 29/09/2026.**
+
+**29/09 — site no ar (Render + Aiven):** `Dockerfile`, `docker/entrypoint.sh`, `render.yaml` e
+`.dockerignore` para publicar pelo Render (passo a passo na §2.7). Única mudança no código:
+`trustProxies(at: '*')` no `bootstrap/app.php`, para o Laravel gerar links `https` atrás do proxy
+do Render (no XAMPP não muda nada). Conferido com MySQL 8 nas mesmas travas do Aiven (chave primária
+obrigatória e conexão segura): 28 migrations e seed limpos, 2º boot não duplica dados, login dos 4
+tipos de conta e todas as abas principais respondendo 200 com links em https.
+**Atenção, testes no MySQL 8** (no MariaDB do XAMPP passam): `BancoTest::checks_do_banco` espera o
+código `23000`, mas o MySQL 8 devolve `HY000` para CHECK violado (a trava funciona, só muda o
+código); `MedicoTest::especialidades_com_principal...` depende da hora em que roda (a regra
+"consulta futura marcada" barra a troca). Já falhavam antes do deploy.
 
 **29/09 — cadastro (branch `front/cadastro`, feita em cima da `revisao/28-09`):**
 - **Conferência antes de mexer:** subi a `revisao/28-09` com MariaDB e abri 209 páginas no navegador

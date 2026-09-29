@@ -1,0 +1,59 @@
+# =====================================================================
+# FacilMed — configuração do servidor no Render (Blueprint).
+# Passo a passo: README §2.7.
+#
+# O Render lê este arquivo e cria o site sozinho. A cada push na main
+# ele monta de novo (Dockerfile) e publica. Se o build falhar, a versão
+# anterior continua no ar.
+#
+# As 3 variáveis com "sync: false" são segredos: o Render pede na hora
+# de criar e elas NUNCA vão para o Git.
+# =====================================================================
+services:
+  - type: web
+    runtime: docker
+    name: facilmed
+    plan: free
+    region: virginia
+    branch: main
+    autoDeployTrigger: commit
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      # --- Segredos (preenchidos no painel do Render) ---
+      - key: APP_KEY          # chave do Laravel: "base64:...."
+        sync: false
+      - key: DB_URL           # "Service URI" do MySQL no Aiven
+        sync: false
+      - key: MYSQL_CA_CERT    # texto do "CA certificate" do Aiven
+        sync: false
+
+      # --- Fixas ---
+      - key: APP_NAME
+        value: FacilMed
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_LOCALE
+        value: pt_BR
+      - key: APP_FALLBACK_LOCALE
+        value: pt_BR
+      - key: APP_FAKER_LOCALE
+        value: pt_BR
+      - key: LOG_CHANNEL
+        value: stderr        # logs aparecem na aba "Logs" do Render
+      - key: DB_CONNECTION
+        value: mysql
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: MAIL_MAILER
+        value: log           # e-mail não sai de verdade (igual ao local)
+      - key: MAIL_FROM_ADDRESS
+        value: nao-responda@facilmed.test
+      - key: MAIL_FROM_NAME
+        value: FacilMed
