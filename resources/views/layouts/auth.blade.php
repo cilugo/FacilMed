@@ -46,6 +46,9 @@
                 @if (session('sucesso'))
                     <div class="aviso aviso--ok" role="status">{{ session('sucesso') }}</div>
                 @endif
+                @if (session('erro'))
+                    <div class="aviso aviso--erro" role="alert">{{ session('erro') }}</div>
+                @endif
 
                 @yield('conteudo')
             </div>

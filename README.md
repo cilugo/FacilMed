@@ -381,6 +381,11 @@ tipos de conta e todas as abas principais respondendo 200 com links em https.
 código `23000`, mas o MySQL 8 devolve `HY000` para CHECK violado (a trava funciona, só muda o
 código); `MedicoTest::especialidades_com_principal...` depende da hora em que roda (a regra
 "consulta futura marcada" barra a troca). Já falhavam antes do deploy.
+- **Tela "419 PAGE EXPIRED" no login/cadastro (29/09, no site no ar):** acontecia ao enviar um
+  formulário que ficou velho (voltar pelo navegador depois de se cadastrar, página aberta muito
+  tempo, outra conta em outra aba). Agora o `bootstrap/app.php` devolve a pessoa para a mesma página
+  com o aviso "A página ficou desatualizada..." e os campos preenchidos (menos a senha); na segunda
+  tentativa entra. `layouts/auth` passou a mostrar `session('erro')`. Teste em `SegurancaTest`.
 
 **29/09 — cadastro (branch `front/cadastro`, feita em cima da `revisao/28-09`):**
 - **Conferência antes de mexer:** subi a `revisao/28-09` com MariaDB e abri 209 páginas no navegador

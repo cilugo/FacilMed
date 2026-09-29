@@ -60,4 +60,34 @@ class SegurancaTest extends TestCase
 
         $this->get("/medico/{$avaliacao->medico_id}")->assertOk()->assertDontSee($avaliacao->comentario);
     }
+
+    /**
+     * Formulário velho (token CSRF que não bate mais com a sessão): em vez da
+     * tela crua "419 PAGE EXPIRED", volta para a página com aviso e sem a senha.
+     * Nos testes o Laravel desliga a checagem de CSRF; aqui ela é religada.
+     */
+    public function test_formulario_desatualizado_volta_com_aviso_em_vez_de_419(): void
+    {
+        $this->app->bind(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, fn ($app) => new class($app, $app['encrypter']) extends \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken {
+            protected function runningUnitTests()
+            {
+                return false;
+            }
+        });
+
+        $this->get('/login')->assertOk();
+
+        $this->from('/login')
+            ->post('/login', ['_token' => 'token-velho', 'email' => 'admin@facilmed.test', 'password' => 'facilmed2026'])
+            ->assertRedirect('/login')
+            ->assertSessionHas('erro')
+            ->assertSessionHasInput('email', 'admin@facilmed.test')
+            ->assertSessionMissing('_old_input.password');
+
+        $this->assertGuest();
+        $this->get('/login')->assertSee('A página ficou desatualizada', false);
+
+        // Pedido JSON continua recebendo o 419 de verdade.
+        $this->postJson('/login', ['_token' => 'token-velho'])->assertStatus(419);
+    }
 }
