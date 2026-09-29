@@ -131,9 +131,11 @@ fim deve aparecer "22 consultas de demonstracao criadas".
 | mudei algo em `config/` e não fez efeito | `php artisan optimize:clear` |
 | `localhost/FacilMed` dá "Not Found" do Apache | em `C:\xampp\apache\conf\httpd.conf`, `LoadModule rewrite_module` sem `#` na frente; reinicie o Apache |
 | `localhost/FacilMed` abre sem estilo | a pasta não se chama `FacilMed` ou não está direto no `htdocs`: use o jeito B |
+| Pull dá erro `untracked working tree files would be overwritten by merge: composer.lock` | o seu `composer.lock` foi criado antes de ele entrar no Git. Apague só o **seu** (`del composer.lock` na pasta do projeto) e faça o Pull de novo. **Não apague o do GitHub** |
 
-Não vão para o Git (e está certo): `vendor/`, `.env`, `storage/logs/`. Quem rodar o
-`composer install` primeiro pode commitar o **`composer.lock`**, para todos terem as mesmas versões.
+Não vão para o Git (e está certo): `vendor/`, `.env`, `storage/logs/`. O **`composer.lock`** vai
+(desde 28/09): ele deixa todos com as mesmas versões dos pacotes, e o build do Render (`Dockerfile`)
+precisa dele. Sem o `composer.lock` na `main`, o site online para de atualizar.
 
 ### 2.7 No servidor (Render + Aiven) — site no ar
 
@@ -377,6 +379,12 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > **Atualize ao terminar cada etapa.**
 
 **Atualizado em 29/09/2026.**
+
+**29/09 — `composer.lock` de volta:** o commit `cee1442` ("sla") apagou o `composer.lock` da `main`.
+Foi confusão: a instrução era apagar só a cópia local, que travava o Pull (§2.6). Sem o arquivo, o
+`COPY composer.json composer.lock` do `Dockerfile` falha e o Render para de atualizar. Ele voltou
+idêntico ao do `3f8fdd4`. Conferido: `composer install` pelo lock (como no Render),
+`migrate:fresh --seed` limpo e 133 testes passando.
 
 **29/09 — site no ar (Render + Aiven):** `Dockerfile`, `docker/entrypoint.sh`, `render.yaml` e
 `.dockerignore` para publicar pelo Render (passo a passo na §2.7). Única mudança no código:
