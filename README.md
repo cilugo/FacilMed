@@ -472,8 +472,9 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
   formulário (ex.: `motivo_bloqueio`) é gravado com `forceFill()`.
 
 **Próximos passos sugeridos:**
-1. Pull Request da `revisao/28-09` para a `main` e, depois, da `front/cadastro` (que está em cima dela).
-   *(As branches `front/telas-*` e `claude/...` já estão na `main` e podem ser apagadas.)*
+1. *(Feito em 29/09: `revisao/28-09` e `front/cadastro` já estão na `main`.)* As branches
+   `front/telas-*`, `claude/...`, `revisao/28-09`, `front/cadastro` e `deploy/render` já estão
+   inteiras na `main` e podem ser apagadas no GitHub.
 2. Cada um: **Pull**, `composer install`, `composer run banco-do-zero` e `php artisan test`.
 3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
