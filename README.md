@@ -158,16 +158,17 @@ Convênios fictícios: **SpSaúde**, **Horizonte Med**, **Bem Viver Saúde** (3 
 
 ### Para testar as bases simuladas
 
-**Cadastro de médico** (`/cadastro/medico`)
+**Cadastro de médico pela clínica** (entre como clínica → **Meus médicos → Cadastrar médico**).
+Desde 29/09 o médico não se cadastra sozinho: `/cadastro/medico` só volta para a escolha.
 
 | CRM / UF | Resultado |
 |---|---|
-| 445566 / SP, nome **Paulo Yamada** | ✅ aceito — entra verificado |
+| 445566 / SP, nome **Paulo Yamada** | ✅ aceito — entra verificado, com senha provisória (aparece uma vez em "Tabela de preços") |
 | 445566 / SP, outro nome | ❌ em nome de outra pessoa (desde 28/09 o nome é conferido; "Dr./Dra.", acento e maiúscula não contam) |
 | 998877 / SP | ❌ cassado |
 | 556677 / RJ | ❌ suspenso |
 | 123456 / SP | ❌ não existe na base |
-| 112233 / SP | ❌ já cadastrado |
+| 112233 / SP | já tem conta (Dra. Helena): só ganha o vínculo com a unidade; se já atende nela, ❌ |
 
 **Cadastro de clínica/hospital** (`/cadastro/clinica`)
 
@@ -216,7 +217,7 @@ FacilMed/
 │   ├── migrations/        ← estrutura do banco (fonte da verdade)
 │   └── seeders/           ← dados fictícios (DadosFicticios.php)
 ├── resources/views/       ← telas (Blade)
-│   ├── layouts/           ← site (público), auth (login), publico (cadastros), painel
+│   ├── layouts/           ← site (público), auth (login), cadastro (cadastros), painel
 │   ├── home, busca/, publico/, cadastro/, auth/, agendamento/
 │   ├── paciente/, medico/, clinica/, admin/
 │   └── emails/            ← texto dos e-mails
@@ -224,7 +225,7 @@ FacilMed/
 ├── routes/                ← web.php (páginas), auth.php (login), console.php (agendador)
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus)
-├── tests/Feature/         ← 128 testes automáticos
+├── tests/Feature/         ← 132 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -318,7 +319,7 @@ aprovação do grupo, e só para e-mail de integrante.**
 
 ### 5.6 Testes automáticos
 
-`php artisan test` → **128 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **132 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -329,7 +330,29 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 28/09/2026.**
+**Atualizado em 29/09/2026.**
+
+**29/09 — cadastro (branch `front/cadastro`, feita em cima da `revisao/28-09`):**
+- **Conferência antes de mexer:** subi a `revisao/28-09` com MariaDB e abri 209 páginas no navegador
+  (todas as abas dos 4 painéis e os links de dentro delas, no computador e no celular). Nenhum erro
+  500, e os cadastros funcionaram.
+- **Médico não se cadastra mais sozinho** (plano do app de 28/09; decisão do Sidney em 29/09: fica
+  paciente e clínica, como no protótipo da Mari). Ele entra por **Clínica → Meus médicos →
+  Cadastrar médico**, que já conferia o CRM na base simulada. `/cadastro/medico` volta para `/cadastro`.
+  Os testes de CRM recusado passaram a rodar por esse caminho.
+- **Visual da Mari no cadastro** (protótipo `cadpac`, commit "Cadastros"): escolha, paciente e
+  clínica em tela dividida, cartões com ícone. Arquivos: `layouts/cadastro.blade.php`,
+  `public/css/cadastro.css`, `public/javas/cadastro.js` (máscaras e "mostrar senha"; validar continua
+  no FormRequest), `cadastro/_campo`, `_icone`, `_avisos` e o componente `<x-cadastro.card>`
+  (`components/cadastro/card.blade.php` — componente anônimo do Blade: o arquivo vira a tag).
+  Diferenças do protótipo: logo oficial no lugar do `logo.svg`; ficam CPF, acessibilidade com
+  consentimento e a primeira unidade da clínica; saem CNES, cargo e usuário (não existem no banco; o
+  login é pelo e-mail). O `layouts/publico` ficou sem uso e saiu.
+- **Corrigido:** pelo XAMPP (`/FacilMed`), `/register` e `/cadastro/medico` mandavam para
+  `http://localhost/cadastro` (404) — §11, item 40.
+- Conferido: **132 testes** passando, `migrate:fresh --seed` limpo e a varredura no navegador de novo
+  (213 páginas, 0 erro), incluindo o caminho inteiro: clínica nova cadastra o médico → ele entra com
+  a senha provisória → é obrigado a trocar → usa a agenda.
 
 **Junção de 25/09/2026:** a home que o grupo fez no protótipo depois da organização (slider do início com 9 fotos, fotos dos médicos, "Hospitais e Clínicas" e "Sobre") foi trazida para `resources/views/home.blade.php`, `public/css/home.css` e `public/javas/home.js`; fotos em `public/imgs/` (sliderinicio, medicos, sliderhospcli — estas comprimidas de 10,5 MB para 1 MB). Os 3 médicos fictícios ganharam foto (`foto` em `DadosFicticios::MEDICOS`). O `prototipo-antigo/` também foi atualizado com a versão do GitHub (a home agora é `paginas/index.html`). **27/09:** entrou o commit `c9faffe` (mudanças na home: slider em loop contínuo, menu que marca o item clicado, cores em azul-escuro, novo texto do topo, "Sobre nós" e nova foto `medico5`), no protótipo e na home em Laravel.
 
@@ -359,7 +382,7 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   (dá para reverter se o grupo quiser): a **acessibilidade só aparece para o médico** da consulta e só
   enquanto ela está agendada (a clínica não vê — é o que o AGENTS §3 e o consentimento do cadastro
   dizem); a **base simulada confere o nome junto com o CRM**.
-- E-mails e lembretes. **128 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+- E-mails e lembretes. **132 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**
@@ -385,9 +408,8 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   formulário (ex.: `motivo_bloqueio`) é gravado com `forceFill()`.
 
 **Próximos passos sugeridos:**
-1. Subir esta versão numa branch (ex.: `revisao/28-09`) e abrir Pull Request para a `main`. *(O PR #2
-   e o `composer.lock` já entraram. As branches `front/telas-*` e `claude/...` já estão na `main` e podem
-   ser apagadas.)*
+1. Pull Request da `revisao/28-09` para a `main` e, depois, da `front/cadastro` (que está em cima dela).
+   *(As branches `front/telas-*` e `claude/...` já estão na `main` e podem ser apagadas.)*
 2. Cada um: **Pull**, `composer install`, `composer run banco-do-zero` e `php artisan test`.
 3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
@@ -396,10 +418,6 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
   diferentes, e os dados de demonstração já vêm assim (a Ana aparece com duas consultas no mesmo dia e
   hora em "Minhas consultas"). Sugestão: recusar na confirmação ("você já tem consulta nesse horário") e
   espalhar os horários no `ConsultaSeeder`. É regra nova de agendamento: precisa do OK do grupo.
-- *(28/09)* O commit "Cadastros" (Mari) redesenhou os cadastros **só no `prototipo-antigo/`**, que o
-  sistema não usa. Para levar ao Laravel (como foi feito com a home), decidir antes: a tela de escolha
-  tirou o "Sou médico"; o cadastro de clínica pede CNES, cargo e "usuário" (o sistema entra por e-mail e
-  esses campos não existem no banco); o JS do cadastro de paciente ficou em outra pasta e não carrega.
 - *(28/09)* "Cadastros" e "Create composer.lock" foram commitados **direto na `main`** (regra 1 do §10).
 - A vitrine "Hospitais e Clínicas" da home é uma lista fixa no Blade. O "Hospital Vale Sereno"
   não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
@@ -413,6 +431,14 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 - O protótipo estático do admin (`facilmed_admin_telas.zip`, 26/09) tem "Resultados de exames",
   status "Em acompanhamento" e idade de paciente — fora do escopo (AGENTS.md §1 e §3). As telas
   do admin feitas aqui seguem o contrato da seção 7.3.
+
+**Plano do app (PDF de 28/09) — o que já foi decidido (Sidney, 29/09):** cadastro aberto só para
+paciente e clínica (feito); **o agendamento continua** — a tela "médicos disponíveis" leva aos
+horários; **a avaliação continua por consulta realizada**, com comentário privado (AGENTS §3), e a
+nota do local e a do médico saem dessas avaliações. **Ainda por fazer/decidir:** busca por
+distância (locais sem latitude/longitude hoje; sugestão: localização do navegador + tabela de
+cidades com coordenadas no seeder, sem serviço externo); página do local; exclusão de conta
+(LGPD); CNES fica de fora.
 
 **Pendente de decisão do grupo (28/09):** o PDF "Dashboard da Clínica" tira do menu a tabela
 de preços e o perfil, e pede documentação com upload, resultados de exames, status "remarcada",
@@ -660,7 +686,8 @@ nunca como cor de marca.
 
 **Onde está o visual:**
 - Site público → `public/css/home.css` (a home que o grupo fez) + `site.css`
-- Login e cadastro → `public/css/login.css` (o login que o grupo fez)
+- Login → `public/css/login.css` (o login que o grupo fez)
+- Cadastro → `public/css/cadastro.css` + `public/javas/cadastro.js` (o cadastro que a Mari fez, 29/09)
 - Painéis → `public/css/painel.css` + `crud.css` + `agendamento.css`
 - Menus de cada tipo de conta → `config/navegacao.php`. **Item de menu sem tela é link morto:**
   exames, receitas, atestados, prontuário, "resumo da saúde", financeiro e relatórios foram
@@ -692,6 +719,7 @@ foi processado com sucesso".
 | Comentário de avaliação **privado** | reduz risco jurídico de comentário público sobre profissional de saúde |
 | Acessibilidade em **texto**, sem upload de laudo | guardar laudo tornaria o projeto depositário de dado sensível de saúde |
 | Sem pagamento, SUS e teleconsulta | fora do que um TCC consegue fazer direito até 20/10 |
+| Médico **não se cadastra sozinho**: entra pela clínica (29/09) | plano do app de 28/09; a clínica já cadastrava o médico conferindo o CRM na base simulada, então nada de regra mudou — só sumiu um caminho a mais |
 
 **Becos sem saída (não repita):** validar CRM de graça por código; validar carteirinha por
 algoritmo; consultar o COMPROVA da ANS; checar horário livre só com SELECT antes do INSERT
@@ -779,6 +807,7 @@ e corrigidos 18 problemas — todos com teste automático hoje:
 | 37 | *(28/09, 3ª rodada)* "Aprovar" carteirinha no admin não conferia a base simulada |
 | 38 | *(28/09, 3ª rodada)* **Caixas de marcar quebradas** no cadastro de médico (só aparecia "C", "D"...), no de paciente e no de médico pela clínica (marcada parecia desmarcada) |
 | 39 | *(28/09, 3ª rodada)* No celular, as abas de "Minhas consultas" passavam da largura da tela; comentários antigos no código contradiziam o AGENTS (senha "6 a 10", convênio "não pode ser inventado") |
+| 40 | *(29/09)* Pelo XAMPP (`/FacilMed`), `/register` e `/cadastro/medico` redirecionavam para `http://localhost/cadastro` (404): o `Route::redirect` perde a subpasta. Agora usam `redirect()->route()` |
 
 ---
 
