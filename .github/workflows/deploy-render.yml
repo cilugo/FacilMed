@@ -1,0 +1,31 @@
+# FacilMed — publica o site no Render a cada push na main (README §2.7).
+#
+# O Render não publica sozinho porque o app dele não está instalado na
+# conta dona do repositório. Esta automação avisa o Render pelo
+# "Deploy Hook" (um link secreto do Render), guardado no GitHub em
+# Settings → Secrets and variables → Actions → RENDER_DEPLOY_HOOK.
+name: Publicar no Render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # botão "Run workflow" na aba Actions, para publicar na mão
+
+concurrency:
+  group: deploy-render
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar o Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::Falta o segredo RENDER_DEPLOY_HOOK (README §2.7)."
+            exit 1
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Render avisado. O site atualiza em uns 2-5 minutos: https://facilmed.onrender.com"

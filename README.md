@@ -137,9 +137,16 @@ Não vão para o Git (e está certo): `vendor/`, `.env`, `storage/logs/`. Quem r
 
 ### 2.7 No servidor (Render + Aiven) — site no ar
 
-O sistema fica publicado no **Render** (site) com o banco **MySQL no Aiven**. Os dois são grátis e
-nenhum pede cartão. O Render está ligado a este repositório: **cada push na `main` atualiza o site
-sozinho** em uns 5 minutos. Se o build der erro, a versão anterior continua no ar.
+O sistema fica publicado em **https://facilmed.onrender.com** — **Render** (site, conta do Sidney)
+com o banco **MySQL no Aiven** (`facilmed-mysql`, Nova York). Os dois são grátis e nenhum pede
+cartão. **Cada push na `main` atualiza o site** em uns 5 minutos. Se o build der erro, a versão
+anterior continua no ar.
+
+**Como o push chega no Render:** o app do Render não está instalado na conta `cilugo` (dona do
+repositório), então o Render não percebe o push sozinho. Quem avisa é a automação
+`.github/workflows/deploy-render.yml` (aba **Actions** do GitHub), que chama o *Deploy Hook* do
+Render guardado no segredo `RENDER_DEPLOY_HOOK` (GitHub → Settings → Secrets and variables →
+Actions). Para publicar sem commit: aba Actions → "Publicar no Render" → **Run workflow**.
 
 Arquivos do deploy (não mexem no XAMPP): `Dockerfile`, `docker/entrypoint.sh`, `render.yaml`,
 `.dockerignore`. A cada vez que o servidor liga, o `entrypoint.sh`:
