@@ -11,6 +11,7 @@
         @section('titulo', 'Cadastro de paciente')
         @section('conteudo') ... @endsection
         (opcional) @section('conteudo_classe', 'conteudo--centro')
+        (opcional) @section('pagina_classe', 'pagina--escolha')  ← só a tela de escolha
 --}}
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -24,7 +25,7 @@
     <script src="{{ asset('javas/alpine.min.js') }}" defer></script>
 </head>
 <body>
-    <main class="pagina">
+    <main class="pagina @yield('pagina_classe')">
         <section class="marca">
             <div class="circulo circulo--1"></div>
             <div class="circulo circulo--2"></div>
