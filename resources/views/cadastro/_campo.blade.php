@@ -21,6 +21,8 @@
     $erroCampo = $errors->first($nome);
     $valor = old($nome, $padrao ?? '');
     $obrigatorio = $obrigatorio ?? false;
+    // Leitor de tela lê o erro (se houver) ou a ajuda junto com o campo.
+    $descrito = $erroCampo ? $id . '-erro' : (! empty($ajuda) ? $id . '-ajuda' : null);
 @endphp
 <div class="campo {{ ($inteiro ?? false) ? 'campo--inteiro' : '' }} {{ $erroCampo ? 'campo--invalido' : '' }}">
     <label for="{{ $id }}">{{ $rotulo }}{{ $obrigatorio ? ' *' : '' }}</label>
@@ -29,9 +31,9 @@
         @if (! empty($icone)) @include('cadastro._icone', ['nome' => $icone]) @endif
 
         @if ($tipo === 'textarea')
-            <textarea id="{{ $id }}" name="{{ $nome }}" @if ($erroCampo) aria-invalid="true" aria-describedby="{{ $id }}-erro" @endif {!! $atributos ?? '' !!}>{{ $valor }}</textarea>
+            <textarea id="{{ $id }}" name="{{ $nome }}" @if ($erroCampo) aria-invalid="true" @endif @if ($descrito) aria-describedby="{{ $descrito }}" @endif {!! $atributos ?? '' !!}>{{ $valor }}</textarea>
         @elseif ($tipo === 'select')
-            <select id="{{ $id }}" name="{{ $nome }}" @if ($obrigatorio) required @endif @if ($erroCampo) aria-invalid="true" aria-describedby="{{ $id }}-erro" @endif {!! $atributos ?? '' !!}>
+            <select id="{{ $id }}" name="{{ $nome }}" @if ($obrigatorio) required @endif @if ($erroCampo) aria-invalid="true" @endif @if ($descrito) aria-describedby="{{ $descrito }}" @endif {!! $atributos ?? '' !!}>
                 <option value="">{{ $vazio ?? 'Selecione' }}</option>
                 @foreach ($opcoes as $chave => $texto)
                     <option value="{{ $chave }}" @selected((string) $valor === (string) $chave)>{{ $texto }}</option>
@@ -43,10 +45,10 @@
                    @if ($tipo !== 'password') value="{{ $valor }}" @endif
                    @if (! empty($mascara)) data-mascara="{{ $mascara }}" @endif
                    @if ($obrigatorio) required @endif
-                   @if ($erroCampo) aria-invalid="true" aria-describedby="{{ $id }}-erro" @endif
+                   @if ($erroCampo) aria-invalid="true" @endif @if ($descrito) aria-describedby="{{ $descrito }}" @endif
                    {!! $atributos ?? '' !!}>
             @if ($tipo === 'password')
-                <button type="button" class="mostrar-senha" aria-label="Mostrar senha" aria-pressed="false" data-alvo="{{ $id }}">
+                <button type="button" class="mostrar-senha" aria-label="Mostrar {{ mb_strtolower($rotulo) }}" aria-pressed="false" data-alvo="{{ $id }}">
                     @include('cadastro._icone', ['nome' => 'olho'])
                 </button>
             @endif
@@ -56,7 +58,7 @@
     @if ($erroCampo)
         <p class="erro" id="{{ $id }}-erro">{{ $erroCampo }}</p>
     @elseif (! empty($ajuda))
-        <p class="ajuda">{{ $ajuda }}</p>
+        <p class="ajuda" id="{{ $id }}-ajuda">{{ $ajuda }}</p>
     @else
         <p class="erro" aria-hidden="true"></p>
     @endif

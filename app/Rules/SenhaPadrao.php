@@ -7,9 +7,10 @@ use Illuminate\Validation\Rules\Password;
 /**
  * A POLITICA DE SENHA DO FACILMED MORA AQUI, E SO AQUI.
  *
- * Cadastro de paciente, de medico, de clinica, troca de senha e
- * recuperacao de senha chamam este metodo. Mudou a regra? Muda a
- * linha abaixo e vale para os cinco lugares de uma vez.
+ * Cadastro de paciente, de clinica, troca de senha e recuperacao de
+ * senha chamam este metodo. Mudou a regra? Muda a linha abaixo e vale
+ * para os quatro lugares de uma vez. (O cadastro de medico pela
+ * clinica nao pede senha: gera uma provisoria que ele troca ao entrar.)
  *
  * REGRA ATUAL: minimo 8 caracteres, maximo 72 (limite TECNICO do
  * bcrypt, ver abaixo), sem exigir maiuscula nem simbolo. E a regra do

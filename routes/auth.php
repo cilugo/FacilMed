@@ -14,7 +14,9 @@ Route::middleware('guest')->group(function () {
     // O cadastro do Breeze criava usuario SEM tipo (paciente/medico/clinica),
     // que quebrava no /dashboard. O cadastro de verdade e o /cadastro
     // (CadastroController). /register so redireciona para la.
-    Route::redirect('register', '/cadastro')->name('register');
+    // redirect()->route() e nao Route::redirect(): este ultimo perde a
+    // subpasta /FacilMed do XAMPP e mandava para http://localhost/cadastro (404).
+    Route::get('register', fn () => redirect()->route('cadastro.escolher'))->name('register');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

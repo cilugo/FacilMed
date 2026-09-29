@@ -4,8 +4,9 @@
  * Vem do protótipo da Mariana (prototipo-antigo/paginas/cadpac).
  * Só CONFORTO VISUAL: quem valida é o servidor (FormRequest), que tira
  * pontos e traços antes de conferir. Por isso a validação em JS do
- * protótipo não foi trazida — com o JS desligado o cadastro funciona igual
- * e o erro aparece embaixo do campo, vindo do Laravel (AGENTS.md §3).
+ * protótipo não foi trazida — o erro aparece embaixo do campo, vindo do
+ * Laravel (AGENTS.md §3). Sem JS, só o bloco de acessibilidade do paciente
+ * (que abre com o Alpine) deixa de aparecer; o resto funciona igual.
  *
  * Uso no HTML:
  *   <input data-mascara="cpf|cnpj|telefone|cep">
@@ -48,8 +49,9 @@
       if (!campo) return;
       const visivel = campo.type === 'text';
       campo.type = visivel ? 'password' : 'text';
+      // O rótulo fica fixo ("Mostrar senha"/"Mostrar confirmar senha");
+      // quem diz se está visível é o aria-pressed.
       botao.setAttribute('aria-pressed', String(!visivel));
-      botao.setAttribute('aria-label', visivel ? 'Mostrar senha' : 'Ocultar senha');
     });
   });
 

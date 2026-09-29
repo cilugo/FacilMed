@@ -39,6 +39,30 @@ class CadastroTest extends TestCase
         $this->assertGuest();
     }
 
+    /**
+     * Pelo XAMPP o sistema roda em http://localhost/FacilMed. O Route::redirect
+     * do Laravel monta o destino sem essa subpasta e mandava para
+     * http://localhost/cadastro, que dá 404 (achado na revisão de 29/09).
+     * Um pedido por teste: o cliente de teste só aplica a subpasta no 1º pedido.
+     */
+    private function destinoPeloXampp(string $endereco): string
+    {
+        return $this->withServerVariables([
+            'SCRIPT_NAME' => '/FacilMed/index.php', 'PHP_SELF' => '/FacilMed/index.php',
+            'SCRIPT_FILENAME' => base_path('index.php'),
+        ])->get('/FacilMed' . $endereco)->assertRedirect()->headers->get('Location');
+    }
+
+    public function test_cadastro_de_medico_antigo_volta_para_a_escolha_dentro_do_xampp(): void
+    {
+        $this->assertSame('http://localhost/FacilMed/cadastro', $this->destinoPeloXampp('/cadastro/medico'));
+    }
+
+    public function test_register_volta_para_a_escolha_dentro_do_xampp(): void
+    {
+        $this->assertSame('http://localhost/FacilMed/cadastro', $this->destinoPeloXampp('/register'));
+    }
+
     public function test_escolha_de_cadastro_tem_so_paciente_e_clinica(): void
     {
         $this->get('/cadastro')->assertOk()

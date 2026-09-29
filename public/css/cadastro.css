@@ -17,7 +17,7 @@
   --azul: #2350d0;          /* início do degradê dos botões (protótipo) */
   --azul-claro: #1C9CE5;    /* azul-claro da marca */
   --texto-suave: #4f6fb8;
-  --placeholder: #8fa3c9;
+  --placeholder: #5f73a0;   /* contraste ~4,5:1 sobre o fundo dos campos */
   --borda: #d6e2f5;
   --fundo: #f7faff;
   --fundo-cabecalho: #edf3fd;
@@ -142,14 +142,12 @@ h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
   grid-template-columns: 1fr 1fr;
   gap: 4px 20px;
 }
-.grade--3 { grid-template-columns: 2fr 1fr 1fr; }
 
 /* ---------- Campos ---------- */
 .campo { min-width: 0; }
 .campo--inteiro { grid-column: 1 / -1; }
 
-.campo label,
-.campo .rotulo {
+.campo label {
   display: block;
   margin-bottom: 6px;
   font-size: .85rem;
@@ -357,7 +355,7 @@ h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
 }
 
 @media (max-width: 600px) {
-  .grade, .grade--3, .tipos { grid-template-columns: 1fr; }
+  .grade, .tipos { grid-template-columns: 1fr; }
   .rodape { flex-direction: column-reverse; gap: 16px; }
   .rodape .botao { width: 100%; }
 }

@@ -140,8 +140,6 @@ body { background-color: var(--site-fundo); }
 .chamada .container { display: flex; align-items: center; justify-content: space-between; gap: 30px; flex-wrap: wrap; }
 .chamada h2 { font-family: "Rosario", Arial, sans-serif; font-size: 26px; line-height: 1.2; margin-bottom: 6px; }
 .chamada p { color: #d4e0ff; max-width: 560px; }
-.chamada .btn-outline { border-color: #fff; color: #fff; }
-.chamada .btn-outline:hover { background: #fff; color: var(--site-marinho); }
 .chamada .acoes { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ---------- Página de busca ---------- */

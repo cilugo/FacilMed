@@ -1,6 +1,7 @@
 {{--
     Layout das telas de ENTRADA: login, esqueci a senha, nova senha,
-    confirmar senha, verificar e-mail e a escolha do tipo de cadastro.
+    confirmar senha e verificar e-mail. (O cadastro tem layout próprio,
+    layouts/cadastro, desde 29/09/2026.)
 
     Visual: public/css/login.css, feito pelo grupo para o protótipo
     (paginas/login.html) e trazido para o Laravel em 24/09/2026.

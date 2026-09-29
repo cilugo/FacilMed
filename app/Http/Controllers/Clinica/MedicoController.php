@@ -45,7 +45,8 @@ class MedicoController extends Controller
      * fica sabendo a senha definitiva do profissional.
      *
      * O CRM de médico NOVO é conferido na base simulada pelo FormRequest
-     * (igual ao cadastro autônomo, desde 24/09): se chegou aqui, bateu, e
+     * (desde 24/09; e desde 29/09 este é o ÚNICO jeito de um médico entrar
+     * no FacilMed - o autocadastro saiu): se chegou aqui, bateu, e
      * ele já nasce 'verificado'. A clínica não "verifica" nada.
      *
      * Se o medico JA existe no sistema (mesmo CRM+UF), nao crie outro:

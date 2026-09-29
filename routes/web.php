@@ -62,7 +62,9 @@ Route::middleware('guest')->group(function () {
 });
 
 // Endereço antigo do cadastro de médico (link salvo, protótipo): volta para a escolha.
-Route::redirect('/cadastro/medico', '/cadastro');
+// redirect()->route() e não Route::redirect(): este último monta o destino SEM a
+// subpasta /FacilMed do XAMPP e mandava para http://localhost/cadastro (404).
+Route::any('/cadastro/medico', fn () => redirect()->route('cadastro.escolher'));
 
 // ---------------------------------------------------------------------
 // Agendamento (paciente logado)

@@ -15,9 +15,12 @@ use Illuminate\Validation\Validator;
  *
  * - CRM+UF já existe no FacilMed → não cria outro médico: só o vínculo.
  *   Nome, e-mail e CPF são ignorados.
- * - CRM novo → precisa passar na base simulada (mesma regra do cadastro
- *   autônomo, decisão de 24/09) e aí name, email, cpf e especialidades
- *   são obrigatórios. A conta nasce com senha temporária.
+ * - CRM novo → precisa passar na base simulada (decisão de 24/09: CRM
+ *   ativo, UF certa e nome igual ao do CRM) e aí name, email, cpf e
+ *   especialidades são obrigatórios. A conta nasce com senha temporária.
+ *
+ * Desde 29/09 é o ÚNICO jeito de um médico entrar no FacilMed: o
+ * autocadastro (/cadastro/medico) saiu.
  */
 class CadastrarMedicoPelaClinicaRequest extends FormRequest
 {
