@@ -11,6 +11,9 @@ use Illuminate\Database\Seeder;
 
 class ConsultaSeeder extends Seeder
 {
+    /** Horarios do turno da manha (bloco 08:00-12:00, consultas de 30 min). */
+    private const MANHA = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'];
+
     /**
      * Gera historico e agenda futura para as telas nao nascerem vazias.
      *
@@ -32,6 +35,14 @@ class ConsultaSeeder extends Seeder
 
         if ($pacientes->isEmpty() || $medicos->isEmpty()) {
             $this->command->warn('Sem pacientes ou medicos: rode os seeders anteriores primeiro.');
+            return;
+        }
+
+        // 29/09: os outros seeders podem rodar de novo sem duplicar nada (firstOrCreate).
+        // Aqui o horario depende do que ja esta marcado (horarioLivre), entao rodar de
+        // novo criaria outra agenda inteira. Para recriar: composer run banco-do-zero.
+        if (Consulta::exists()) {
+            $this->command->info('Ja existem consultas: as de demonstracao nao foram criadas de novo.');
             return;
         }
 
@@ -57,16 +68,21 @@ class ConsultaSeeder extends Seeder
                     $data = $data->previous('friday');
                 }
 
-                $consulta = Consulta::firstOrCreate(
+                $pacienteId = $pacientes->random()->id;
+
+                // Antes: 9+$i -> a ultima caia as 12:00, FORA do bloco
+                // 08:00-12:00 (o ultimo horario do bloco e 11:30).
+                $horario = $this->horarioLivre($medico->id, $pacienteId, $data->toDateString(), ['09:00', '10:00', '10:30', '11:30'][$i]);
+                if ($horario === null) {
+                    continue;
+                }
+
+                $consulta = Consulta::create(
                     [
-                        'medico_id'     => $medico->id,
-                        'data_consulta' => $data->toDateString(),
-                        // Antes: 9+$i -> a ultima caia as 12:00, FORA do bloco
-                        // 08:00-12:00 (o ultimo horario do bloco e 11:30).
-                        'horario'       => ['09:00', '10:00', '10:30', '11:30'][$i],
-                    ],
-                    [
-                        'paciente_id'      => $pacientes->random()->id,
+                        'medico_id'        => $medico->id,
+                        'data_consulta'    => $data->toDateString(),
+                        'horario'          => $horario,
+                        'paciente_id'      => $pacienteId,
                         'vinculo_id'       => $vinculo->id,
                         'especialidade_id' => $preco->especialidade_id,
                         'forma_pagamento'  => 'particular',
@@ -98,15 +114,20 @@ class ConsultaSeeder extends Seeder
                     $data = $data->next('monday');
                 }
 
-                Consulta::firstOrCreate(
+                $pacienteId = $pacientes->random()->id;
+
+                // Manha: o primeiro vinculo de cada medico e o turno da manha.
+                $horario = $this->horarioLivre($medico->id, $pacienteId, $data->toDateString(), ['09:30', '10:30'][$i]);
+                if ($horario === null) {
+                    continue;
+                }
+
+                Consulta::create(
                     [
-                        'medico_id'     => $medico->id,
-                        'data_consulta' => $data->toDateString(),
-                        // Manha: o primeiro vinculo de cada medico e o turno da manha.
-                        'horario'       => ['09:30', '10:30'][$i],
-                    ],
-                    [
-                        'paciente_id'      => $pacientes->random()->id,
+                        'medico_id'        => $medico->id,
+                        'data_consulta'    => $data->toDateString(),
+                        'horario'          => $horario,
+                        'paciente_id'      => $pacienteId,
                         'vinculo_id'       => $vinculo->id,
                         'especialidade_id' => $preco->especialidade_id,
                         'forma_pagamento'  => 'particular',
@@ -135,7 +156,8 @@ class ConsultaSeeder extends Seeder
      * Segue as mesmas regras do AgendamentoController::validarCarteirinha:
      * o vinculo aceita convenio E o medico aceita o convenio do plano.
      * Valor 0,00 porque a plataforma nao cobra consulta por convenio.
-     * Horarios 11:00 e 08:00 (turno da manha), que nao colidem com os particulares acima.
+     * Horarios 11:00 e 08:00 (turno da manha); se o paciente ja tiver consulta nesse
+     * horario (com outro medico), horarioLivre() escolhe o proximo livre.
      */
     private function consultasPorConvenio(): int
     {
@@ -169,13 +191,16 @@ class ConsultaSeeder extends Seeder
                         $data = $dias < 0 ? $data->previous('friday') : $data->next('monday');
                     }
 
-                    Consulta::firstOrCreate(
+                    $horario = $this->horarioLivre($medico->id, $carteirinha->paciente_id, $data->toDateString(), $hora);
+                    if ($horario === null) {
+                        continue;
+                    }
+
+                    Consulta::create(
                         [
-                            'medico_id'     => $medico->id,
-                            'data_consulta' => $data->toDateString(),
-                            'horario'       => $hora,
-                        ],
-                        [
+                            'medico_id'         => $medico->id,
+                            'data_consulta'     => $data->toDateString(),
+                            'horario'           => $horario,
                             'paciente_id'       => $carteirinha->paciente_id,
                             'vinculo_id'        => $vinculo->id,
                             'especialidade_id'  => $preco->especialidade_id,
@@ -192,5 +217,33 @@ class ConsultaSeeder extends Seeder
         }
 
         return $criadas;
+    }
+
+    /**
+     * 29/09/2026: o horario preferido ou, se ele nao servir, o primeiro da manha em
+     * que NEM o medico NEM o paciente ja tem consulta naquele dia.
+     *
+     * Antes o paciente era sorteado e o horario era fixo: com 3 medicos no mesmo
+     * dia e hora e so 2 pacientes, a Ana sempre aparecia com duas consultas no
+     * mesmo horario (em "Minhas consultas"). O agendamento agora recusa isso
+     * (Paciente::consultaNoHorario), entao os dados de demonstracao tambem nao
+     * podem ter. Todas as consultas daqui duram 30 min: comparar o horario de
+     * inicio basta.
+     */
+    private function horarioLivre(int $medicoId, int $pacienteId, string $data, string $preferido): ?string
+    {
+        $ocupados = Consulta::whereDate('data_consulta', $data)
+            ->where(fn ($q) => $q->where('medico_id', $medicoId)->orWhere('paciente_id', $pacienteId))
+            ->pluck('horario')
+            ->map(fn ($h) => substr($h, 0, 5))
+            ->all();
+
+        foreach (array_unique([$preferido, ...self::MANHA]) as $horario) {
+            if (! in_array($horario, $ocupados, true)) {
+                return $horario;
+            }
+        }
+
+        return null;
     }
 }
