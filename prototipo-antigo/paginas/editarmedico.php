@@ -1,3 +1,5 @@
+//conferir para deletar ou não //
+
 <?php
 require_once("../php/conexao.php");
 require_once("../php/verificarsessao.php");

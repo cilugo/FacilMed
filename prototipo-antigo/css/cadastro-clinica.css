@@ -53,7 +53,7 @@ body {
 .logo { position: relative; text-align: center; }
 .logo .logo__imagem {
   display: block;
-  width: 130px;
+  width: 350px;
   max-width: 100%;
   height: auto;
   aspect-ratio: 160 / 140;
