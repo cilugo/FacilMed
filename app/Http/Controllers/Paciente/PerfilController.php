@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Paciente\ExcluirContaRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class PerfilController extends Controller
@@ -82,5 +84,21 @@ class PerfilController extends Controller
         ]);
 
         return back()->with('sucesso', 'Informação salva.');
+    }
+
+    /**
+     * 30/09/2026 — o paciente exclui a própria conta (LGPD). A regra inteira
+     * está em Paciente::excluirConta(); aqui só confirma, chama e desloga.
+     */
+    public function excluir(ExcluirContaRequest $request)
+    {
+        $canceladas = $request->user()->paciente->excluirConta();
+
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('status', 'Sua conta foi excluída e seus dados pessoais foram apagados.' .
+            ($canceladas > 0 ? " {$canceladas} " . ($canceladas === 1 ? 'consulta futura foi cancelada' : 'consultas futuras foram canceladas') . ' e os médicos foram avisados.' : ''));
     }
 }

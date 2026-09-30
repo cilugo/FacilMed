@@ -1,7 +1,8 @@
 {{--
     Paciente → Meu perfil. Dados: Paciente\PerfilController@edit.
-    Três formulários: dados pessoais, senha (rota password.update do Breeze)
-    e acessibilidade (dado sensível, só com consentimento — LGPD art. 11).
+    Quatro formulários: dados pessoais, senha (rota password.update do Breeze),
+    acessibilidade (dado sensível, só com consentimento — LGPD art. 11) e
+    excluir a conta (30/09, LGPD).
 --}}
 @extends('layouts.painel')
 
@@ -160,6 +161,50 @@
 
             <div class="fm-form__acoes">
                 <button type="submit" class="fm-botao" x-text="precisa ? 'Salvar' : '{{ $acess ? 'Apagar informação' : 'Salvar' }}'">Salvar</button>
+            </div>
+        </form>
+    </section>
+
+    {{-- ===================== EXCLUIR CONTA (30/09, LGPD) =====================
+         Regra em Paciente::excluirConta(); confirmação no ExcluirContaRequest,
+         com erros no saco próprio "excluirConta" (não se mistura com a senha). --}}
+    @php $erroExclusao = $errors->excluirConta; @endphp
+    <section class="fm-painel" style="margin-top: 18px;" id="excluir-conta">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="user-x" /> Excluir minha conta</h2>
+        </header>
+
+        <p style="margin: 0 0 10px;">Se você excluir a conta:</p>
+        <ul style="margin: 0 0 16px; padding-left: 20px; display: grid; gap: 6px; list-style: disc;">
+            <li>suas consultas marcadas para o futuro são canceladas, e o médico é avisado;</li>
+            <li>seu nome, e-mail, telefone, CPF, data de nascimento, os números das suas carteirinhas, as informações de acessibilidade e o que você escreveu nas consultas são apagados;</li>
+            <li>as notas que você deu continuam valendo para a média do médico, mas sem o seu nome e sem o comentário;</li>
+            <li>as consultas que já aconteceram continuam no histórico do médico, sem nenhum dado seu;</li>
+            <li><strong>não dá para desfazer.</strong> Se quiser voltar, é só criar uma conta nova (pode ser com o mesmo e-mail e CPF).</li>
+        </ul>
+
+        <form method="POST" action="{{ route('paciente.perfil.excluir') }}" class="fm-form fm-form--duas">
+            @csrf
+            @method('DELETE')
+
+            {{-- name="current_password": o Laravel nunca guarda esse campo na sessão (ver ExcluirContaRequest) --}}
+            <div class="fm-campo {{ $erroExclusao->has('current_password') ? 'fm-campo--erro' : '' }}">
+                <label for="excluir_senha">Sua senha *</label>
+                <input id="excluir_senha" name="current_password" type="password" autocomplete="current-password" required>
+                @if ($erroExclusao->has('current_password')) <span class="fm-campo__erro">{{ $erroExclusao->first('current_password') }}</span> @endif
+            </div>
+            <div></div>
+
+            <div style="grid-column: 1 / -1;">
+                <label style="display: flex; gap: 8px; align-items: flex-start; font-size: 14px;">
+                    <input type="checkbox" name="confirmacao" value="1" required style="width: 18px; height: 18px; margin-top: 2px;">
+                    Entendo que a exclusão não pode ser desfeita.
+                </label>
+                @if ($erroExclusao->has('confirmacao')) <span class="fm-campo__erro">{{ $erroExclusao->first('confirmacao') }}</span> @endif
+            </div>
+
+            <div class="fm-form__acoes">
+                <button type="submit" class="fm-botao fm-botao--perigo">Excluir minha conta</button>
             </div>
         </form>
     </section>

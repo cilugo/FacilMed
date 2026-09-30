@@ -7,7 +7,7 @@
 > telas — está no `README.md`.** Leia o README (principalmente §4, §5 e §6) antes de editar.
 > Se algo aqui conflitar com outro arquivo, **este vence**.
 >
-> Última revisão: 29/09/2026.
+> Última revisão: 30/09/2026.
 
 ## 1. Escopo — o que este projeto NÃO é
 
@@ -28,7 +28,7 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
   `http://localhost/FacilMed`. Fuso `America/Sao_Paulo`.
 - **Não instalar dependência nova** (Composer ou npm) sem registrar a decisão no README §6 e ter aprovação.
 - "Estado bom": `php artisan migrate:fresh --seed` roda limpo **e** `php artisan test` passa
-  (154 testes, banco `facilmed_testes` — nunca o `facilmed`).
+  (170 testes, banco `facilmed_testes` — nunca o `facilmed`).
 
 ## 3. Regras invioláveis de negócio e de dados
 
@@ -95,6 +95,11 @@ intenção de quem escreveu a tela.
   é o paciente daquela consulta.
 - **Nunca** salvar a localização do paciente (banco, sessão, log). Ela vai só na URL da busca de
   locais, arredondada, e serve só para ordenar por distância (29/09/2026).
+- **Nunca** apagar paciente com `delete()` nem fazer um segundo caminho de exclusão de conta: a
+  exclusão pedida pelo paciente (LGPD, 30/09/2026) é **só** por `Paciente::excluirConta()`, que
+  anonimiza (a consulta fica, o dado pessoal some). Conta excluída (`excluida_em` preenchido) nunca
+  volta a `ativo` — o CHECK `chk_users_excluida_inativa` garante no banco. Dado pessoal novo ligado ao
+  paciente (coluna ou tabela) precisa entrar no `excluirConta()`, com teste.
 - **Nunca** apresentar a distância como exata: a coordenada do local é aproximada (bairro ou centro
   da cidade) e a conta é em linha reta. O texto da tela diz "aproximada, em linha reta".
 
