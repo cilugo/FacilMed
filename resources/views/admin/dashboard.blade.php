@@ -15,7 +15,6 @@
         .adm-linha { display: grid; gap: 18px; margin-top: 18px; }
         .adm-linha > .fm-painel { margin: 0; min-width: 0; }
         @media (min-width: 1100px) {
-            .adm-linha--grafico { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
             .adm-linha--tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
         @media (min-width: 1100px) and (max-width: 1399px) {
@@ -55,7 +54,7 @@
         @endforeach
     </div>
 
-    {{-- ================= Gráfico + acesso rápido ================= --}}
+    {{-- ================= Gráfico ================= --}}
     <div class="adm-linha adm-linha--grafico">
         <section class="fm-painel">
             <header class="fm-painel__topo">
@@ -68,23 +67,6 @@
             </header>
             <p class="fm-meta" style="margin: -6px 0 8px;"><strong style="color: var(--fm-titulo); font-size: 18px;">{{ $grafico['total'] }}</strong> {{ $grafico['rotulo'] }}</p>
             <div class="fm-grafico" data-fm-linha='@json($grafico['serie'])' role="img" aria-label="Consultas realizadas no período"></div>
-        </section>
-
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="bolt" /> Acesso rápido</h2>
-            </header>
-            <ul class="fm-atalhos">
-                @foreach ($atalhos as $a)
-                    <li>
-                        <a href="{{ $a['url'] }}" class="fm-atalho">
-                            <span class="fm-atalho__icone"><x-icone :nome="$a['icone']" /></span>
-                            <span class="fm-atalho__rotulo">{{ $a['rotulo'] }}</span>
-                            <x-icone nome="chevron-right" class="fm-atalho__seta" />
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
         </section>
     </div>
 
