@@ -57,17 +57,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, var(--painel-1) 0%, var(--painel-2) 100%);
+  /* Mesmo fundo e mesmo respiro do painel do login (login.css, .login-brand) */
+  background: linear-gradient(160deg, #eaf1fd 0%, #dbe7fb 55%, #cfe0fa 100%);
+  padding: 40px;
 }
 
 .circulo { position: absolute; border-radius: 50%; pointer-events: none; }
-.circulo--1 { width: 360px; height: 360px; top: -130px; left: -140px; background: rgba(255,255,255,.5); }
-.circulo--2 { width: 160px; height: 160px; top: 22%; right: -60px; background: rgba(255,255,255,.45); }
-.circulo--3 { width: 300px; height: 300px; bottom: -120px; left: -70px; background: rgba(170,200,245,.4); }
+/* Círculos com as medidas do login (login.css, .login-brand__blob--1/2/3) */
+.circulo--1 { width: 420px; height: 420px; top: -140px; left: -160px; background: rgba(255,255,255,.55); }  /* canto de cima */
+.circulo--2 { width: 180px; height: 180px; top: 38%; right: -70px; background: rgba(255,255,255,.4); }     /* direita */
+.circulo--3 { width: 260px; height: 260px; bottom: -90px; left: 40px; background: rgba(180,205,245,.6); }   /* embaixo */
 
-.marca__link { position: relative; display: block; border-radius: 12px; }
+.marca__link { position: relative; z-index: 2; display: block; width: 100%; max-width: 320px; border-radius: 12px; }
 .marca__link:focus-visible { outline: 3px solid var(--azul-claro); outline-offset: 6px; }
-.marca__logo { display: block; width: 260px; max-width: 70vw; height: auto; }
+.marca__logo { display: block; width: 100%; height: auto; object-fit: contain; }   /* até 320px, como no login */
 
 /* ---------- Lado do formulário ---------- */
 .conteudo {
@@ -350,12 +353,9 @@ h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
  * Paciente e clínica continuam com o visual da Mariana.
  * Cores: as da marca (README §8), no lugar dos tons aproximados do style1.
  */
-.pagina--escolha .marca__link { margin-top: 60px; }   /* no login a logo fica um pouco abaixo do centro */
 
-/* Círculos em vh: acompanham a altura da tela, então nunca se encostam */
-.pagina--escolha .circulo--1 { width: 70vh; height: 70vh; top: -26vh; left: -32vh; background: rgba(255,255,255,.55); }
-.pagina--escolha .circulo--2 { width: 30vh; height: 30vh; top: 40vh; right: -12vh; }
-.pagina--escolha .circulo--3 { width: 44vh; height: 44vh; bottom: -20vh; left: 7%; background: rgba(170,200,245,.45); }
+/* O painel da marca (logo e círculos) é o mesmo das outras telas de cadastro,
+   com as medidas do login: ver .marca e .circulo lá em cima. */
 
 .pagina--escolha .conteudo { padding: 48px 64px; }
 .pagina--escolha .escolha { max-width: 520px; }
@@ -377,7 +377,7 @@ h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
   .pagina { grid-template-columns: 1fr; grid-template-rows: auto 1fr; min-height: 100vh; min-height: 100dvh; }
   .conteudo--centro { align-items: flex-start; }
   .marca { min-height: 180px; padding: 28px 0; }
-  .marca__logo { width: 170px; }
+  .marca__link { max-width: 170px; }
   .conteudo { overflow: visible; padding: 28px 16px; }
 }
 
@@ -388,12 +388,6 @@ h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
 }
 
 @media (max-width: 900px) {
-  .pagina--escolha .marca { min-height: 260px; padding: 32px 0; }
-  .pagina--escolha .marca__link { margin-top: 0; }
-  .pagina--escolha .marca__logo { width: 160px; }
-  .pagina--escolha .circulo--1 { width: 360px; height: 360px; top: -180px; left: -160px; }
-  .pagina--escolha .circulo--2 { width: 160px; height: 160px; top: 35%; right: -60px; }
-  .pagina--escolha .circulo--3 { width: 220px; height: 220px; bottom: -120px; }
   .pagina--escolha .conteudo { padding: 40px 24px; }
   .pagina--escolha h1 { font-size: 1.7rem; }
   .pagina--escolha .opcoes .botao { height: 52px; font-size: 1rem; }
