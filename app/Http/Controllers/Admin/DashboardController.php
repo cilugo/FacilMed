@@ -68,12 +68,14 @@ class DashboardController extends Controller
         $realizadasAntes = $stats->total('realizada', $mesPassadoIni, $mesPassadoFim);
 
         // Cadastros novos no mês x mês anterior (para a variação dos cartões).
-        $novos = fn (string $tipo, $de, $ate) => User::where('tipo', $tipo)
+        // (Conta excluída pelo paciente, 30/09, não entra: ela não é mais um cadastro.)
+        $novos = fn (string $tipo, $de, $ate) => User::where('tipo', $tipo)->whereNull('excluida_em')
             ->whereBetween('created_at', [$de->copy()->startOfDay(), $ate->copy()->endOfDay()])->count();
 
         $clinicasAtivas  = Clinica::whereHas('user', fn ($q) => $q->where('status', 'ativo'))->count();
         $medicosAtivos   = Medico::visivel()->count();
-        $pacientes       = User::where('tipo', User::TIPO_PACIENTE)->count();
+        // 30/09: conta excluída pelo paciente não é mais um paciente cadastrado.
+        $pacientes       = User::where('tipo', User::TIPO_PACIENTE)->whereNull('excluida_em')->count();
         $agendadasFuturas = EstatisticasDeConsultas::aPartirDeAgora(
             $stats->todas()->where('consultas.status', 'agendada')
         )->count();
@@ -141,7 +143,7 @@ class DashboardController extends Controller
 
         // ---- Últimos cadastros (todos os tipos) ----
         $icones = ['paciente' => 'user', 'medico' => 'doctors', 'clinica' => 'building', 'admin' => 'badge'];
-        $ultimosCadastros = User::latest()->limit(5)->get(['id', 'name', 'tipo', 'created_at'])
+        $ultimosCadastros = User::whereNull('excluida_em')->latest()->limit(5)->get(['id', 'name', 'tipo', 'created_at'])
             ->map(fn (User $u) => [
                 'nome'  => $u->name,
                 'tipo'  => Formatador::PAPEIS[$u->tipo] ?? $u->tipo,
@@ -242,7 +244,6 @@ class DashboardController extends Controller
                 ],
             ],
 
-            'atalhos'          => array_slice(Formatador::atalhos('admin'), 0, 5),
             'clinicas'         => $clinicas,
             'medicos'          => $medicos,
             'ultimosCadastros' => $ultimosCadastros,

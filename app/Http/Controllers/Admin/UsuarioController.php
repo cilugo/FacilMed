@@ -42,6 +42,9 @@ class UsuarioController extends Controller
         ]);
 
         abort_if($user->ehAdmin(), 403, 'Não é possível bloquear um administrador.');
+        // 30/09: conta excluída pelo paciente fica como está. Bloquear e depois
+        // "desbloquear" a colocaria de volta como ativa.
+        abort_if($user->foiExcluida(), 422, 'Essa conta foi excluída pelo próprio paciente.');
 
         // Consultas futuras afetadas (24/09). Paciente bloqueado: as dele.
         // Médico: as que ele atenderia. Clínica: as das unidades dela.

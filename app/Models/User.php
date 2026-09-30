@@ -29,6 +29,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'bloqueado_em'      => 'datetime',
+            'excluida_em'       => 'datetime',   // 30/09: o paciente excluiu a conta (Paciente::excluirConta)
         ];
     }
 
@@ -88,6 +89,12 @@ class User extends Authenticatable
     public function estaBloqueado(): bool
     {
         return $this->status === 'bloqueado';
+    }
+
+    /** 30/09: conta que o próprio paciente excluiu (ficou anonimizada). */
+    public function foiExcluida(): bool
+    {
+        return $this->excluida_em !== null;
     }
 
     /**

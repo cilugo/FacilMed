@@ -296,7 +296,13 @@ class AgendamentoController extends Controller
              * Sem a trava, os dois conferiam juntos, não viam conflito e gravavam.
              * (O índice único do banco não ajuda aqui: ele é por médico.)
              */
-            Paciente::whereKey($paciente->id)->lockForUpdate()->first();
+            $travado = Paciente::whereKey($paciente->id)->lockForUpdate()->with('user')->first();
+
+            // 30/09: a conta pode ter sido excluída (Paciente::excluirConta, que
+            // trava esta mesma linha) entre o middleware e aqui — por exemplo,
+            // excluir numa aba e agendar em outra no mesmo segundo. Depois da
+            // trava o dado é o de agora: conta que não está ativa não agenda.
+            abort_unless($travado?->user?->estaAtivo(), 403, 'Sua conta não está ativa.');
 
             $conflito = $paciente->consultaNoHorario($this->juntar($data, $dados['horario']), $duracao, $antiga?->id);
 

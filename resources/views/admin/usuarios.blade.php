@@ -77,7 +77,9 @@
             <ul class="fm-lista">
                 @foreach ($usuarios as $u)
                     @php
-                        [$rotuloSit, $tomSit] = $situacoes[$u->status] ?? [ucfirst($u->status), 'cinza'];
+                        [$rotuloSit, $tomSit] = $u->foiExcluida()
+                            ? ['Excluída', 'cinza']   // 30/09: o próprio paciente excluiu (dados anonimizados)
+                            : ($situacoes[$u->status] ?? [ucfirst($u->status), 'cinza']);
                         $esteForm = $formVolta === 'bloquear-' . $u->id;
                     @endphp
                     <li class="fm-conta" x-data="{ bloqueando: {{ $esteForm ? 'true' : 'false' }} }">
@@ -97,7 +99,7 @@
                                         @csrf
                                         <button type="submit" class="fm-botao fm-botao--ok fm-botao--pequeno">Desbloquear</button>
                                     </form>
-                                @elseif ($u->tipo !== 'admin')
+                                @elseif ($u->tipo !== 'admin' && ! $u->foiExcluida())
                                     <button type="button" class="fm-botao fm-botao--perigo fm-botao--pequeno" @click="bloqueando = !bloqueando" :aria-expanded="bloqueando">Bloquear</button>
                                 @endif
                             </div>
@@ -110,7 +112,13 @@
                             </p>
                         @endif
 
-                        @if ($u->status !== 'bloqueado' && $u->tipo !== 'admin')
+                        @if ($u->foiExcluida())
+                            <p class="fm-conta__extra fm-campo__ajuda">
+                                Excluída pelo próprio paciente em {{ Formatador::dataCurta($u->excluida_em) }}. Os dados pessoais foram apagados.
+                            </p>
+                        @endif
+
+                        @if ($u->status !== 'bloqueado' && $u->tipo !== 'admin' && ! $u->foiExcluida())
                             <form method="POST" action="{{ route('admin.usuarios.bloquear', $u) }}" class="fm-form fm-form--caixa fm-conta__extra" x-show="bloqueando" x-cloak>
                                 @csrf
                                 <input type="hidden" name="_form" value="bloquear-{{ $u->id }}">

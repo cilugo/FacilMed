@@ -138,6 +138,10 @@ Route::middleware(['auth', 'tipo:paciente'])->prefix('paciente')->name('paciente
     Route::get('/perfil', [Paciente\PerfilController::class, 'edit'])->name('perfil');
     Route::put('/perfil', [Paciente\PerfilController::class, 'update'])->name('perfil.atualizar');
 
+    // 30/09: exclusão de conta (LGPD). Anonimiza, não apaga — ver
+    // Paciente::excluirConta(). Pede a senha atual e uma confirmação.
+    Route::delete('/perfil', [Paciente\PerfilController::class, 'excluir'])->name('perfil.excluir');
+
     // DADO SENSÍVEL DE SAÚDE (LGPD art. 11). Opcional, com consentimento
     // explícito. Sem upload de arquivo — só texto.
     Route::put('/perfil/acessibilidade', [Paciente\PerfilController::class, 'salvarAcessibilidade'])

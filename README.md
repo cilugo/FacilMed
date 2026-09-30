@@ -213,6 +213,13 @@ Convênios fictícios: **SpSaúde**, **Horizonte Med**, **Bem Viver Saúde** (3 
 - **Com especialidade:** `/locais?especialidade=pediatria` → só Aurora e Esperança (Dra. Camila).
 - **Página do local:** clique no nome ou em "Ver local". As clínicas de São José têm nota (das consultas realizadas); o comentário não aparece.
 
+### Para testar a exclusão de conta
+
+Entre como **Marcos** → "Meu perfil" → "Excluir minha conta" (senha `facilmed2026` + a caixa de
+confirmação). Ele volta para o login com o aviso, e o e-mail dele não entra mais. **Não dá para
+desfazer:** para ter o Marcos de volta, `composer run banco-do-zero` (no site no ar, a aba Shell do
+Render, §2.7). Depois de excluir, ele pode se cadastrar de novo com o mesmo e-mail e CPF.
+
 ### Para testar as bases simuladas
 
 **Cadastro de médico pela clínica** (entre como clínica → **Meus médicos → Cadastrar médico**).
@@ -260,7 +267,7 @@ FacilMed/
 │
 ├── app/
 │   ├── Http/Controllers/  ← um controller por tela: Paciente/, Medico/, Clinica/, Admin/, Auth/
-│   ├── Http/Requests/     ← validação dos formulários (Medico/, Clinica/, Admin/)
+│   ├── Http/Requests/     ← validação dos formulários (Paciente/, Medico/, Clinica/, Admin/)
 │   ├── Http/Middleware/   ← tipo de conta, conta ativa, troca de senha temporária
 │   ├── Models/            ← tabelas e relacionamentos
 │   ├── Policies/          ← quem pode ver/mexer em quê
@@ -283,7 +290,7 @@ FacilMed/
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus,
 │                             localizacao.php = coordenadas aproximadas das cidades)
-├── tests/Feature/         ← 154 testes automáticos
+├── tests/Feature/         ← 170 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -310,7 +317,7 @@ banco antigo.
 
 ### 5.2 As tabelas, por grupo
 
-- **Contas:** `users` (tipo e status), `pacientes`, `medicos`, `clinicas`,
+- **Contas:** `users` (tipo, status e `excluida_em`), `pacientes`, `medicos`, `clinicas`,
   `paciente_acessibilidade` (separada de propósito: dado sensível, só com consentimento).
 - **Locais e agenda:** `locais` (de uma clínica **ou** de um médico — o banco garante um dono
   só), `horarios_funcionamento`, `vinculos`, `precos`, `disponibilidades`, `bloqueios` (ausências),
@@ -359,6 +366,11 @@ horário mesmo se clicarem juntas.
   regra do `recebeAgendamento()`) e só preço ativo de especialidade ativa (`precosOferecidos()`).
 - Conta bloqueada é deslogada na próxima página. Médico cadastrado pela clínica troca a senha
   temporária antes de usar o sistema.
+- **O paciente pode excluir a própria conta** (30/09, LGPD) em "Meu perfil", com a senha atual e uma
+  confirmação. A conta é **anonimizada, não apagada** (`Paciente::excluirConta()`): consultas futuras
+  canceladas (o médico é avisado), acessibilidade apagada, carteirinhas apagadas (a já usada em consulta
+  fica sem número), o que o paciente escreveu nas consultas apagado, avaliações só com a nota, e nome,
+  e-mail, telefone, CPF, nascimento e sexo somem. Conta excluída nunca volta a ativa (CHECK no banco).
 - Várias regras também estão travadas **no próprio banco** (preço negativo, horário que termina
   antes de começar, nota fora de 1 a 5, local com dois donos).
 
@@ -403,7 +415,7 @@ distância            → linha reta (Haversine, App\Support\Localizacao), calcu
 
 ### 5.7 Testes automáticos
 
-`php artisan test` → **154 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **170 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -414,7 +426,56 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 29/09/2026.**
+**Atualizado em 30/09/2026.**
+
+**30/09 — exclusão de conta pelo paciente (LGPD)** (branch `back/exclusao-de-conta`; último item
+decidido do plano do app; escolhas do Sidney: só paciente, anonimizar em vez de apagar, a nota fica
+e o comentário sai):
+- **Onde:** "Meu perfil" → bloco "Excluir minha conta", no fim da página. Pede a senha atual e a caixa
+  "entendo que não pode ser desfeita" (`App\Http\Requests\Paciente\ExcluirContaRequest`, com os erros
+  no "saco" próprio `excluirConta`, para não se misturarem com os do formulário de senha). Rota
+  `DELETE /paciente/perfil` (`paciente.perfil.excluir`).
+- **A regra inteira** está em `Paciente::excluirConta()`, numa transação, com a linha do paciente
+  travada (`lockForUpdate`, como no agendamento):
+  consultas futuras canceladas por `Consulta::cancelar()` (o médico recebe o aviso de sempre, e nele o
+  paciente aparece como "Conta excluída"); o texto livre que o paciente escreveu nas consultas
+  (observações e o motivo quando ele mesmo cancelou) apagado; acessibilidade apagada; carteirinhas
+  apagadas, **menos as já usadas em consulta**, que ficam sem número nem titular (é a mesma regra do
+  `PlanoController::remover`, e os números "por convênio" da clínica dependem delas); avaliações com a
+  nota mantida e o comentário apagado (a média do médico não muda); o e-mail antigo sai de
+  `notificacoes_enviadas` e de `password_reset_tokens`; as sessões abertas (IP e navegador) são
+  apagadas; nome vira "Conta excluída", e-mail vira `excluida-{id}@facilmed.invalid` (o domínio
+  `.invalid` é reservado e nunca entrega nada), telefone, CPF, nascimento e sexo ficam vazios, a senha
+  vira uma aleatória e o status vira `inativo` — o `GarantirContaAtiva` já barra.
+- **Banco:** migration nova `2026_09_30_000100_exclusao_de_conta` — `users.excluida_em` (quando o pedido
+  foi atendido), o CHECK `chk_users_excluida_inativa` (conta excluída nunca volta a `ativo`, nem por um
+  UPDATE na mão) e `pacientes.cpf` aceitando vazio. O índice único do CPF continua (o `->change()` não
+  mexe em índice); por isso a pessoa pode se cadastrar de novo com o mesmo e-mail e CPF.
+- **Agendamento:** depois de travar a linha do paciente, o `AgendamentoController::salvar` confere de
+  novo se a conta está ativa. Sem isso, um agendamento feito em outra aba no mesmo segundo da exclusão
+  passava pelo middleware antes e gravava uma consulta para a conta já excluída.
+- **Senha na sessão:** o campo de senha da exclusão se chama `current_password` (e não "senha_atual")
+  porque é um dos nomes que o Laravel nunca guarda na sessão quando a validação falha.
+- **Admin:** a lista de usuários mostra "Excluída" e "Excluída pelo próprio paciente em ...", sem o botão
+  de bloquear. `UsuarioController::bloquear` recusa conta excluída (bloquear e depois desbloquear a
+  colocaria de volta como ativa). No dashboard do admin, conta excluída não entra em "Pacientes
+  cadastrados", nos cadastros do mês nem em "Últimos cadastros".
+- **Revisão independente** (um agente que não viu o código sendo escrito): achou as observações, o motivo
+  de cancelamento, a corrida com o agendamento, a senha na sessão, o CHECK e as carteirinhas usadas —
+  tudo corrigido acima, com teste. **Limites que ficam:** uma avaliação enviada no mesmo segundo da
+  exclusão, em outra aba, pode ficar com o comentário (a janela é de milissegundos; travar a avaliação
+  não compensa); e, em desenvolvimento, o `storage/logs/laravel.log` guarda os e-mails "enviados" com
+  nome e endereço (é arquivo local da máquina de cada um, fora do Git).
+- 16 testes novos no `ExclusaoDeContaTest` — os que usam consulta passada pegam uma consulta pelo status e a
+  passam para a Ana, porque o `ConsultaSeeder` sorteia o paciente. Conferido: **170 testes** (várias vezes,
+  com sorteios diferentes), `migrate:fresh --seed` limpo, a migration desfeita e aplicada de novo num
+  banco que já tinha dados (índice único mantido, CPFs intactos, CHECK barrando) e, no
+  navegador, o caminho inteiro: senha errada, exclusão, aviso no login, tentar entrar de novo ("E-mail
+  ou senha incorretos", sem revelar que a conta existiu) e o bloco no celular.
+
+**30/09 — commits do grupo direto na `main`:** `06a32de` (painel da esquerda do cadastro com as
+medidas do login) e `90a1e46` (sai o "Acesso rápido" do dashboard do admin). Nenhum teste dependia
+disso. O `Admin\DashboardController` ainda mandava `$atalhos`, que ficou sem uso, e saiu.
 
 **29/09 (noite) — Locais perto de você e página do local** (plano do app; escolhas do Sidney em
 29/09: tela nova de locais, localização do navegador ou cidade, botão na home):
@@ -541,7 +602,7 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
   (dá para reverter se o grupo quiser): a **acessibilidade só aparece para o médico** da consulta e só
   enquanto ela está agendada (a clínica não vê — é o que o AGENTS §3 e o consentimento do cadastro
   dizem); a **base simulada confere o nome junto com o CRM**.
-- E-mails e lembretes. **154 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+- E-mails e lembretes. **170 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**
@@ -574,8 +635,8 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
 3. Ensaio da apresentação seguindo as contas do §3 (16–20/10 é só integração e teste).
 
 **Para o grupo olhar (não mexi porque é código de outra pessoa — README §10, regra 6):**
-- *(28/09 e 29/09)* "Cadastros", "Create composer.lock", "sla" e "login e cadastro" foram commitados
-  **direto na `main`** (regra 1 do §10). O "sla" apagou o `composer.lock` e derrubou a publicação.
+- *(28/09 a 30/09)* "Cadastros", "Create composer.lock", "sla", "login e cadastro", "Mudanças em
+  visual do cadastro" e "Modificação de dashboard" foram commitados **direto na `main`** (regra 1 do §10). O "sla" apagou o `composer.lock` e derrubou a publicação.
 - A vitrine "Hospitais e Clínicas" da home é uma lista fixa no Blade. O "Hospital Vale Sereno"
   não existe no sistema, e os endereços das outras três (Santa Clara, Vida Plena, Aurora) são
   diferentes dos cadastrados no banco. Na banca, procurar a clínica e achar outro endereço pega
@@ -593,8 +654,8 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
 paciente e clínica (feito); **o agendamento continua** — a tela "médicos disponíveis" leva aos
 horários; **a avaliação continua por consulta realizada**, com comentário privado (AGENTS §3), e a
 nota do local e a do médico saem dessas avaliações. **Feito em 29/09:** busca por distância e
-página do local (§5.6). **Ainda por fazer:** exclusão de conta (LGPD). Fora: CNES, fotos do local
-(upload) e comentário público.
+página do local (§5.6). **Feito em 30/09:** exclusão de conta pelo paciente (LGPD, §5.4). Fora:
+CNES, fotos do local (upload) e comentário público. Com isso, tudo o que foi decidido do plano está feito.
 
 **Pendente de decisão do grupo (28/09):** o PDF "Dashboard da Clínica" tira do menu a tabela
 de preços e o perfil, e pede documentação com upload, resultados de exames, status "remarcada",
@@ -880,6 +941,7 @@ foi processado com sucesso".
 | Paciente **não marca duas consultas que se sobrepõem** (29/09) | ninguém está em dois consultórios ao mesmo tempo; a vaga presa numa das duas era perdida para outro paciente |
 | Distância **sem serviço externo**: coordenada aproximada do bairro/cidade + localização do navegador (29/09) | Google e Nominatim precisam de internet e chave na banca, e o ViaCEP não dá coordenadas; em linha reta e "aproximada" para não prometer o caminho de carro |
 | Locais por distância numa **tela nova** (`/locais`) (29/09) | a busca de médicos já funcionava e tinha teste; as duas se ligam por link |
+| Exclusão de conta **anonimiza, não apaga** (30/09) | `consultas.paciente_id` é `restrictOnDelete` e a agenda, as notas e os números dos médicos dependem dessas consultas; a LGPD (art. 16) aceita guardar o dado anonimizado. Só o paciente se exclui: médico e clínica têm consultas e vínculos de outras pessoas, e para eles continua o "bloquear" do admin |
 | Médico **não se cadastra sozinho**: entra pela clínica (29/09) | plano do app de 28/09; a clínica já cadastrava o médico conferindo o CRM na base simulada, então nada de regra mudou — só sumiu um caminho a mais |
 
 **Becos sem saída (não repita):** validar CRM de graça por código; validar carteirinha por
