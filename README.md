@@ -473,6 +473,18 @@ e o comentário sai):
   navegador, o caminho inteiro: senha errada, exclusão, aviso no login, tentar entrar de novo ("E-mail
   ou senha incorretos", sem revelar que a conta existiu) e o bloco no celular.
 
+**30/09 — login com as bolinhas do fundo maiores** (pedido do Sidney; branch `front/login-bolinhas`):
+em `public/css/login.css`, as três passaram de 420/260/180 px para 540/340/240 px. Em tela baixa (até
+760 px de altura, notebook pequeno) a de cima e a de baixo ficam num tamanho no meio, para não
+encostarem na logo nem no slogan. As bolinhas do **cadastro** não mudaram (o Lucas tinha acabado de
+deixá-las com as medidas antigas do login, em `06a32de`): se o grupo quiser as duas telas iguais de
+novo, é copiar os mesmos números para `.circulo--1/2/3` do `cadastro.css`.
+
+**30/09 — como o trabalho do Claude chega no site (decisão do Sidney):** cada assunto continua numa
+branch própria (fica o histórico), mas é juntado na `main` e enviado na hora, sem esperar revisão —
+cada push na `main` já publica no Render (§2.7). Quem quiser revisar, olha a branch ou o merge no
+histórico.
+
 **30/09 — commits do grupo direto na `main`:** `06a32de` (painel da esquerda do cadastro com as
 medidas do login) e `90a1e46` (sai o "Acesso rápido" do dashboard do admin). Nenhum teste dependia
 disso. O `Admin\DashboardController` ainda mandava `$atalhos`, que ficou sem uso, e saiu.
