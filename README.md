@@ -39,10 +39,13 @@ preço da consulta particular, convênio aceito e a avaliação de quem já foi.
 
 | Quem usa | O que faz |
 |---|---|
-| **Paciente** | busca, agenda, remarca, cancela, cadastra carteirinha, avalia |
-| **Médico** | perfil, especialidades, onde atende, preços, horários, ausências, agenda |
-| **Clínica / hospital** | unidades, médicos, tabela de preços, convênios, agenda |
-| **Admin** | convênios, especialidades, contas, acompanhamento da plataforma |
+| **Paciente** | busca clínicas perto (CEP, localização ou cidade, raio de 5/10/20 km), agenda, remarca, cancela, cadastra carteirinha, avalia o local e o médico |
+| **Médico** | **só vê** (desde 01/10): a agenda, as consultas, as avaliações e o perfil; troca a própria senha |
+| **Clínica / hospital** | unidades (com fotos e site), médicos (perfil, foto, horários, ausências), tabela de preços, convênios, agenda (marca realizada/falta e cancela) |
+| **Admin** | convênios, especialidades, contas (ativas, bloqueadas, excluídas), acompanhamento da plataforma |
+
+**Plano novo (01/10/2026):** o FacilMed virou um *rastreador de clínicas e hospitais perto do
+paciente* — a clínica é a "linha de frente". O resumo das mudanças está na §6 (01/10).
 
 **Tudo é fictício:** médicos, clínicas, convênios e as "bases oficiais" de CRM, CNPJ e
 carteirinha são tabelas do próprio banco (**bases simuladas**). Nada é consultado no CFM, na
@@ -173,12 +176,37 @@ Arquivos do deploy (não mexem no XAMPP): `Dockerfile`, `docker/entrypoint.sh`, 
 3. **Apply**. O primeiro build leva uns 5–10 minutos. O endereço aparece no topo
    (`https://facilmed-xxxx.onrender.com`). Aba **Logs** mostra os erros, se houver.
 
+**E-mail de verdade pelo Brevo (01/10/2026) — para o "Esqueci minha senha" chegar na caixa:**
+O Render grátis **bloqueia SMTP** (Gmail direto não sai). O Brevo recebe o e-mail por HTTPS e é grátis
+(300/dia, sem domínio próprio). Não precisa de pacote novo: `app/Mail/BrevoTransport.php` fala com a API.
+1. Em **brevo.com**, crie a conta com o e-mail do grupo que vai ser o remetente (ex.: um Gmail do grupo).
+   Em *Senders & IP* → *Senders*, confirme esse e-mail (chega um código nele).
+2. Em *SMTP & API* → aba **API keys** → *Generate a new API key* → copie a chave (`xkeysib-...`).
+3. No Render → serviço `facilmed` → **Environment**: `MAIL_MAILER` = `brevo`, `BREVO_API_KEY` = a chave,
+   `MAIL_FROM_ADDRESS` = o e-mail confirmado no passo 1 → *Save* (o site reinicia sozinho).
+4. Teste: crie uma conta de paciente pelo site com um e-mail de integrante e use "Esqueci minha senha".
+Sem `BREVO_API_KEY`, o sistema continua no `log` mesmo com `MAIL_MAILER=brevo` (nada quebra). Se o
+Brevo recusar (chave errada, remetente não confirmado), a tela mostra "Não conseguimos enviar o e-mail
+agora" e o motivo aparece na aba **Logs**. **Só e-mail de integrante do grupo** (AGENTS.md §4.1).
+
+**Contas com e-mail real para cada tipo (01/10/2026):** paciente e clínica o grupo cria pelo próprio
+site (Cadastrar → Conta Pessoal / Conta Empresarial; para clínica use o CNPJ 43.300.001/0001-64 ou
+12.345.678/0001-95 da §3). O **admin** não tem cadastro pelo site: no Render → Environment, coloque
+`ADMIN_EMAIL` (o e-mail) e `ADMIN_PASSWORD` (senha inicial, mínimo 8). A cada boot o
+`facilmed:garantir-admin` cria essa conta **se ainda não existir** — depois disso ele não mexe mais
+(nem na senha). E-mail real **nunca** vai para o Git nem para o seeder.
+
+**Fotos de demonstração:** a cada boot o `entrypoint.sh` também roda o `FotosDemonstracaoSeeder`, que
+põe duas fotos (as `public/imgs/sliderhospcli/`) nas 6 unidades de demonstração que ainda não têm
+nenhuma. Não mexe nas fotos que uma clínica enviou.
+
 **Limites do plano grátis (bom saber antes da banca):**
 - O site **dorme depois de 15 minutos** sem visita; a primeira visita depois disso leva ~1 minuto.
   Abra o site uns 2 minutos antes de apresentar.
 - O Aiven pode desligar o banco grátis depois de muito tempo **sem nenhum uso** (avisa por e-mail
   antes). Basta religar no painel.
-- E-mail continua em `MAIL_MAILER=log` (não sai de verdade) e o agendador dos lembretes não roda.
+- E-mail só sai de verdade com o Brevo configurado (acima); o agendador dos lembretes de 24h não roda
+  no plano grátis.
 - **Nunca** coloque senha do banco ou `APP_KEY` em arquivo do Git: elas ficam só no painel do Render.
 
 **Apagar tudo e recriar os dados de demonstração no servidor:** no Render, aba **Shell**:
@@ -205,13 +233,29 @@ Convênios fictícios: **SpSaúde**, **Horizonte Med**, **Bem Viver Saúde** (3 
 **Vale Saúde** (desativado, para demonstrar). Todos os dados estão em
 `database/seeders/DadosFicticios.php`.
 
-### Para testar a distância (Locais perto de você)
+### Para testar o plano novo (01/10/2026)
+
+- **Busca da home:** especialidade + "Onde você está?" (CEP, cidade ou "Usar minha localização") +
+  raio (a home já vem com 5 km). Ex.: Pediatria + CEP `12243-700` (Vila Ema, São José) → Aurora a menos
+  de 1 km. **O CEP precisa de internet** (ViaCEP + Nominatim); sem internet, use a cidade ou a localização.
+- **Filtros dos resultados:** "Até 5/10/20 km", "Mais próximos", **"Aceita meu plano"** (entre como Ana:
+  ela tem SpSaúde → somem Aurora e Esperança, onde só atende a Dra. Camila) e "Só particular".
+- **Página do local:** galeria de fotos, nota, endereço/telefone/site, planos, "Ver médicos disponíveis"
+  e **"Avalie este local"** (entre como paciente; mandar de novo atualiza a nota). O comentário só a
+  clínica dona lê (entre como `contato@aurora.test` → Avaliações).
+- **Perfil do paciente:** foto (só ele vê) e "Minhas avaliações" (locais e médicos) com Editar/Excluir.
+- **Médico só vê:** entre como Helena → agenda sem botões, perfil só leitura. Entre como Vida Plena →
+  "Horários dos médicos", "Ausências", agenda com Realizada/Falta/Cancelar, "Meus médicos" → Perfil
+  (bio, especialidades, convênios, foto) e "Unidades" → Fotos e site.
+- **Admin:** "Contas ativas", "Contas bloqueadas" e "Contas excluídas" no menu.
+
+### Para testar a distância (Clínicas perto de você)
 
 - **Pela cidade:** `/locais?cidade=Jacareí` → São Lucas (Jacareí) primeiro, Santa Clara (Taubaté) por último.
 - **Pela localização:** clique em "Usar minha localização" e permita no navegador (funciona em
   `localhost` e no site no ar, que é `https`). Quem está em São José vê as três clínicas de lá primeiro.
 - **Com especialidade:** `/locais?especialidade=pediatria` → só Aurora e Esperança (Dra. Camila).
-- **Página do local:** clique no nome ou em "Ver local". As clínicas de São José têm nota (das consultas realizadas); o comentário não aparece.
+- **Página do local:** clique no nome ou em "Ver local". Todas as unidades têm nota (das avaliações do local, `AvaliacaoLocalSeeder`); o comentário não aparece.
 
 ### Para testar a exclusão de conta
 
@@ -291,7 +335,7 @@ FacilMed/
 ├── lang/pt_BR/            ← mensagens em português
 ├── config/                ← configurações (agendamento.php, navegacao.php = menus,
 │                             localizacao.php = coordenadas aproximadas das cidades)
-├── tests/Feature/         ← 170 testes automáticos
+├── tests/Feature/         ← 207 testes automáticos
 ├── storage/               ← logs e cache (gerado)
 ├── design/                ← prints e protótipos de tela (referência visual)
 └── prototipo-antigo/      ← versão antiga em PHP puro (não usada pelo sistema)
@@ -416,7 +460,7 @@ distância            → linha reta (Haversine, App\Support\Localizacao), calcu
 
 ### 5.7 Testes automáticos
 
-`php artisan test` → **170 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
+`php artisan test` → **207 testes** em `tests/Feature/`: cadastros, carteirinhas, agendamento,
 médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam no banco
 `facilmed_testes` (criado sozinho), **nunca** no `facilmed`. Toda mudança de back-end vem com teste.
 
@@ -427,7 +471,60 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 30/09/2026.**
+**Atualizado em 01/10/2026.**
+
+**01/10 — plano novo do grupo: "rastreador de clínicas perto do paciente"** (anotações e desenhos do
+grupo + PDF do plano; decisões do Sidney em 01/10, com o Claude). A clínica virou a "linha de frente".
+Commits na branch `claude/pivo-rastreador`, juntada na `main`.
+- **Decidido (Sidney):** o agendamento **continua**; o médico **só vê** a agenda (a clínica cuida de
+  horários, ausências e de marcar realizada/falta/cancelar); **qualquer paciente logado** avalia o local,
+  uma vez por local, com comentário **privado**; o médico continua avaliado só por consulta realizada;
+  busca aberta para quem não tem conta; senha mínima **continua 8** (a anotação dizia 6); fotos **no
+  banco**; CEP vira coordenada por **ViaCEP + Nominatim** com reserva na tabela de bairros; e-mail de
+  verdade pelo **Brevo**; admin com telas separadas para contas ativas, bloqueadas e excluídas.
+- **Fase 0:** "Conta Pessoal" / "Conta Empresarial" no cadastro de verdade (a Mari tinha mudado só no
+  `prototipo-antigo/`, `e87d8a2`); placeholder `exemplo@exemplo.com`; saiu o `$atalhos` que sobrou do
+  "Acesso rápido" tirado em `5c24179`.
+- **Fase 1 — médico só vê:** saem do médico as telas de horários, ausências, consultório e preços, e as
+  rotas de escrita. A clínica ganha **Horários dos médicos**, **Ausências**, os botões na **Agenda da
+  clínica** e **Meus médicos → Perfil** (bio, especialidades, convênios, foto). Policies perguntam "é o
+  dono da unidade?" (`Local::donoUserId`); `MedicoPolicy::gerenciar` nova. Nome e CRM não mudam mais
+  (foram conferidos juntos na base simulada) — por isso saíram os testes de "trocar CRM no perfil".
+- **Fase 5 — admin:** "Contas ativas" (com bloquear), "Contas bloqueadas" (com desbloquear) e "Contas
+  excluídas", no mesmo visual.
+- **Fase 4 — perfil do paciente:** foto (só ele vê) e "Minhas avaliações" (locais e médicos) com editar
+  e excluir. `excluirConta()` apaga a foto e tira o comentário das avaliações de local.
+- **Fase 6 — e-mail:** `app/Mail/BrevoTransport.php` (API do Brevo, **sem pacote novo**: o Render grátis
+  bloqueia SMTP). Sem `BREVO_API_KEY` continua no log. `facilmed:garantir-admin` cria o admin de
+  `ADMIN_EMAIL` no boot. Passo a passo na §2.7.
+- **Fase 2 — local:** tabela `fotos` (local até 6, médico 1, paciente 1; `FotoController` serve) e
+  `locais.site`; **avaliação do local** (`avaliacoes_locais`, `AvaliacaoLocalPolicy`, UNIQUE paciente +
+  local). A nota do local passou a sair daí (`Local::notas`); a migration copia as notas das consultas
+  já avaliadas. Clínica → Unidades: fotos e site; Clínica → Avaliações: as do local, com comentário.
+- **Fase 3 — busca nova:** home com especialidade + "Onde você está?" (CEP, cidade ou localização) +
+  raio (5 km na home); `/locais` com "Até 5/10/20 km", "Mais próximos", "Aceita meu plano" (carteirinha
+  do paciente logado ou convênio escolhido) e "Só particular"; página do local como no desenho (galeria,
+  nota, site, planos, "Avalie este local"); `/local/{id}/medicos` (médicos disponíveis → "Ver
+  horários"); barra Início/Perfil no celular para o paciente; "Hospitais e Clínicas" da home vem do
+  banco (resolve o "Hospital Vale Sereno" que não existia). `App\Support\Geocodificador` fala com
+  ViaCEP/Nominatim (timeout curto, cache; nos testes, desligado por `LOCALIZACAO_EXTERNA=false`).
+- **Render consertado (01/10, madrugada):** os deploys de `e87d8a2`, `5c24179` e `eb74dfd` falharam com
+  `getaddrinfo ... aivencloud.com failed`: o MySQL grátis do **Aiven estava desligado** (ele desliga
+  quando fica sem uso). Foi religado e volta do último backup automático (29/09, 13h59) — **o que foi
+  cadastrado no site depois disso pode ter sumido** (ex.: a conta da Clínica Ferr Inni: cadastre de novo).
+  Se o site voltar a dar erro de banco: Aiven → `facilmed-mysql` → **Power on**, e depois aba Actions do
+  GitHub → "Publicar no Render" → Run workflow.
+- Ajustes de tela conferidos no navegador: a busca da home em duas colunas (os rótulos quebravam) e o
+  menu do topo vira ☰ abaixo de 1420 px (o item "Clínicas perto de você" é mais comprido).
+- Conferido: **207 testes**, `migrate:fresh --seed` limpo, e as telas principais abertas no navegador
+  (visitante, paciente, médico, clínica, admin; computador e celular), sem erro de JavaScript.
+- **Limites:** o CEP precisa de internet (sem ela, cidade ou localização funcionam); fotos ficam no banco
+  (limite de 2 MB por foto; o navegador reduz antes de enviar); o Aiven grátis pode desligar de novo
+  sem uso — abrir o site uns dias antes da banca.
+- **Próximo passo:** cada um faz Pull, `composer install`, `composer run banco-do-zero` e
+  `php artisan test`; o grupo cria a conta no Brevo e os e-mails de cada tipo de conta (§2.7) para
+  testar o "Esqueci minha senha" no site no ar.
+
 
 **30/09 — exclusão de conta pelo paciente (LGPD)** (branch `back/exclusao-de-conta`; último item
 decidido do plano do app; escolhas do Sidney: só paciente, anonimizar em vez de apagar, a nota fica
@@ -615,7 +712,7 @@ código); `MedicoTest::especialidades_com_principal...` depende da hora em que r
   (dá para reverter se o grupo quiser): a **acessibilidade só aparece para o médico** da consulta e só
   enquanto ela está agendada (a clínica não vê — é o que o AGENTS §3 e o consentimento do cadastro
   dizem); a **base simulada confere o nome junto com o CRM**.
-- E-mails e lembretes. **170 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
+- E-mails e lembretes. **207 testes automáticos**, incluindo a `VarreduraTest`, que abre todas as
   páginas com as 5 visões (visitante, paciente, médico, clínica, admin) e falha se alguma der erro 500.
 
 **Telas internas — o que vale saber (28/09):**

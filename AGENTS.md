@@ -7,7 +7,7 @@
 > telas — está no `README.md`.** Leia o README (principalmente §4, §5 e §6) antes de editar.
 > Se algo aqui conflitar com outro arquivo, **este vence**.
 >
-> Última revisão: 30/09/2026.
+> Última revisão: 01/10/2026 (plano novo do grupo: "rastreador de clínicas perto do paciente").
 
 ## 1. Escopo — o que este projeto NÃO é
 
@@ -28,7 +28,10 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
   `http://localhost/FacilMed`. Fuso `America/Sao_Paulo`.
 - **Não instalar dependência nova** (Composer ou npm) sem registrar a decisão no README §6 e ter aprovação.
 - "Estado bom": `php artisan migrate:fresh --seed` roda limpo **e** `php artisan test` passa
-  (170 testes, banco `facilmed_testes` — nunca o `facilmed`).
+  (207 testes, banco `facilmed_testes` — nunca o `facilmed`).
+- **Teste não fala com a internet**: o `phpunit.xml` desliga a busca de CEP/endereço
+  (`LOCALIZACAO_EXTERNA=false`) e o e-mail é `array`. Teste que precisa de serviço externo usa
+  `Http::fake()` (ViaCEP, Nominatim, Brevo).
 
 ## 3. Regras invioláveis de negócio e de dados
 
@@ -83,18 +86,37 @@ intenção de quem escreveu a tela.
 - Cancelamento é **sempre permitido**. Abaixo de 24h ele é registrado como cancelamento tardio,
   mas nunca bloqueado — bloquear só transforma cancelamento em falta.
 
+**Quem faz o quê (plano novo, 01/10/2026)**
+
+- **O médico só VÊ**: agenda, consultas, avaliações e o perfil (só leitura + trocar senha).
+  Horários, ausências, perfil do médico (bio, especialidades, convênios, foto) e os botões
+  realizada/falta/cancelar são da **clínica** dona da unidade — a Policy pergunta "é o dono do
+  local?" (`Local::donoUserId`). Não devolver rota de escrita para o médico.
+- Nome e CRM do médico **não mudam** depois do cadastro (foram conferidos juntos na base simulada).
+
+**Avaliações**
+
+- Avaliação do **médico**: só de consulta `realizada`, só pelo paciente daquela consulta (abaixo).
+- Avaliação do **local**: qualquer paciente logado, **uma por local** (UNIQUE `paciente_id, local_id`),
+  pode editar ou excluir. A nota do local é a média de `avaliacoes_locais` (`Local::notas`).
+
 **Privacidade**
 
-- **Nunca** expor o comentário de uma avaliação para o paciente, para outros pacientes ou em
-  qualquer tela pública. Comentário é visível apenas para a clínica/médico avaliado e admin.
+- **Nunca** expor o comentário de uma avaliação (do médico ou do local) para outros pacientes ou em
+  qualquer tela pública. Comentário é visível apenas para quem foi avaliado (médico, clínica dona do
+  local), o admin e **o próprio autor** (histórico "Minhas avaliações" e o quadro de avaliar — 01/10).
   Nota em estrelas é pública.
+- **Foto de paciente** só o próprio paciente vê (`FotoController`). Foto de local e de médico é pública.
+  Fotos ficam **no banco** (tabela `fotos`), porque o Render grátis apaga arquivo enviado.
 - **Nunca** ler ou exibir `paciente_acessibilidade` fora do contexto de uma consulta agendada
   com aquele profissional. É dado sensível de saúde (LGPD art. 11). Não entra em listagem,
   busca, exportação nem log.
-- **Nunca** permitir avaliação de consulta cujo `status` não seja `realizada`, nem por quem não
-  é o paciente daquela consulta.
-- **Nunca** salvar a localização do paciente (banco, sessão, log). Ela vai só na URL da busca de
-  locais, arredondada, e serve só para ordenar por distância (29/09/2026).
+- **Nunca** permitir avaliação de consulta (do médico) cujo `status` não seja `realizada`, nem por
+  quem não é o paciente daquela consulta.
+- **Nunca** salvar a localização do paciente (banco, sessão, log, cache). Ela vai só na URL da busca de
+  locais, arredondada, e serve só para ordenar por distância (29/09/2026). O CEP digitado vira
+  coordenada (ViaCEP + Nominatim) e a tela é **redirecionada** para `?lat=&lng=&cep=` — nada é
+  guardado (01/10/2026).
 - **Nunca** apagar paciente com `delete()` nem fazer um segundo caminho de exclusão de conta: a
   exclusão pedida pelo paciente (LGPD, 30/09/2026) é **só** por `Paciente::excluirConta()`, que
   anonimiza (a consulta fica, o dado pessoal some). Conta excluída (`excluida_em` preenchido) nunca
@@ -105,8 +127,13 @@ intenção de quem escreveu a tela.
 
 **E-mail**
 
-- **Nunca** enviar e-mail sem gravar em `notificacoes_enviadas`. O `UNIQUE (consulta_id, tipo)`
-  é o que impede o mesmo lembrete sair 24 vezes quando o scheduler roda de hora em hora.
+- **Nunca** enviar e-mail de consulta sem gravar em `notificacoes_enviadas`. O `UNIQUE (consulta_id, tipo)`
+  é o que impede o mesmo lembrete sair 24 vezes quando o scheduler roda de hora em hora. (O link de
+  "Esqueci minha senha" é do próprio Laravel e não passa por ali — ele já tem limite de 1 por minuto.)
+- E-mail de verdade só pelo **Brevo** (`App\Mail\BrevoTransport`, `MAIL_MAILER=brevo` + `BREVO_API_KEY`):
+  o Render grátis bloqueia SMTP. Sem a chave, cai no `log` sozinho.
+- **Nunca** colocar e-mail real no seeder ou no Git. Conta com e-mail real: paciente/clínica pelo
+  próprio site; admin pelas variáveis `ADMIN_EMAIL`/`ADMIN_PASSWORD` do Render (`facilmed:garantir-admin`).
 - **Nunca** usar e-mail real de pessoa real nos seeders ou em teste.
 
 **Contas e validação de entrada**

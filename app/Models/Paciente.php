@@ -95,6 +95,12 @@ class Paciente extends Model
         return $this->hasMany(Avaliacao::class);
     }
 
+    /** 01/10/2026: avaliações que ele fez de LOCAIS (clínicas, hospitais). */
+    public function avaliacoesLocais(): HasMany
+    {
+        return $this->hasMany(AvaliacaoLocal::class);
+    }
+
     /**
      * 30/09/2026 — o paciente exclui a própria conta (LGPD, plano do app).
      *
@@ -111,7 +117,7 @@ class Paciente extends Model
      *     motivo de cancelamento) é apagado;
      *  2. acessibilidade (dado de saúde) e foto do perfil → apagadas de vez; carteirinhas → saem,
      *     menos as já usadas em consulta, que ficam sem número nem titular;
-     *  3. avaliações → a NOTA fica (a média do médico não muda), o COMENTÁRIO sai
+     *  3. avaliações (do médico e, desde 01/10, do local) → a NOTA fica, o COMENTÁRIO sai
      *     (é texto livre escrito pela pessoa);
      *  4. e-mail antigo → sai do registro de avisos enviados e dos pedidos de
      *     troca de senha; as sessões abertas (guardam IP e navegador) são apagadas;
@@ -172,6 +178,8 @@ class Paciente extends Model
             // update() direto no banco, sem passar pelo model: só o comentário
             // muda, então não precisa recalcular a média do médico.
             $paciente->avaliacoes()->update(['comentario' => null]);
+            // 01/10/2026: o mesmo para as avaliações de locais - a nota fica, o texto sai.
+            $paciente->avaliacoesLocais()->update(['comentario' => null]);
 
             $emailNovo = "excluida-{$user->id}@facilmed.invalid";
 

@@ -117,6 +117,9 @@
 
     {{-- 24/09: o arquivo real esta em public/javas/, nao em public/js/. --}}
     <script src="{{ asset('javas/graficos.js') }}" defer></script>
+    {{-- 01/10/2026: barra Início/Perfil do paciente no celular. --}}
+    @include('parciais.barra-paciente')
+
     @stack('scripts')
 </body>
 </html>

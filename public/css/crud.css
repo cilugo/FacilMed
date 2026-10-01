@@ -547,3 +547,16 @@
     color: var(--fm-borda-forte);
 }
 .fm-estrelas--escolher button.is-cheia { color: var(--fm-ambar); }
+.fm-subtitulo-lista {
+    display: flex; align-items: center; gap: 8px; margin: 14px 0 0;
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--fm-suave);
+}
+.fm-subtitulo-lista .fm-icone { width: 16px; height: 16px; }
+.fm-avaliacao-minha__info a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* 01/10/2026 — fotos da unidade (Clínica → Unidades). */
+.fm-fotos-mini { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.fm-fotos-mini img { width: 84px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid var(--fm-borda); }
+.fm-fotos-mini--editar figure { position: relative; margin: 0; }
+.fm-fotos-mini--editar form { position: absolute; top: 4px; right: 4px; }
+.fm-fotos-mini--editar .fm-chip__remover { background: #fff; border-radius: 50%; box-shadow: var(--fm-sombra); }

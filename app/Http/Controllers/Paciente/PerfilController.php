@@ -23,6 +23,10 @@ class PerfilController extends Controller
                 ->with('medico.user', 'consulta.especialidade', 'consulta.vinculo.local')
                 ->latest()->get()
                 ->each->makeVisible('comentario'),
+            'avaliacoesLocais' => $paciente->avaliacoesLocais()
+                ->with('local.clinica.user', 'local.medico')
+                ->latest('updated_at')->get()
+                ->each->makeVisible('comentario'),
         ]);
     }
 

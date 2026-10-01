@@ -46,8 +46,8 @@
                 <a href="{{ route('home') }}#especialidades" class="menu-link">Especialidades</a>
                 <a href="{{ route('home') }}#hospitais-clinicas" class="menu-link">Hospitais e clínicas</a>
                 <a href="{{ route('home') }}#sobre" class="menu-link">Sobre</a>
+                <a href="{{ route('busca.locais') }}" class="menu-link {{ $menuAtivo === 'locais' ? 'active' : '' }}">Clínicas perto de você</a>
                 <a href="{{ route('busca.index') }}" class="menu-link {{ $menuAtivo === 'busca' ? 'active' : '' }}">Encontrar médicos</a>
-                <a href="{{ route('busca.locais') }}" class="menu-link {{ $menuAtivo === 'locais' ? 'active' : '' }}">Perto de você</a>
             </nav>
 
             <div class="header-actions">
@@ -72,8 +72,8 @@
             <a href="{{ route('home') }}#especialidades" @click="menuAberto = false">Especialidades</a>
             <a href="{{ route('home') }}#hospitais-clinicas" @click="menuAberto = false">Hospitais e clínicas</a>
             <a href="{{ route('home') }}#sobre" @click="menuAberto = false">Sobre</a>
+            <a href="{{ route('busca.locais') }}">Clínicas perto de você</a>
             <a href="{{ route('busca.index') }}">Encontrar médicos</a>
-            <a href="{{ route('busca.locais') }}">Perto de você</a>
         </nav>
     </header>
 
@@ -97,6 +97,10 @@
             </p>
         </div>
     </footer>
+
+    {{-- 01/10/2026 (plano novo do grupo): no celular, o paciente logado tem
+         sempre a barra de baixo com Início e Perfil (site-barra.css no site.css). --}}
+    @include('parciais.barra-paciente')
 
     @stack('scripts')
 </body>

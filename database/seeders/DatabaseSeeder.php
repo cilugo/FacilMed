@@ -34,6 +34,10 @@ class DatabaseSeeder extends Seeder
             FeriadoSeeder::class,
 
             ConsultaSeeder::class,
+
+            // 01/10/2026: fotos das unidades e avaliações dos locais.
+            FotosDemonstracaoSeeder::class,
+            AvaliacaoLocalSeeder::class,
         ]);
     }
 }

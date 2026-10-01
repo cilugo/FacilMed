@@ -26,7 +26,8 @@ return [
 
     'paciente' => [
         ['rota' => 'paciente.dashboard',  'label' => 'Início',           'icone' => 'home'],
-        ['rota' => 'busca.index',         'label' => 'Agendar consulta', 'icone' => 'search'],
+        // 01/10/2026: a busca começa pelo lugar (clínicas perto de você).
+        ['rota' => 'busca.locais',        'label' => 'Buscar clínicas',  'icone' => 'search'],
         ['rota' => 'paciente.consultas',  'label' => 'Minhas consultas', 'icone' => 'calendar'],
         ['rota' => 'paciente.planos',     'label' => 'Meu plano',        'icone' => 'card'],
         ['rota' => 'paciente.perfil',     'label' => 'Meu perfil',       'icone' => 'user'],

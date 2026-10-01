@@ -15,7 +15,7 @@ class Local extends Model
 
     protected $fillable = [
         'clinica_id', 'medico_id', 'nome', 'tipo', 'cep', 'endereco',
-        'numero', 'complemento', 'bairro', 'cidade', 'uf', 'telefone', 'ativo',
+        'numero', 'complemento', 'bairro', 'cidade', 'uf', 'telefone', 'site', 'ativo',
         'latitude', 'longitude',
     ];
 
@@ -64,6 +64,12 @@ class Local extends Model
         return $this->hasMany(Vinculo::class);
     }
 
+    /** 01/10/2026: avaliações do local (qualquer paciente logado, uma por pessoa). */
+    public function avaliacoes(): HasMany
+    {
+        return $this->hasMany(AvaliacaoLocal::class);
+    }
+
     /** 01/10/2026: galeria do local (no banco - ver Foto), na ordem. Sem a imagem pesada. */
     public function fotos(): HasMany
     {
@@ -103,22 +109,21 @@ class Local extends Model
     }
 
     /**
-     * Nota média e total de avaliações de cada local (29/09).
+     * Nota média e total de avaliações de cada local.
      *
-     * A avaliação é por CONSULTA realizada (AGENTS §3), a consulta sabe o
-     * vínculo e o vínculo sabe o local: a nota do local sai daí, sem tabela
-     * nova. Só números - o comentário é privado e nunca sai desta consulta.
+     * 01/10/2026 (plano novo do grupo): sai da tabela avaliacoes_locais -
+     * qualquer paciente logado avalia o local, uma vez (antes era a média das
+     * avaliações das consultas feitas ali). Só números: o comentário é
+     * privado e nunca sai desta consulta.
      *
      * @return Collection<int, object{local_id: int, media: float, total: int}>  indexada pelo id do local
      */
     public static function notas(iterable $ids): Collection
     {
-        return Avaliacao::query()
-            ->join('consultas', 'consultas.id', '=', 'avaliacoes.consulta_id')
-            ->join('vinculos', 'vinculos.id', '=', 'consultas.vinculo_id')
-            ->whereIn('vinculos.local_id', collect($ids)->all())
-            ->groupBy('vinculos.local_id')
-            ->selectRaw('vinculos.local_id, AVG(avaliacoes.estrelas) AS media, COUNT(*) AS total')
+        return AvaliacaoLocal::query()
+            ->whereIn('local_id', collect($ids)->all())
+            ->groupBy('local_id')
+            ->selectRaw('local_id, AVG(estrelas) AS media, COUNT(*) AS total')
             ->toBase()
             ->get()
             ->keyBy('local_id');

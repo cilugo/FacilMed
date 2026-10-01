@@ -12,9 +12,10 @@ use App\Http\Requests\Clinica\CadastrarMedicoPelaClinicaRequest;
 use App\Models\Convenio;
 use App\Models\Especialidade;
 use App\Models\Preco;
+use Illuminate\Validation\Rule;
+use App\Models\Foto;
 use App\Models\Vinculo;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class MedicoController extends Controller
 {
@@ -151,7 +152,7 @@ class MedicoController extends Controller
         $this->authorize('gerenciar', $medico);
 
         return view('clinica.medicos-editar', [
-            'medico'         => $medico->load('user', 'especialidades', 'convenios', 'vinculos.local'),
+            'medico'         => $medico->load('user', 'especialidades', 'convenios', 'vinculos.local', 'fotoEnviada'),
             'especialidades' => Especialidade::where('ativo', true)->orderBy('nome')->get(),
             'convenios'      => Convenio::where('ativo', true)->orderBy('nome')->get(),
         ]);
@@ -247,5 +248,28 @@ class MedicoController extends Controller
         $medico->convenios()->sync($dados['convenios'] ?? []);
 
         return back()->with('sucesso', 'Convênios atualizados.');
+    }
+
+    /**
+     * 01/10/2026: foto do médico (aparece na lista de médicos disponíveis e
+     * no perfil público). Uma só - mandar outra troca. No banco (ver Foto).
+     */
+    public function salvarFoto(Request $request, Medico $medico)
+    {
+        $this->authorize('gerenciar', $medico);
+
+        $request->validate(['foto' => Foto::regras()], Foto::mensagens());
+        Foto::updateOrCreate(['medico_id' => $medico->id], Foto::dadosDoArquivo($request->file('foto')));
+
+        return back()->with('sucesso', "Foto de {$medico->user->name} atualizada.");
+    }
+
+    public function removerFoto(Medico $medico)
+    {
+        $this->authorize('gerenciar', $medico);
+
+        Foto::where('medico_id', $medico->id)->delete();
+
+        return back()->with('sucesso', 'Foto removida.');
     }
 }

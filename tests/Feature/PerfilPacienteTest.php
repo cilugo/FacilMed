@@ -67,7 +67,7 @@ class PerfilPacienteTest extends TestCase
         $this->comoPaciente()->post('/paciente/perfil/foto', ['foto' => $falso])->assertSessionHasErrors('foto');
         $this->comoPaciente()->post('/paciente/perfil/foto', ['foto' => UploadedFile::fake()->create('grande.png', 3000, 'image/png')])
             ->assertSessionHasErrors('foto');
-        $this->assertSame(0, Foto::count());
+        $this->assertSame(0, Foto::whereNotNull('paciente_id')->count());
     }
 
     public function test_banco_garante_um_dono_por_foto(): void
@@ -135,11 +135,11 @@ class PerfilPacienteTest extends TestCase
     public function test_excluir_a_conta_apaga_a_foto(): void
     {
         $this->comoPaciente()->post('/paciente/perfil/foto', ['foto' => self::png()]);
-        $this->assertSame(1, Foto::count());
+        $this->assertSame(1, Foto::whereNotNull('paciente_id')->count());
 
         $this->comoPaciente()->delete('/paciente/perfil', ['current_password' => 'facilmed2026', 'confirmacao' => '1'])
             ->assertRedirect(route('login'));
 
-        $this->assertSame(0, Foto::count());
+        $this->assertSame(0, Foto::whereNotNull('paciente_id')->count());
     }
 }

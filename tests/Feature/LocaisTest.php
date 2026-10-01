@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Avaliacao;
 use App\Models\Clinica;
 use App\Models\Local;
 use App\Models\Vinculo;
@@ -109,16 +108,22 @@ class LocaisTest extends TestCase
     {
         $local = $this->local('Vida Plena - Centro');
         $vinculo = Vinculo::where('local_id', $local->id)->firstOrFail();
-        $media = Avaliacao::whereHas('consulta.vinculo', fn ($v) => $v->where('local_id', $local->id))->avg('estrelas');
+        // 01/10/2026: a nota do local sai das avaliações DO LOCAL.
+        $media = \App\Models\AvaliacaoLocal::where('local_id', $local->id)->avg('estrelas');
 
         $this->assertNotNull($media, 'O seed deveria ter avaliação na Vida Plena.');
 
         $this->get("/local/{$local->id}")->assertOk()
             ->assertSee('Rua Quinze de Novembro')
-            ->assertSee('Dra. Helena Navarro')
-            ->assertSee(route('agendamento.horario', $vinculo), false)
+            ->assertSee(route('publico.local.medicos', $local), false)
             ->assertSee(number_format((float) $media, 1, ',', ''))
-            ->assertDontSee('Atendimento pontual');   // comentário é privado (AGENTS §3)
+            ->assertDontSee('Atendimento pontual')    // comentário é privado (AGENTS §3)
+            ->assertDontSee('Clínica pequena e tranquila');
+
+        // Os médicos ficam na página "Médicos disponíveis", com "Ver horários".
+        $this->get("/local/{$local->id}/medicos")->assertOk()
+            ->assertSee('Dra. Helena Navarro')
+            ->assertSee(route('agendamento.horario', $vinculo), false);
     }
 
     public function test_pagina_do_local_repete_o_aviso_do_convenio(): void
@@ -133,8 +138,8 @@ class LocaisTest extends TestCase
     {
         $local = $this->local('Vida Plena - Centro');
 
-        $this->get("/local/{$local->id}?especialidade=cardiologia")->assertOk()->assertSee('Dra. Helena Navarro');
-        $this->get("/local/{$local->id}?especialidade=pediatria")->assertOk()
+        $this->get("/local/{$local->id}/medicos?especialidade=cardiologia")->assertOk()->assertSee('Dra. Helena Navarro');
+        $this->get("/local/{$local->id}/medicos?especialidade=pediatria")->assertOk()
             ->assertDontSee('Dra. Helena Navarro')->assertSee('Nenhum médico');
     }
 

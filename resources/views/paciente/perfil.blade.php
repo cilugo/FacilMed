@@ -162,70 +162,54 @@
     </section>
 
     {{-- ===================== MINHAS AVALIAÇÕES (01/10) ===================== --}}
-    {{-- O comentário aparece aqui porque quem lê é o próprio autor. Para
+    {{-- Dos locais (clínicas, hospitais) e dos médicos (consultas realizadas).
+         O comentário aparece aqui porque quem lê é o próprio autor. Para
          qualquer outro paciente e nas páginas públicas, só as estrelas. --}}
+    @php $totalAvaliacoes = $avaliacoes->count() + $avaliacoesLocais->count(); @endphp
     <section class="fm-painel" style="margin-top: 18px;" id="avaliacoes">
         <header class="fm-painel__topo">
             <h2 class="fm-painel__titulo"><x-icone nome="star" /> Minhas avaliações</h2>
-            <span class="fm-painel__periodo">{{ $avaliacoes->count() }} {{ $avaliacoes->count() === 1 ? 'avaliação' : 'avaliações' }}</span>
+            <span class="fm-painel__periodo">{{ $totalAvaliacoes }} {{ $totalAvaliacoes === 1 ? 'avaliação' : 'avaliações' }}</span>
         </header>
 
-        @if ($avaliacoes->isEmpty())
-            <p class="fm-vazio">Você ainda não avaliou nenhuma consulta. Depois de uma consulta realizada, avalie em "Minhas consultas".</p>
-        @else
+        @if ($totalAvaliacoes === 0)
+            <p class="fm-vazio">Você ainda não avaliou nada. Avalie um local na página dele, e um médico depois de uma consulta realizada (em "Minhas consultas").</p>
+        @endif
+
+        @if ($avaliacoesLocais->isNotEmpty())
+            <h3 class="fm-subtitulo-lista"><x-icone nome="building" /> Locais</h3>
+            <ul class="fm-lista">
+                @foreach ($avaliacoesLocais as $a)
+                    @include('paciente.parciais.avaliacao-item', [
+                        'chave'      => 'local-' . $a->id,
+                        'titulo'     => $a->local->nome,
+                        'tituloUrl'  => $a->local->estaPublico() ? route('publico.local', $a->local) : null,
+                        'detalhe'    => trim(($a->local->clinica?->nome_fantasia ?? '') . ' · ' . $a->local->cidade, ' ·'),
+                        'avaliacao'  => $a,
+                        'rotaSalvar' => route('publico.local.avaliar', $a->local),
+                        'metodo'     => 'POST',
+                        'rotaExcluir'=> route('paciente.avaliacoes-locais.excluir', $a),
+                        'quemLe'     => 'Só a clínica e a administração leem o comentário.',
+                    ])
+                @endforeach
+            </ul>
+        @endif
+
+        @if ($avaliacoes->isNotEmpty())
+            <h3 class="fm-subtitulo-lista"><x-icone nome="doctors" /> Médicos</h3>
             <ul class="fm-lista">
                 @foreach ($avaliacoes as $a)
-                    @php $esteForm = old('_form') === 'avaliacao-' . $a->id; @endphp
-                    <li class="fm-avaliacao-minha" x-data="{ editando: {{ $esteForm ? 'true' : 'false' }}, nota: {{ (int) ($esteForm ? old('estrelas', $a->estrelas) : $a->estrelas) }} }">
-                        <div class="fm-avaliacao-minha__linha">
-                            <div class="fm-avaliacao-minha__info">
-                                <strong>{{ $a->medico->user->name }}</strong>
-                                <span>
-                                    {{ $a->consulta?->especialidade?->nome }}{{ $a->consulta?->vinculo?->local ? ' · ' . $a->consulta->vinculo->local->nome : '' }}
-                                    · {{ \App\Support\Formatador::dataCurta($a->created_at) }}
-                                </span>
-                            </div>
-                            <span class="fm-estrelas" aria-label="{{ $a->estrelas }} de 5 estrelas">
-                                @for ($i = 1; $i <= 5; $i++)<span class="{{ $i <= $a->estrelas ? 'is-cheia' : '' }}">★</span>@endfor
-                            </span>
-                        </div>
-                        @if ($a->comentario)
-                            <p class="fm-avaliacao-minha__texto" x-show="!editando">“{{ $a->comentario }}”</p>
-                        @endif
-                        <div class="fm-consulta__acoes" x-show="!editando">
-                            <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="editando = true"><x-icone nome="pencil" /> Editar</button>
-                            <form method="POST" action="{{ route('paciente.avaliacoes.excluir', $a) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="fm-botao fm-botao--perigo fm-botao--pequeno">Excluir</button>
-                            </form>
-                        </div>
-
-                        <form method="POST" action="{{ route('paciente.avaliacoes.atualizar', $a) }}" class="fm-form fm-form--caixa" x-show="editando" x-cloak>
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="_form" value="avaliacao-{{ $a->id }}">
-                            <input type="hidden" name="estrelas" :value="nota">
-                            <div class="fm-campo">
-                                <label>Sua nota *</label>
-                                <div class="fm-estrelas fm-estrelas--escolher">
-                                    @for ($i = 1; $i <= 5; $i++)
-                                        <button type="button" aria-label="{{ $i }} {{ $i === 1 ? 'estrela' : 'estrelas' }}" :class="nota >= {{ $i }} && 'is-cheia'" @click="nota = {{ $i }}">★</button>
-                                    @endfor
-                                </div>
-                                @if ($esteForm) @error('estrelas') <span class="fm-campo__erro">{{ $message }}</span> @enderror @endif
-                            </div>
-                            <div class="fm-campo">
-                                <label for="comentario-{{ $a->id }}">Comentário (opcional)</label>
-                                <textarea id="comentario-{{ $a->id }}" name="comentario" maxlength="1000">{{ $esteForm ? old('comentario') : $a->comentario }}</textarea>
-                                <span class="fm-campo__ajuda">Só o médico, a clínica e a administração leem o comentário.</span>
-                            </div>
-                            <div class="fm-form__acoes">
-                                <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="editando = false">Voltar</button>
-                                <button type="submit" class="fm-botao fm-botao--pequeno">Salvar</button>
-                            </div>
-                        </form>
-                    </li>
+                    @include('paciente.parciais.avaliacao-item', [
+                        'chave'      => 'medico-' . $a->id,
+                        'titulo'     => $a->medico->user->name,
+                        'tituloUrl'  => null,
+                        'detalhe'    => trim(($a->consulta?->especialidade?->nome ?? '') . ($a->consulta?->vinculo?->local ? ' · ' . $a->consulta->vinculo->local->nome : ''), ' ·'),
+                        'avaliacao'  => $a,
+                        'rotaSalvar' => route('paciente.avaliacoes.atualizar', $a),
+                        'metodo'     => 'PUT',
+                        'rotaExcluir'=> route('paciente.avaliacoes.excluir', $a),
+                        'quemLe'     => 'Só o médico, a clínica e a administração leem o comentário.',
+                    ])
                 @endforeach
             </ul>
         @endif

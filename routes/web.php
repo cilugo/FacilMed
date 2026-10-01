@@ -45,6 +45,9 @@ Route::get('/buscar', [BuscaController::class, 'index'])->name('busca.index');
 Route::get('/locais', [BuscaController::class, 'locais'])->name('busca.locais');
 Route::get('/local/{local}', [PerfilPublicoController::class, 'local'])
     ->whereNumber('local')->name('publico.local');
+// 01/10/2026: médicos disponíveis no local ("Ver médicos disponíveis").
+Route::get('/local/{local}/medicos', [PerfilPublicoController::class, 'medicosDoLocal'])
+    ->whereNumber('local')->name('publico.local.medicos');
 
 // 01/10/2026: fotos guardadas no banco (local, médico, paciente). A de paciente
 // só o próprio vê (FotoController).
@@ -105,6 +108,11 @@ Route::middleware(['auth', 'tipo:paciente'])->group(function () {
     // (AGENTS.md §6 — consequência de o convênio ser vinculado ao
     // médico e não ao endereço.)
     Route::post('/agendar', [AgendamentoController::class, 'salvar'])->name('agendamento.salvar');
+
+    // 01/10/2026: avaliar o LOCAL (qualquer paciente logado, uma vez; mandar
+    // de novo atualiza). Comentário privado: clínica dona e admin.
+    Route::post('/local/{local}/avaliar', [Paciente\AvaliacaoLocalController::class, 'salvar'])
+        ->whereNumber('local')->name('publico.local.avaliar');
 });
 
 // ---------------------------------------------------------------------
@@ -152,6 +160,8 @@ Route::middleware(['auth', 'tipo:paciente'])->prefix('paciente')->name('paciente
         ->whereNumber('avaliacao')->name('avaliacoes.atualizar');
     Route::delete('/avaliacoes/{avaliacao}', [Paciente\AvaliacaoController::class, 'excluir'])
         ->whereNumber('avaliacao')->name('avaliacoes.excluir');
+    Route::delete('/avaliacoes-locais/{avaliacaoLocal}', [Paciente\AvaliacaoLocalController::class, 'excluir'])
+        ->whereNumber('avaliacaoLocal')->name('avaliacoes-locais.excluir');
 
     // 30/09: exclusão de conta (LGPD). Anonimiza, não apaga — ver
     // Paciente::excluirConta(). Pede a senha atual e uma confirmação.
@@ -244,11 +254,20 @@ Route::middleware(['auth', 'tipo:clinica'])->prefix('clinica')->name('clinica.')
         ->whereNumber('medico')->name('medicos.especialidades');
     Route::put('/medicos/{medico}/convenios', [Clinica\MedicoController::class, 'salvarConvenios'])
         ->whereNumber('medico')->name('medicos.convenios');
+    Route::post('/medicos/{medico}/foto', [Clinica\MedicoController::class, 'salvarFoto'])
+        ->whereNumber('medico')->name('medicos.foto');
+    Route::delete('/medicos/{medico}/foto', [Clinica\MedicoController::class, 'removerFoto'])
+        ->whereNumber('medico')->name('medicos.foto.remover');
 
     Route::get('/unidades', [Clinica\UnidadeController::class, 'index'])->name('unidades');
     Route::post('/unidades', [Clinica\UnidadeController::class, 'salvar'])->name('unidades.salvar');
     Route::put('/unidades/{local}/horarios', [Clinica\UnidadeController::class, 'salvarHorarios'])
         ->name('unidades.horarios');
+    // 01/10/2026: site e fotos da unidade (galeria da página do local).
+    Route::put('/unidades/{local}/site', [Clinica\UnidadeController::class, 'salvarSite'])->name('unidades.site');
+    Route::post('/unidades/{local}/fotos', [Clinica\UnidadeController::class, 'salvarFoto'])->name('unidades.fotos');
+    Route::delete('/unidades/fotos/{foto}', [Clinica\UnidadeController::class, 'removerFoto'])
+        ->whereNumber('foto')->name('unidades.fotos.remover');
 
     // Preço por vínculo + especialidade: o mesmo médico pode ter
     // valores diferentes em cada unidade e em cada especialidade.

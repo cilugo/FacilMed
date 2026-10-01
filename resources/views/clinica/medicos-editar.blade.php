@@ -13,6 +13,10 @@
 
 @section('titulo', 'Editar médico')
 
+@push('scripts')
+    <script src="{{ asset('javas/foto.js') }}" defer></script>
+@endpush
+
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/crud.css') }}">
 @endpush
@@ -49,6 +53,39 @@
                 O perfil é um só: o que você salvar aqui aparece lá também.</span>
         </p>
     @endif
+
+    {{-- ===================== FOTO (01/10) ===================== --}}
+    @php $fotoUrl = $medico->fotoUrl(); @endphp
+    <section class="fm-painel fm-foto-perfil" style="margin-top: 18px;">
+        <div class="fm-foto-perfil__imagem">
+            @if ($fotoUrl)
+                <img src="{{ $fotoUrl }}" alt="Foto de {{ $medico->user->name }}" data-previa-foto>
+            @else
+                <span class="fm-avatar fm-avatar--grande" aria-hidden="true">{{ \App\Support\Formatador::iniciais($medico->user->name) }}</span>
+                <img src="" alt="Prévia da foto" data-previa-foto hidden>
+            @endif
+        </div>
+        <div class="fm-foto-perfil__acoes">
+            <h2 class="fm-painel__titulo"><x-icone nome="user" /> Foto do médico</h2>
+            <p class="fm-campo__ajuda">Aparece na lista de médicos disponíveis e no perfil público. Sem foto, aparecem as iniciais.</p>
+            <form method="POST" action="{{ route('clinica.medicos.foto', $medico) }}" enctype="multipart/form-data" class="fm-form fm-form--linha">
+                @csrf
+                <div class="fm-campo {{ $errors->has('foto') ? 'fm-campo--erro' : '' }}">
+                    <label for="foto" class="sr-only">Escolher foto</label>
+                    <input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" data-reduzir-foto required>
+                    @error('foto') <span class="fm-campo__erro">{{ $message }}</span> @enderror
+                </div>
+                <button type="submit" class="fm-botao fm-botao--pequeno">{{ $fotoUrl ? 'Trocar foto' : 'Enviar foto' }}</button>
+            </form>
+            @if ($medico->fotoEnviada)
+                <form method="POST" action="{{ route('clinica.medicos.foto.remover', $medico) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="fm-botao fm-botao--suave fm-botao--pequeno">Remover foto</button>
+                </form>
+            @endif
+        </div>
+    </section>
 
     {{-- ===================== DADOS PROFISSIONAIS ===================== --}}
     <section class="fm-painel" style="margin-top: 18px;">

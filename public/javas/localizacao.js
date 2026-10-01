@@ -49,7 +49,7 @@
         var form = botao.closest('form');
 
         if (!('geolocation' in navigator) || !window.isSecureContext) {
-            avisar(form, 'Seu navegador não liberou a localização nesta página. Escolha a cidade na lista.', true);
+            avisar(form, 'Seu navegador não liberou a localização nesta página. Digite o CEP ou a cidade.', true);
             return;
         }
 
@@ -60,18 +60,25 @@
             campo(form, 'lat', posicao.coords.latitude.toFixed(3));
             campo(form, 'lng', posicao.coords.longitude.toFixed(3));
 
-            var cidade = form.querySelector('[name="cidade"]');
-            if (cidade) {
-                cidade.value = '';
-            }
+            // 01/10/2026: a posição do navegador passa na frente do que estava
+            // valendo (cidade, CEP ou o que foi digitado em "CEP ou cidade").
+            ['cidade', 'cep', 'onde'].forEach(function (nome) {
+                form.querySelectorAll('[name="' + nome + '"]').forEach(function (elemento) {
+                    if (elemento.type === 'hidden') {
+                        elemento.remove();
+                    } else {
+                        elemento.value = '';
+                    }
+                });
+            });
 
             form.action = botao.getAttribute('data-localizacao');
             form.submit();
         }, function (erro) {
             botao.disabled = false;
             avisar(form, erro.code === 1
-                ? 'Você não permitiu o acesso à localização. Tudo bem: escolha a cidade na lista.'
-                : 'Não deu para pegar sua localização agora. Escolha a cidade na lista.', true);
+                ? 'Você não permitiu o acesso à localização. Tudo bem: digite o CEP ou a cidade.'
+                : 'Não deu para pegar sua localização agora. Digite o CEP ou a cidade.', true);
         }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
     });
 })();

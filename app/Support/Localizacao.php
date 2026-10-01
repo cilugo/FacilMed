@@ -117,7 +117,7 @@ final class Localizacao
      *
      * @return array{lat: float, lng: float, descricao: string, params: array<string, string|float>}|null
      */
-    public static function origem(mixed $lat, mixed $lng, ?string $cidade): ?array
+    public static function origem(mixed $lat, mixed $lng, ?string $cidade, ?string $cep = null): ?array
     {
         $ponto = self::coordenadas($cidade);
 
@@ -129,11 +129,28 @@ final class Localizacao
         $lng = self::lerCoordenada($lng, 180);
 
         if ($lat !== null && $lng !== null) {
+            // 01/10/2026: posição que veio de um CEP (o controller trocou o CEP
+            // por lat/lng na URL) - a tela mostra "do CEP 12245-000".
+            $cep = preg_replace('/\D/', '', (string) $cep);
+            if (strlen($cep) === 8) {
+                return ['lat' => $lat, 'lng' => $lng, 'descricao' => 'do CEP ' . self::formatarCep($cep),
+                    'params' => ['lat' => $lat, 'lng' => $lng, 'cep' => $cep]];
+            }
+
             return ['lat' => $lat, 'lng' => $lng, 'descricao' => 'de você', 'params' => ['lat' => $lat, 'lng' => $lng]];
         }
 
         return null;
     }
+
+    /** "12245000" → "12245-000". */
+    public static function formatarCep(string $cep): string
+    {
+        return substr($cep, 0, 5) . '-' . substr($cep, 5, 3);
+    }
+
+    /** Raios aceitos na busca (01/10/2026, plano do grupo: 5, 10 ou 20 km). */
+    public const RAIOS = [5, 10, 20];
 
     private static function comparavel(string $texto): string
     {

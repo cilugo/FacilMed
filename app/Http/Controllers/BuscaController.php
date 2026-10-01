@@ -9,6 +9,7 @@ use App\Models\Medico;
 use App\Models\Preco;
 use App\Models\User;
 use App\Models\Vinculo;
+use App\Support\Geocodificador;
 use App\Support\Localizacao;
 use Illuminate\Http\Request;
 
@@ -88,12 +89,21 @@ class BuscaController extends Controller
     }
 
     /**
-     * "Locais perto de você" (29/09/2026, plano do app): clínicas, hospitais e
-     * consultórios do mais perto para o mais longe.
+     * "Clínicas perto de você" - a busca principal do plano novo (01/10/2026):
+     * o paciente diz a especialidade e ONDE está, e vê clínicas e hospitais do
+     * mais perto para o mais longe.
      *
-     * De onde medir (Localizacao::origem): a posição que o navegador deu
-     * (?lat=&lng=) ou o centro da cidade escolhida (?cidade=). Sem nenhum dos
-     * dois, a lista sai em ordem alfabética, sem distância.
+     * Onde está (prioridade de cima para baixo):
+     *   ?onde=      o que ele digitou: CEP (8 números) ou nome da cidade;
+     *   ?cidade=    a cidade escolhida numa lista (endereço antigo, 29/09);
+     *   ?lat=&lng=  a posição do navegador, ou a de um CEP (com ?cep=).
+     * CEP: o Geocodificador acha a coordenada (ViaCEP + Nominatim, ou o
+     * bairro/cidade se falhar) e a tela é REDIRECIONADA para ?lat=&lng=&cep=,
+     * arredondados. Assim a posição não fica guardada em lugar nenhum
+     * (AGENTS.md §3) e trocar um filtro não consulta o CEP de novo.
+     *
+     * Filtros: ?raio= (5, 10 ou 20 km), ?plano=1 (aceita o convênio da
+     * carteirinha do paciente logado), ?convenio=ID e ?particular=1.
      *
      * Só entra local que dá para agendar (Local::agendaveis - a mesma regra da
      * busca de médicos) e, com ?especialidade=, que a ofereça. Poucos locais
@@ -102,13 +112,65 @@ class BuscaController extends Controller
     public function locais(Request $request)
     {
         $especialidade = $this->texto($request, 'especialidade');
+        $onde = $this->texto($request, 'onde');
         $cidade = $this->texto($request, 'cidade');
-        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade);
+        $cep = preg_replace('/\D/', '', (string) $this->texto($request, 'cep'));
+        [$lat, $lng] = [$request->query('lat'), $request->query('lng')];
+        $aviso = null;
 
-        $locais = Local::agendaveis($especialidade)
+        // O que foi DIGITADO agora vale mais que a posição que veio na URL.
+        if ($onde !== null) {
+            $digitos = preg_replace('/\D/', '', $onde);
+            [$lat, $lng, $cep, $cidade] = [null, null, strlen($digitos) === 8 ? $digitos : '', strlen($digitos) === 8 ? null : $onde];
+        }
+
+        if (strlen($cep) === 8 && Localizacao::lerCoordenada($lat, 90) === null) {
+            $achou = Geocodificador::doCep($cep);
+            if ($achou) {
+                return redirect()->route('busca.locais', array_filter([
+                    'especialidade' => $especialidade,
+                    'cep'           => $cep,
+                    'lat'           => round($achou['lat'], 3),
+                    'lng'           => round($achou['lng'], 3),
+                ] + $request->only(['raio', 'plano', 'convenio', 'particular'])));
+            }
+            $aviso = 'Não encontramos o CEP ' . Localizacao::formatarCep($cep) . '. Confira os números, use a sua localização ou digite a cidade.';
+            $cep = '';
+        }
+
+        if ($cidade !== null && Localizacao::coordenadas($cidade) === null) {
+            $aviso = "Ainda não conhecemos a cidade \"{$cidade}\" no mapa do FacilMed. Tente o CEP, a sua localização ou uma cidade do Vale do Paraíba.";
+            $cidade = null;
+        }
+
+        $origem = Localizacao::origem($lat, $lng, $cidade, $cep);
+        $raio = in_array((int) $request->query('raio'), Localizacao::RAIOS, true) ? (int) $request->query('raio') : null;
+        $particular = $request->boolean('particular');
+
+        // "Aceita meu plano": os convênios das carteirinhas ATIVAS do paciente
+        // logado. Sem login (ou sem carteirinha), vale o ?convenio= escolhido na lista.
+        $paciente = $request->user()?->ehPaciente() ? $request->user()->paciente : null;
+        $meusConvenios = $paciente
+            ? $paciente->planosAtivos()->with('plano')->get()->pluck('plano.convenio_id')->filter()->unique()->values()
+            : collect();
+        $convenioId = ctype_digit((string) $request->query('convenio')) ? (int) $request->query('convenio') : null;
+        $convenios = $request->boolean('plano') && $meusConvenios->isNotEmpty()
+            ? $meusConvenios
+            : ($convenioId ? collect([$convenioId]) : collect());
+
+        // A mesma condição filtra os locais E os vínculos carregados (o card
+        // conta só os médicos que servem para esta busca).
+        $vinculoServe = fn ($v) => $v->agendaveis()->oferece($especialidade)
+            ->when($particular, fn ($q) => $q->where('vinculos.aceita_particular', true))
+            ->when($convenios->isNotEmpty(), fn ($q) => $q->where('vinculos.aceita_convenio', true)
+                ->whereHas('medico.convenios', fn ($c) => $c->whereIn('convenios.id', $convenios)->where('convenios.ativo', true)));
+
+        $locais = Local::where('locais.ativo', true)
+            ->whereHas('vinculos', $vinculoServe)
             ->with([
                 'clinica',
-                'vinculos' => fn ($v) => $v->agendaveis()->oferece($especialidade),
+                'fotos',
+                'vinculos' => $vinculoServe,
                 'vinculos.medico.user',
                 'vinculos.precos.especialidade',
             ])
@@ -122,6 +184,15 @@ class BuscaController extends Controller
             'nota'      => $notas->get($local->id),
         ]);
 
+        // Raio: só com origem (sem ela não há distância). Local sem coordenada
+        // fica de fora, porque não dá para garantir que está dentro do raio.
+        $foraDoRaio = 0;
+        if ($origem && $raio) {
+            $dentro = $resultados->filter(fn ($r) => $r->distancia !== null && $r->distancia <= $raio);
+            $foraDoRaio = $resultados->count() - $dentro->count();
+            $resultados = $dentro;
+        }
+
         // Com origem: mais perto primeiro; local sem coordenada vai para o fim.
         // "<=>" com listas compara item a item: sem coordenada?, distância, nome.
         $resultados = $origem
@@ -132,9 +203,17 @@ class BuscaController extends Controller
         return view('busca.locais', [
             'resultados'     => $resultados->values(),
             'especialidades' => Especialidade::where('ativo', true)->orderBy('nome')->get(),
-            'cidades'        => Local::where('ativo', true)->select('cidade', 'uf')->distinct()->orderBy('cidade')->get(),
-            'filtros'        => ['especialidade' => $especialidade, 'cidade' => $cidade],
+            'convenios'      => Convenio::where('ativo', true)->orderBy('nome')->get(),
+            'escolhida'      => $especialidade ? Especialidade::where('slug', $especialidade)->first() : null,
+            'filtros'        => [
+                'especialidade' => $especialidade, 'cidade' => $cidade, 'raio' => $raio, 'particular' => $particular,
+                'plano' => $request->boolean('plano'), 'convenio' => $convenioId,
+            ],
             'origem'         => $origem,
+            'aviso'          => $aviso,
+            'foraDoRaio'     => $foraDoRaio,
+            'temCarteirinha' => $meusConvenios->isNotEmpty(),
+            'ehPaciente'     => $paciente !== null,
         ]);
     }
 
