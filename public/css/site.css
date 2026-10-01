@@ -137,6 +137,10 @@ body { background-color: var(--site-fundo); }
 .local-foto { background: #eaf4fc; color: var(--site-marinho); }
 .local-foto .fm-icone { width: 30px; height: 30px; }
 .local-foto img { transform: none; object-position: center; }
+/* Até 6 cards: em grade (6 numa linha no computador, 2 no celular), para o
+   último não ficar cortado na borda como numa lista que rola de lado. */
+.lista-locais { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); overflow: visible; }
+.lista-locais .specialty-card { min-width: 0; }
 
 .chamada {
     padding: 50px 0;

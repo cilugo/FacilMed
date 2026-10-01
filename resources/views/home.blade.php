@@ -197,9 +197,9 @@
                     <a href="{{ route('busca.locais') }}" class="view-all">Ver todos</a>
                 </div>
 
-                <div class="specialties-list">
+                <div class="specialties-list lista-locais">
                     @foreach ($locaisDestaque as $item)
-                        <a href="{{ route('publico.local', $item->local) }}" class="specialty-card" style="min-width: 200px;">
+                        <a href="{{ route('publico.local', $item->local) }}" class="specialty-card">
                             {{-- Sem foto (ou se o arquivo não carregar), fica o ícone de prédio --}}
                             <div class="specialty-photo local-foto">
                                 <x-icone nome="building" />
