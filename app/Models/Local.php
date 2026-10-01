@@ -15,7 +15,7 @@ class Local extends Model
 
     protected $fillable = [
         'clinica_id', 'medico_id', 'nome', 'tipo', 'cep', 'endereco',
-        'numero', 'complemento', 'bairro', 'cidade', 'uf', 'telefone', 'ativo',
+        'numero', 'complemento', 'bairro', 'cidade', 'uf', 'telefone', 'foto', 'ativo',
         'latitude', 'longitude',
     ];
 

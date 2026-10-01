@@ -30,27 +30,28 @@ final class DadosFicticios
      * 3 clínicas + 3 hospitais. Cada um é uma conta de "clínica" com UMA
      * unidade; o que muda é o tipo da unidade (clinica/hospital).
      * [email, razao_social, nome_fantasia, cnpj, telefone, descricao, unidade]
-     * unidade = [nome, tipo, cep, endereco, numero, bairro, cidade, uf]
+     * unidade = [nome, tipo, cep, endereco, numero, bairro, cidade, uf, foto]
+     * foto = fachada, relativa a public/ (30/09: card da home)
      */
     public const ESTABELECIMENTOS = [
         ['contato@clinicaspsaude.test', 'SpSaúde Serviços Médicos LTDA', 'Clínica SpSaúde', '41100001000195', '1239504000',
             'Rede própria do convênio SpSaúde, com atendimento de especialidades.',
-            ['SpSaúde - Jardim Satélite', 'clinica', '12230000', 'Av. Andrômeda', '2000', 'Jardim Satélite', 'São José dos Campos', 'SP']],
+            ['SpSaúde - Jardim Satélite', 'clinica', '12230000', 'Av. Andrômeda', '2000', 'Jardim Satélite', 'São José dos Campos', 'SP', 'imgs/sliderhospcli/h6.jpg']],
         ['contato@vidaplena.test', 'Vida Plena Serviços Médicos LTDA', 'Clínica Vida Plena', '41100002000130', '1239211000',
             'Clínica de bairro com foco em atendimento de rotina e acompanhamento.',
-            ['Vida Plena - Centro', 'clinica', '12210100', 'Rua Quinze de Novembro', '480', 'Centro', 'São José dos Campos', 'SP']],
+            ['Vida Plena - Centro', 'clinica', '12210100', 'Rua Quinze de Novembro', '480', 'Centro', 'São José dos Campos', 'SP', 'imgs/sliderhospcli/h2.jpg']],
         ['contato@aurora.test', 'Centro Médico Aurora S/A', 'Centro Médico Aurora', '41100003000184', '1239452000',
             'Centro médico com corpo clínico multidisciplinar e agenda estendida.',
-            ['Aurora - Vila Ema', 'clinica', '12243700', 'Rua República do Iraque', '90', 'Vila Ema', 'São José dos Campos', 'SP']],
+            ['Aurora - Vila Ema', 'clinica', '12243700', 'Rua República do Iraque', '90', 'Vila Ema', 'São José dos Campos', 'SP', 'imgs/sliderhospcli/h4.jpg']],
         ['contato@santaclara.test', 'Hospital Santa Clara de Taubaté LTDA', 'Hospital Santa Clara', '42200001000120', '1236323000',
             'Hospital geral com ambulatório de especialidades.',
-            ['Santa Clara - Taubaté', 'hospital', '12020270', 'Av. Tiradentes', '1500', 'Centro', 'Taubaté', 'SP']],
+            ['Santa Clara - Taubaté', 'hospital', '12020270', 'Av. Tiradentes', '1500', 'Centro', 'Taubaté', 'SP', 'imgs/sliderhospcli/h1.jpg']],
         ['contato@saolucasdovale.test', 'Hospital São Lucas do Vale LTDA', 'Hospital São Lucas do Vale', '42200002000174', '1239531000',
             'Hospital com pronto atendimento e ambulatório.',
-            ['São Lucas - Jacareí', 'hospital', '12307000', 'Av. Siqueira Campos', '800', 'Centro', 'Jacareí', 'SP']],
+            ['São Lucas - Jacareí', 'hospital', '12307000', 'Av. Siqueira Campos', '800', 'Centro', 'Jacareí', 'SP', 'imgs/sliderhospcli/h3.jpg']],
         ['contato@hospitalesperanca.test', 'Associação Hospitalar Esperança', 'Hospital Esperança', '42200003000119', '1236524000',
             'Hospital filantrópico com ambulatório pediátrico.',
-            ['Esperança - Caçapava', 'hospital', '12280000', 'Rua Capitão Carlos de Moura', '300', 'Centro', 'Caçapava', 'SP']],
+            ['Esperança - Caçapava', 'hospital', '12280000', 'Rua Capitão Carlos de Moura', '300', 'Centro', 'Caçapava', 'SP', 'imgs/sliderhospcli/h5.jpg']],
     ];
 
     /**

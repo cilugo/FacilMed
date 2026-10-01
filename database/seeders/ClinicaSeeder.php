@@ -21,7 +21,7 @@ class ClinicaSeeder extends Seeder
     public function run(): void
     {
         foreach (DadosFicticios::ESTABELECIMENTOS as [$email, $razao, $fantasia, $cnpj, $telefone, $descricao, $u]) {
-            [$nome, $tipo, $cep, $endereco, $numero, $bairro, $cidade, $uf] = $u;
+            [$nome, $tipo, $cep, $endereco, $numero, $bairro, $cidade, $uf, $foto] = $u;
 
             $user = User::updateOrCreate(
                 ['email' => $email],
@@ -47,7 +47,7 @@ class ClinicaSeeder extends Seeder
 
             $local = Local::updateOrCreate(
                 ['clinica_id' => $clinica->id, 'nome' => $nome],
-                compact('tipo', 'cep', 'endereco', 'numero', 'bairro', 'cidade', 'uf', 'telefone') + ['ativo' => true]
+                compact('tipo', 'cep', 'endereco', 'numero', 'bairro', 'cidade', 'uf', 'telefone', 'foto') + ['ativo' => true]
             );
 
             // Seg-sex 08-18, sábado 08-12 (hospital poderia ter mais; fica
