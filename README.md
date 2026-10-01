@@ -428,6 +428,39 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 
 **Atualizado em 30/09/2026.**
 
+**30/09 — home nova, proposta sem agendamento** (branch `front/home-nova`; feita com o Claude a pedido
+do grupo, depois de aprovar uma imagem de como ia ficar):
+- **A proposta do site mudou:** não vai ter mais agendamento — o foco é a pessoa achar hospitais e
+  clínicas (de convênio e particulares) perto dela. **Por enquanto só a home foi ajustada.** O
+  agendamento continua no código (rotas `agendamento.*`, telas, painéis, este README e o AGENTS.md
+  ainda falam dele); tirar ou esconder é a próxima decisão do grupo.
+- **Busca da home, só dois campos:** sem cadastro, **especialidade + cidade**; logado, **especialidade +
+  CEP**. As duas vão para "Locais perto de você" (`/locais`). Saiu da home o "Usar minha localização"
+  (continua na página de locais). O resto da home é igual para logado e não logado.
+- **CEP sem serviço externo** (mesmo motivo das coordenadas, §5.6): `config/localizacao.php` ganhou
+  `ceps`, faixas aproximadas dos Correios por cidade, e `Localizacao::cidadePorCep()` devolve a cidade;
+  a distância parte do centro dela. Cidade escolhida na lista vale mais que o CEP. CEP fora das faixas:
+  aviso na tela, sem erro. O CEP só vai na URL — não é salvo (AGENTS §3).
+- **"Como funciona"** reescrito em três passos simples, sem agendamento. **Título do topo**, legendas do
+  carrossel e o texto de "É clínica ou hospital?" também não falam mais em agendar. **"Sobre nós" não
+  mudou** (pedido do grupo), embora ainda cite agendamento.
+- **"Clínicas e hospitais bem avaliados"** (`HomeController::locaisDestaque`) no lugar da vitrine fixa
+  "Hospitais e Clínicas" do protótipo: mesmo card dos médicos, com a **foto da fachada** e a **nota**
+  (`Local::notas`). Entra quem aparece em `/locais` (`Local::agendaveis`), só clínica e hospital, até 6,
+  pela maior nota. O `id="hospitais-clinicas"` ficou, por causa do menu.
+- **Banco:** migration `2026_09_30_000200_add_foto_to_locais_table` — `locais.foto` (caminho relativo a
+  `public/`, como `medicos.foto`; nula = ícone de prédio). A migration já põe a foto nos 6 locais do seed
+  que existem (como a das coordenadas, para o banco do site no ar); o `ClinicaSeeder` grava pelos
+  `DadosFicticios`. **Para ver no XAMPP:** `php artisan migrate`.
+- **Fotos novas** `public/imgs/sliderhospcli/h5.jpg` e `h6.jpg`, gratuitas do Unsplash, escolhidas sem
+  nome de clínica real na fachada: h5 de Troy Spoelma (unsplash.com/photos/DSqKAWX0LDY), h6 de XS Xue
+  (unsplash.com/photos/3VE_XaFFBHk).
+- **Testes:** `HomeTest` novo (8) e 4 novos no `LocaisTest` (CEP); o `test_home_e_busca_levam_para_os_locais`
+  mudou (a home não tem mais o botão de localização). **Não rodaram nesta máquina** — a pasta do
+  repositório estava sem `vendor/` e sem `.env`. Rodar `php artisan test` antes do merge.
+- **Sobrou no código:** o slider de clínicas do `public/javas/home.js` (`clinicsList`) não tem mais o que
+  mover na home; ficou porque ele já confere se os elementos existem.
+
 **30/09 — exclusão de conta pelo paciente (LGPD)** (branch `back/exclusao-de-conta`; último item
 decidido do plano do app; escolhas do Sidney: só paciente, anonimizar em vez de apagar, a nota fica
 e o comentário sai):
