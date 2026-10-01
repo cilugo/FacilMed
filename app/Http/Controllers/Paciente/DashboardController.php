@@ -161,8 +161,6 @@ class DashboardController extends Controller
                 ];
             })->all(),
             'planosUrl' => route('paciente.planos'),
-
-            'atalhos' => Formatador::atalhos('paciente'),
         ]);
     }
 }
