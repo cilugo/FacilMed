@@ -73,12 +73,9 @@ class ConsultaPolicy
             return $user->paciente?->id === $consulta->paciente_id;
         }
 
-        // O medico e a clinica tambem podem cancelar (imprevisto,
-        // ausencia). O paciente e avisado por e-mail.
-        if ($user->ehMedico()) {
-            return $user->medico?->id === $consulta->medico_id;
-        }
-
+        // A clinica tambem pode cancelar (imprevisto, ausencia do medico).
+        // O paciente e avisado por e-mail. 01/10/2026: o medico nao cancela
+        // mais - ele so ve a agenda; quem cuida dela e a clinica.
         if ($user->ehClinica()) {
             return $this->ehDaClinica($user, $consulta);
         }
@@ -89,15 +86,15 @@ class ConsultaPolicy
     /**
      * Marcar como realizada ou como falta.
      *
-     * So o medico da consulta. A clinica nao marca presenca por ele -
-     * quem sabe se a pessoa apareceu e quem atendeu.
+     * 01/10/2026 (plano novo do grupo): a CLINICA dona da unidade marca - o
+     * medico so ve a agenda. Antes era o contrario (so o medico marcava).
      */
     public function atender(User $user, Consulta $consulta): bool
     {
         // inicio no passado: sem isso dava para marcar como realizada (ou falta)
         // uma consulta da semana que vem - e o paciente ja podia avaliar.
-        return $user->ehMedico()
-            && $user->medico?->id === $consulta->medico_id
+        return $user->ehClinica()
+            && $this->ehDaClinica($user, $consulta)
             && $consulta->status === 'agendada'
             && ! $consulta->inicio->isFuture();
     }

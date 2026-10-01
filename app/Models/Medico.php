@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Medico extends Model
 {
@@ -59,6 +60,25 @@ class Medico extends Model
     public function avaliacoes(): HasMany
     {
         return $this->hasMany(Avaliacao::class);
+    }
+
+    /** 01/10/2026: foto enviada pela clínica (no banco - ver Foto). Sem a imagem pesada. */
+    public function fotoEnviada(): HasOne
+    {
+        return $this->hasOne(Foto::class)->select(Foto::COLUNAS_LEVES);
+    }
+
+    /**
+     * Endereço da foto do médico para as telas: a enviada pela clínica ou, se
+     * não houver, a do seeder (public/imgs/medicos/...). Null = mostrar as iniciais.
+     */
+    public function fotoUrl(): ?string
+    {
+        if ($this->fotoEnviada) {
+            return $this->fotoEnviada->url();
+        }
+
+        return $this->foto ? asset($this->foto) : null;
     }
 
     /**

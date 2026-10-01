@@ -46,6 +46,11 @@ Route::get('/locais', [BuscaController::class, 'locais'])->name('busca.locais');
 Route::get('/local/{local}', [PerfilPublicoController::class, 'local'])
     ->whereNumber('local')->name('publico.local');
 
+// 01/10/2026: fotos guardadas no banco (local, médico, paciente). A de paciente
+// só o próprio vê (FotoController).
+Route::get('/foto/{foto}', [\App\Http\Controllers\FotoController::class, 'mostrar'])
+    ->whereNumber('foto')->name('fotos.mostrar');
+
 // Perfis públicos
 // whereNumber: sem ele, /medico/{medico} captura /medico/agenda, /medico/perfil etc.
 // (declarado antes do grupo do painel) e todas as telas do médico e da clínica davam 404.
@@ -138,6 +143,16 @@ Route::middleware(['auth', 'tipo:paciente'])->prefix('paciente')->name('paciente
     Route::get('/perfil', [Paciente\PerfilController::class, 'edit'])->name('perfil');
     Route::put('/perfil', [Paciente\PerfilController::class, 'update'])->name('perfil.atualizar');
 
+    // 01/10/2026: foto do perfil (guardada no banco - ver App\Models\Foto).
+    Route::post('/perfil/foto', [Paciente\PerfilController::class, 'salvarFoto'])->name('perfil.foto');
+    Route::delete('/perfil/foto', [Paciente\PerfilController::class, 'removerFoto'])->name('perfil.foto.remover');
+
+    // 01/10/2026: "Minhas avaliações" no perfil - editar ou excluir a que ele fez.
+    Route::put('/avaliacoes/{avaliacao}', [Paciente\AvaliacaoController::class, 'atualizar'])
+        ->whereNumber('avaliacao')->name('avaliacoes.atualizar');
+    Route::delete('/avaliacoes/{avaliacao}', [Paciente\AvaliacaoController::class, 'excluir'])
+        ->whereNumber('avaliacao')->name('avaliacoes.excluir');
+
     // 30/09: exclusão de conta (LGPD). Anonimiza, não apaga — ver
     // Paciente::excluirConta(). Pede a senha atual e uma confirmação.
     Route::delete('/perfil', [Paciente\PerfilController::class, 'excluir'])->name('perfil.excluir');
@@ -154,6 +169,9 @@ Route::middleware(['auth', 'tipo:paciente'])->prefix('paciente')->name('paciente
 
 Route::middleware(['auth', 'tipo:medico'])->prefix('medico')->name('medico.')->group(function () {
 
+    // 01/10/2026 (plano novo do grupo): o médico SÓ VÊ. Horários, ausências,
+    // preços, perfil e os botões realizada/falta/cancelar passaram para a
+    // clínica (área da clínica, logo abaixo). Aqui ficam só telas de leitura.
     Route::get('/', [Medico\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/agenda', [Medico\AgendaController::class, 'index'])->name('agenda');
@@ -162,44 +180,13 @@ Route::middleware(['auth', 'tipo:medico'])->prefix('medico')->name('medico.')->g
     // da clínica; o serviço já nasce preso ao médico logado.
     Route::get('/consultas', [Medico\ConsultaController::class, 'index'])->name('consultas');
 
-    Route::post('/agenda/{consulta}/realizada', [Medico\AgendaController::class, 'marcarRealizada'])
-        ->name('agenda.realizada');
-    // Sem este status, quem faltou consegue avaliar e as métricas erram.
-    Route::post('/agenda/{consulta}/falta', [Medico\AgendaController::class, 'marcarFalta'])
-        ->name('agenda.falta');
-    Route::post('/agenda/{consulta}/cancelar', [Medico\AgendaController::class, 'cancelar'])
-        ->name('agenda.cancelar');
-
-    // Blocos recorrentes por vínculo. Almoço = dois blocos no mesmo dia.
-    Route::get('/horarios', [Medico\DisponibilidadeController::class, 'index'])->name('disponibilidade');
-    Route::post('/horarios', [Medico\DisponibilidadeController::class, 'salvar'])->name('disponibilidade.salvar');
-    Route::delete('/horarios/{disponibilidade}', [Medico\DisponibilidadeController::class, 'remover'])
-        ->name('disponibilidade.remover');
-
-    Route::get('/ausencias', [Medico\BloqueioController::class, 'index'])->name('bloqueios');
-    Route::post('/ausencias', [Medico\BloqueioController::class, 'salvar'])->name('bloqueios.salvar');
-    Route::delete('/ausencias/{bloqueio}', [Medico\BloqueioController::class, 'remover'])->name('bloqueios.remover');
-
-    // Vínculos: onde o médico atende. Médico autônomo cria consultório
-    // próprio aqui; em clínica, quem vincula é a clínica.
-    Route::get('/locais', [Medico\LocalController::class, 'index'])->name('locais');
-    Route::post('/locais', [Medico\LocalController::class, 'salvar'])->name('locais.salvar');
-
-    // Só edita preço de local que é consultório próprio dele.
-    // Em clínica, quem define é a clínica. Regra na Policy.
-    Route::get('/precos', [Medico\PrecoController::class, 'index'])->name('precos');
-    Route::post('/precos', [Medico\PrecoController::class, 'salvar'])->name('precos.salvar');
-
     // Aqui o médico VÊ o comentário — é a única tela onde ele aparece,
     // junto da área da clínica e do admin.
     Route::get('/avaliacoes', [Medico\AvaliacaoController::class, 'index'])->name('avaliacoes');
 
+    // Só leitura + trocar a senha (rota password.update, do Breeze). É aqui que
+    // o médico novo troca a senha provisória (middleware ExigirTrocaDeSenha).
     Route::get('/perfil', [Medico\PerfilController::class, 'edit'])->name('perfil');
-    Route::put('/perfil', [Medico\PerfilController::class, 'update'])->name('perfil.atualizar');
-    Route::put('/perfil/especialidades', [Medico\PerfilController::class, 'salvarEspecialidades'])
-        ->name('perfil.especialidades');
-    Route::put('/perfil/convenios', [Medico\PerfilController::class, 'salvarConvenios'])
-        ->name('perfil.convenios');
 });
 
 // ---------------------------------------------------------------------
@@ -212,6 +199,28 @@ Route::middleware(['auth', 'tipo:clinica'])->prefix('clinica')->name('clinica.')
 
     Route::get('/agenda', [Clinica\AgendaController::class, 'index'])->name('agenda');
 
+    // 01/10/2026: quem marca realizada/falta e cancela agora é a clínica
+    // (o médico só vê a agenda). A ConsultaPolicy confere que a consulta é
+    // numa unidade DESTA clínica.
+    Route::post('/agenda/{consulta}/realizada', [Clinica\AgendaController::class, 'marcarRealizada'])
+        ->name('agenda.realizada');
+    // Sem este status, quem faltou consegue avaliar e as métricas erram.
+    Route::post('/agenda/{consulta}/falta', [Clinica\AgendaController::class, 'marcarFalta'])
+        ->name('agenda.falta');
+    Route::post('/agenda/{consulta}/cancelar', [Clinica\AgendaController::class, 'cancelar'])
+        ->name('agenda.cancelar');
+
+    // 01/10/2026: horários e ausências dos médicos, que antes o próprio médico
+    // cadastrava. Blocos recorrentes por vínculo; almoço = dois blocos no mesmo dia.
+    Route::get('/horarios', [Clinica\HorarioController::class, 'index'])->name('horarios');
+    Route::post('/horarios', [Clinica\HorarioController::class, 'salvar'])->name('horarios.salvar');
+    Route::delete('/horarios/{disponibilidade}', [Clinica\HorarioController::class, 'remover'])
+        ->name('horarios.remover');
+
+    Route::get('/ausencias', [Clinica\AusenciaController::class, 'index'])->name('ausencias');
+    Route::post('/ausencias', [Clinica\AusenciaController::class, 'salvar'])->name('ausencias.salvar');
+    Route::delete('/ausencias/{bloqueio}', [Clinica\AusenciaController::class, 'remover'])->name('ausencias.remover');
+
     // Números das consultas de TODAS as unidades da clínica (7/30/90 dias).
     Route::get('/consultas', [Clinica\ConsultaController::class, 'index'])->name('consultas');
 
@@ -221,7 +230,20 @@ Route::middleware(['auth', 'tipo:clinica'])->prefix('clinica')->name('clinica.')
     Route::get('/medicos/novo', [Clinica\MedicoController::class, 'form'])->name('medicos.novo');
     Route::post('/medicos', [Clinica\MedicoController::class, 'salvar'])->name('medicos.salvar');
     Route::delete('/medicos/{vinculo}', [Clinica\MedicoController::class, 'desvincular'])
-        ->name('medicos.desvincular');
+        ->whereNumber('vinculo')->name('medicos.desvincular');
+
+    // 01/10/2026: perfil do médico (bio, especialidades, convênios, foto) — antes
+    // o próprio médico editava. Só médico com vínculo ativo nesta clínica
+    // (MedicoPolicy::gerenciar). Nome e CRM não mudam: foram conferidos juntos
+    // na base simulada no cadastro.
+    Route::get('/medicos/{medico}/editar', [Clinica\MedicoController::class, 'editar'])
+        ->whereNumber('medico')->name('medicos.editar');
+    Route::put('/medicos/{medico}', [Clinica\MedicoController::class, 'atualizar'])
+        ->whereNumber('medico')->name('medicos.atualizar');
+    Route::put('/medicos/{medico}/especialidades', [Clinica\MedicoController::class, 'salvarEspecialidades'])
+        ->whereNumber('medico')->name('medicos.especialidades');
+    Route::put('/medicos/{medico}/convenios', [Clinica\MedicoController::class, 'salvarConvenios'])
+        ->whereNumber('medico')->name('medicos.convenios');
 
     Route::get('/unidades', [Clinica\UnidadeController::class, 'index'])->name('unidades');
     Route::post('/unidades', [Clinica\UnidadeController::class, 'salvar'])->name('unidades.salvar');
@@ -252,7 +274,11 @@ Route::middleware(['auth', 'tipo:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
+    // 01/10/2026: três telas — ativas (com bloquear), bloqueadas (com
+    // desbloquear) e excluídas pelo próprio paciente (só consulta).
     Route::get('/usuarios', [Admin\UsuarioController::class, 'index'])->name('usuarios');
+    Route::get('/usuarios/bloqueadas', [Admin\UsuarioController::class, 'bloqueadas'])->name('usuarios.bloqueadas');
+    Route::get('/usuarios/excluidas', [Admin\UsuarioController::class, 'excluidas'])->name('usuarios.excluidas');
     // Bloqueio exige motivo — bloqueio sem registro de quem e por quê
     // é ingovernável.
     Route::post('/usuarios/{user}/bloquear', [Admin\UsuarioController::class, 'bloquear'])

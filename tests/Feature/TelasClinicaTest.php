@@ -42,8 +42,8 @@ class TelasClinicaTest extends TestCase
             // 28/09 (3ª revisão): a clínica não lê a acessibilidade — só o médico
             // da consulta, enquanto ela está agendada (AGENTS.md §3).
             ->assertDontSee('Uso cadeira de rodas')
-            // A agenda da clínica é só leitura.
-            ->assertDontSee('/agenda/' . $consulta->id . '/cancelar', false);
+            // 01/10/2026: a clínica é quem cancela (o médico só vê).
+            ->assertSee('/clinica/agenda/' . $consulta->id . '/cancelar', false);
     }
 
     public function test_medicos_lista_e_mostra_confirmacao_de_desvinculo(): void

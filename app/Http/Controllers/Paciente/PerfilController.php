@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Paciente;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Paciente\ExcluirContaRequest;
+use App\Models\Foto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -12,9 +13,38 @@ class PerfilController extends Controller
 {
     public function edit()
     {
+        $paciente = auth()->user()->paciente->load('acessibilidade', 'foto');
+
         return view('paciente.perfil', [
-            'paciente' => auth()->user()->paciente->load('acessibilidade'),
+            'paciente'   => $paciente,
+            // 01/10/2026: "Minhas avaliações". O comentário aparece aqui porque
+            // quem lê é o próprio autor (makeVisible: no model ele é escondido).
+            'avaliacoes' => $paciente->avaliacoes()
+                ->with('medico.user', 'consulta.especialidade', 'consulta.vinculo.local')
+                ->latest()->get()
+                ->each->makeVisible('comentario'),
         ]);
+    }
+
+    /**
+     * 01/10/2026: foto do perfil. Uma só por paciente - mandar outra troca a
+     * antiga. Fica no banco (ver App\Models\Foto) e só o próprio paciente vê.
+     */
+    public function salvarFoto(Request $request)
+    {
+        $request->validate(['foto' => Foto::regras()], Foto::mensagens());
+
+        $paciente = $request->user()->paciente;
+        Foto::updateOrCreate(['paciente_id' => $paciente->id], Foto::dadosDoArquivo($request->file('foto')));
+
+        return redirect()->to(route('paciente.perfil'))->with('sucesso', 'Foto atualizada.');
+    }
+
+    public function removerFoto(Request $request)
+    {
+        Foto::where('paciente_id', $request->user()->paciente->id)->delete();
+
+        return redirect()->to(route('paciente.perfil'))->with('sucesso', 'Foto removida.');
     }
 
     /**

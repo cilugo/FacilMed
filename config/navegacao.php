@@ -32,14 +32,12 @@ return [
         ['rota' => 'paciente.perfil',     'label' => 'Meu perfil',       'icone' => 'user'],
     ],
 
+    // 01/10/2026: o médico só vê (agenda, números, avaliações e o perfil, onde
+    // troca a senha). Horários, ausências, preços e perfil passaram para a clínica.
     'medico' => [
         ['rota' => 'medico.dashboard',       'label' => 'Início',          'icone' => 'home'],
         ['rota' => 'medico.agenda',          'label' => 'Minha agenda',    'icone' => 'calendar'],
         ['rota' => 'medico.consultas',       'label' => 'Consultas realizadas', 'icone' => 'chart'],
-        ['rota' => 'medico.disponibilidade', 'label' => 'Meus horários',   'icone' => 'clock'],
-        ['rota' => 'medico.bloqueios',       'label' => 'Ausências',       'icone' => 'pause'],
-        ['rota' => 'medico.locais',          'label' => 'Onde eu atendo',  'icone' => 'pin'],
-        ['rota' => 'medico.precos',          'label' => 'Preços',          'icone' => 'money'],
         ['rota' => 'medico.avaliacoes',      'label' => 'Avaliações',      'icone' => 'star'],
         ['rota' => 'medico.perfil',          'label' => 'Meu perfil',      'icone' => 'user'],
     ],
@@ -49,6 +47,8 @@ return [
         ['rota' => 'clinica.agenda',     'label' => 'Agenda da clínica','icone' => 'calendar'],
         ['rota' => 'clinica.consultas',  'label' => 'Consultas realizadas', 'icone' => 'chart'],
         ['rota' => 'clinica.medicos',    'label' => 'Meus médicos',     'icone' => 'doctors'],
+        ['rota' => 'clinica.horarios',   'label' => 'Horários dos médicos', 'icone' => 'clock'],
+        ['rota' => 'clinica.ausencias',  'label' => 'Ausências',        'icone' => 'pause'],
         ['rota' => 'clinica.unidades',   'label' => 'Unidades',         'icone' => 'building'],
         ['rota' => 'clinica.precos',     'label' => 'Tabela de preços', 'icone' => 'money'],
         ['rota' => 'clinica.convenios',  'label' => 'Convênios',        'icone' => 'shield'],
@@ -63,7 +63,10 @@ return [
      */
     'admin' => [
         ['rota' => 'admin.dashboard',      'label' => 'Início',              'icone' => 'home'],
-        ['rota' => 'admin.usuarios',       'label' => 'Usuários',            'icone' => 'users'],
+        // 01/10/2026: as contas em três telas (pedido do Sidney).
+        ['rota' => 'admin.usuarios',            'label' => 'Contas ativas',     'icone' => 'users'],
+        ['rota' => 'admin.usuarios.bloqueadas', 'label' => 'Contas bloqueadas', 'icone' => 'user-x'],
+        ['rota' => 'admin.usuarios.excluidas',  'label' => 'Contas excluídas',  'icone' => 'power'],
         ['rota' => 'admin.verificacoes',   'label' => 'Verificar CRM',       'icone' => 'badge'],
         ['rota' => 'admin.carteirinhas',   'label' => 'Conferir carteirinhas','icone' => 'card'],
         ['rota' => 'admin.clinicas',       'label' => 'Clínicas e hospitais','icone' => 'building'],

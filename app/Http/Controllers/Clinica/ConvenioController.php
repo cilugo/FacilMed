@@ -21,7 +21,8 @@ use Illuminate\Http\Request;
  *     atendimento aceita convênio (vinculos.aceita_convenio). Isso é da
  *     clínica, porque o vínculo pertence ao dono do local (VinculoPolicy);
  *   - NÃO edita a lista de convênios do médico: ela vale para todos os
- *     lugares onde ele atende, então quem mexe é o próprio médico.
+ *     lugares onde ele atende. Desde 01/10/2026 ela é editada pela clínica
+ *     na tela do perfil do médico (Clinica\MedicoController::salvarConvenios).
  */
 class ConvenioController extends Controller
 {

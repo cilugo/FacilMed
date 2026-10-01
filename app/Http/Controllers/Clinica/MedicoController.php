@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Medico;
 use App\Http\Requests\Clinica\CadastrarMedicoPelaClinicaRequest;
+use App\Models\Convenio;
 use App\Models\Especialidade;
+use App\Models\Preco;
 use App\Models\Vinculo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MedicoController extends Controller
 {
@@ -106,7 +109,7 @@ class MedicoController extends Controller
             : "{$nome} cadastrado(a). CRM conferido na base simulada do FacilMed.";
 
         return redirect()->route('clinica.precos')
-            ->with('sucesso', $msg . ' Agora defina os preços; os horários o próprio médico cadastra.')
+            ->with('sucesso', $msg . ' Agora defina os preços e, em "Horários dos médicos", quando ele atende.')
             // Mostrada UMA vez para a clínica repassar. No primeiro login o
             // médico é obrigado a trocar (middleware ExigirTrocaDeSenha).
             ->with('senha_temporaria', $senhaTemp);
@@ -133,5 +136,116 @@ class MedicoController extends Controller
         });
 
         return back()->with('sucesso', "{$vinculo->medico->user->name} não atende mais em {$vinculo->local->nome}.");
+    }
+
+    /**
+     * 01/10/2026 (plano novo do grupo): o perfil do médico passou para a
+     * clínica - bio, anos de atuação, telefone, especialidades e convênios.
+     * Nome e CRM ficam como estão: foram conferidos JUNTOS na base simulada
+     * no cadastro, e trocar um deles sem conferir de novo abriria brecha.
+     *
+     * MedicoPolicy::gerenciar: só médico com vínculo ativo nesta clínica.
+     */
+    public function editar(Medico $medico)
+    {
+        $this->authorize('gerenciar', $medico);
+
+        return view('clinica.medicos-editar', [
+            'medico'         => $medico->load('user', 'especialidades', 'convenios', 'vinculos.local'),
+            'especialidades' => Especialidade::where('ativo', true)->orderBy('nome')->get(),
+            'convenios'      => Convenio::where('ativo', true)->orderBy('nome')->get(),
+        ]);
+    }
+
+    public function atualizar(Request $request, Medico $medico)
+    {
+        $this->authorize('gerenciar', $medico);
+
+        $request->merge(['telefone_profissional' => preg_replace('/\D/', '', (string) $request->input('telefone_profissional'))]);
+
+        $dados = $request->validate([
+            'bio'                   => ['nullable', 'string', 'max:1000'],
+            'anos_atuacao'          => ['nullable', 'integer', 'min:0', 'max:70'],
+            'telefone_profissional' => ['nullable', 'digits_between:10,11'],
+        ], [
+            'telefone_profissional.digits_between' => 'O telefone deve ter DDD + número, com 10 ou 11 dígitos.',
+        ]);
+
+        $medico->update([
+            'bio'                   => $dados['bio'] ?? null,
+            'anos_atuacao'          => $dados['anos_atuacao'] ?? 0,
+            'telefone_profissional' => ($dados['telefone_profissional'] ?? '') ?: null,
+        ]);
+
+        return back()->with('sucesso', "Dados de {$medico->user->name} salvos.");
+    }
+
+    /**
+     * especialidades[] + principal. Tirar uma especialidade desativa os
+     * preços dela (some do agendamento), mas é recusado se ainda houver
+     * consulta futura marcada nela. (Era Medico\PerfilController até 30/09.)
+     */
+    public function salvarEspecialidades(Request $request, Medico $medico)
+    {
+        $this->authorize('gerenciar', $medico);
+
+        $dados = $request->validate([
+            'especialidades'   => ['required', 'array', 'min:1'],
+            'especialidades.*' => ['integer', Rule::exists('especialidades', 'id')->where('ativo', true)],
+            'principal'        => ['nullable', 'integer', 'in:' . implode(',', array_map('intval', (array) $request->input('especialidades', [])))],
+        ], [
+            'especialidades.required' => 'Escolha pelo menos uma especialidade.',
+            'principal.in'            => 'A principal precisa ser uma das especialidades marcadas.',
+        ]);
+
+        $novas  = collect($dados['especialidades'])->map(fn ($id) => (int) $id)->unique()->values();
+        $saindo = $medico->especialidades()->pluck('especialidades.id')->diff($novas);
+
+        if ($saindo->isNotEmpty()) {
+            $presas = EstatisticasDeConsultas::aPartirDeAgora(
+                $medico->consultas()->getQuery()->where('status', 'agendada')->whereIn('especialidade_id', $saindo)
+            )->count();
+
+            if ($presas > 0) {
+                return back()->with('erro', "Não dá para tirar essa especialidade: há {$presas} " .
+                    ($presas === 1 ? 'consulta futura marcada' : 'consultas futuras marcadas') . ' nela.');
+            }
+        }
+
+        $principal = (int) ($dados['principal'] ?? $novas->first());
+
+        DB::transaction(function () use ($medico, $novas, $saindo, $principal) {
+            $medico->especialidades()->sync($novas->mapWithKeys(fn ($id) => [$id => ['principal' => $id === $principal]])->all());
+
+            if ($saindo->isNotEmpty()) {
+                Preco::whereIn('vinculo_id', $medico->vinculos()->pluck('id'))
+                    ->whereIn('especialidade_id', $saindo)->update(['ativo' => false]);
+            }
+        });
+
+        return back()->with('sucesso', 'Especialidades atualizadas.');
+    }
+
+    /**
+     * Convênios aceitos. O vínculo é com o MÉDICO, não com o endereço
+     * (decisão de 18/09/2026) - aceitando o convênio, ele aceita todos os
+     * planos dele, em todos os lugares onde atende.
+     */
+    public function salvarConvenios(Request $request, Medico $medico)
+    {
+        $this->authorize('gerenciar', $medico);
+
+        // 24/09: sem o exists, id inexistente estourava erro 500 de chave
+        // estrangeira, e dava para ligar convênio desativado editando o HTML.
+        $dados = $request->validate([
+            'convenios'   => ['array'],
+            'convenios.*' => ['integer', Rule::exists('convenios', 'id')->where('ativo', true)],
+        ], [
+            'convenios.*.exists' => 'Um dos convênios escolhidos não existe ou foi desativado.',
+        ]);
+
+        $medico->convenios()->sync($dados['convenios'] ?? []);
+
+        return back()->with('sucesso', 'Convênios atualizados.');
     }
 }

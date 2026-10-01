@@ -50,10 +50,10 @@ class EmailTest extends TestCase
         Mail::assertSent(AvisoDeConsulta::class, fn ($m) => $m->tipo === 'cancelamento' && $m->hasTo('helena@facilmed.test'));
     }
 
-    public function test_medico_cancela_avisa_o_paciente_com_o_motivo(): void
+    public function test_clinica_cancela_avisa_o_paciente_com_o_motivo(): void
     {
         $c = $this->agendar();
-        $this->comoMedico()->post("/medico/agenda/{$c->id}/cancelar", ['motivo' => 'Cirurgia de emergência']);
+        $this->comoClinica()->post("/clinica/agenda/{$c->id}/cancelar", ['motivo' => 'Cirurgia de emergência']);
 
         Mail::assertSent(AvisoDeConsulta::class, fn ($m) => $m->tipo === 'cancelamento' && $m->hasTo('ana@facilmed.test')
             && str_contains($m->render(), 'Cirurgia de emergência'));

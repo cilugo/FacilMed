@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Medico;
+namespace App\Http\Requests\Clinica;
 
 use App\Models\Disponibilidade;
 use App\Models\HorarioFuncionamento;
@@ -12,8 +12,11 @@ use Illuminate\Validation\Validator;
 /**
  * Bloco de atendimento recorrente (ex.: toda segunda, 08:00-12:00, consultas de 30 min).
  *
+ * 01/10/2026 (plano novo do grupo): quem cadastra é a CLÍNICA, para os médicos
+ * das unidades dela - o médico só vê a agenda. As regras do bloco não mudaram.
+ *
  * Regras (24/09):
- * - o vínculo é DESTE médico e está ativo;
+ * - o vínculo é de uma unidade DESTA clínica e está ativo;
  * - fim depois do início, e cabe pelo menos uma consulta;
  * - o bloco cabe no horário de funcionamento do local naquele dia;
  * - não se sobrepõe a outro bloco do médico no mesmo dia — nem no mesmo
@@ -27,7 +30,7 @@ class SalvarDisponibilidadeRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->ehMedico() ?? false;
+        return $this->user()?->ehClinica() ?? false;
     }
 
     protected function prepareForValidation(): void
@@ -41,8 +44,10 @@ class SalvarDisponibilidadeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vinculo_id' => ['required', 'integer', Rule::exists('vinculos', 'id')
-                ->where('medico_id', $this->user()->medico?->id)->where('ativo', true)],
+            // Vínculo ativo numa unidade DESTA clínica (whereIn com subconsulta:
+            // o exists() olha só a tabela vinculos, então o "dono" vem pelos locais).
+            'vinculo_id' => ['required', 'integer', Rule::exists('vinculos', 'id')->where('ativo', true)
+                ->whereIn('local_id', $this->user()->clinica?->locais()->pluck('id')->all() ?? [])],
             'dia_semana' => ['required', Rule::in(Disponibilidade::DIAS)],
             'hora_inicio' => ['required', 'date_format:H:i'],
             'hora_fim'    => ['required', 'date_format:H:i', 'after:hora_inicio'],
@@ -98,7 +103,7 @@ class SalvarDisponibilidadeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'vinculo_id.exists' => 'Escolha um dos lugares onde você atende.',
+            'vinculo_id.exists' => 'Escolha um médico de uma das suas unidades.',
             'hora_fim.after'    => 'O fim precisa ser depois do início.',
             'duracao_consulta_minutos.in' => 'Escolha uma duração da lista.',
         ];
@@ -106,6 +111,6 @@ class SalvarDisponibilidadeRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['dia_semana' => 'dia da semana', 'hora_inicio' => 'início', 'hora_fim' => 'fim', 'duracao_consulta_minutos' => 'duração'];
+        return ['vinculo_id' => 'médico e unidade', 'dia_semana' => 'dia da semana', 'hora_inicio' => 'início', 'hora_fim' => 'fim', 'duracao_consulta_minutos' => 'duração'];
     }
 }

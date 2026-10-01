@@ -36,6 +36,10 @@ else
     echo "FacilMed: banco já tem dados ($USUARIOS usuários), seeder não roda."
 fi
 
+# 6. (01/10/2026) Administrador com e-mail de verdade, se ADMIN_EMAIL e
+#    ADMIN_PASSWORD estiverem no Render. Já existe? Não mexe. Nunca derruba o boot.
+php artisan facilmed:garantir-admin || true
+
 chown -R www-data:www-data storage bootstrap/cache
 
 exec "$@"

@@ -22,11 +22,20 @@
 
     $itens = collect($usuario ? config('navegacao.' . $usuario->tipo, []) : [])
         ->filter(fn ($item) => \Illuminate\Support\Facades\Route::has($item['rota']))
-        ->map(fn ($item) => $item + [
+        ->values();
+
+    // Item ativo: o da rota atual ou de uma "filha" dela (clinica.medicos acende
+    // em clinica.medicos.editar). 01/10: se dois itens servem (admin.usuarios e
+    // admin.usuarios.bloqueadas), vale o mais específico - o nome mais comprido.
+    $ativa = $itens->map(fn ($item) => $item['rota'])
+        ->filter(fn ($rota) => request()->routeIs($rota) || request()->routeIs($rota . '.*'))
+        ->sortByDesc(fn ($rota) => strlen($rota))
+        ->first();
+
+    $itens = $itens->map(fn ($item) => $item + [
             'url'   => route($item['rota']),
-            'ativo' => request()->routeIs($item['rota'] . '*'),
+            'ativo' => $item['rota'] === $ativa,
         ])
-        ->values()
         ->all();
 
     // Médico pendente não aparece na busca. Ele precisa saber disso, em vez

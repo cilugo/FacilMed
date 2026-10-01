@@ -281,9 +281,11 @@ class ExclusaoDeContaTest extends TestCase
             ->assertStatus(422);
         $this->assertSame('inativo', $user->fresh()->status);
 
-        $this->comoAdmin()->get('/admin/usuarios?status=inativo')->assertOk()
+        $this->comoAdmin()->get('/admin/usuarios/excluidas')->assertOk()
             ->assertSee('Excluída pelo próprio paciente')
             ->assertDontSee('ana@facilmed.test');
+        // E não aparece entre as ativas.
+        $this->comoAdmin()->get('/admin/usuarios')->assertOk()->assertDontSee('excluida-' . $user->id);
     }
 
     public function test_dashboard_do_admin_nao_conta_conta_excluida(): void

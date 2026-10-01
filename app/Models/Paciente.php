@@ -79,6 +79,12 @@ class Paciente extends Model
             });
     }
 
+    /** 01/10/2026: foto do perfil (no banco - ver Foto). Sem a imagem pesada. */
+    public function foto(): HasOne
+    {
+        return $this->hasOne(Foto::class)->select(Foto::COLUNAS_LEVES);
+    }
+
     public function getIdadeAttribute(): ?int
     {
         return $this->data_nascimento?->age;
@@ -103,7 +109,7 @@ class Paciente extends Model
      *     de cancelar (o médico recebe o aviso de sempre, depois do commit);
      *     o texto livre que o paciente escreveu nas consultas (observações e
      *     motivo de cancelamento) é apagado;
-     *  2. acessibilidade (dado de saúde) → apagada de vez; carteirinhas → saem,
+     *  2. acessibilidade (dado de saúde) e foto do perfil → apagadas de vez; carteirinhas → saem,
      *     menos as já usadas em consulta, que ficam sem número nem titular;
      *  3. avaliações → a NOTA fica (a média do médico não muda), o COMENTÁRIO sai
      *     (é texto livre escrito pela pessoa);
@@ -142,6 +148,9 @@ class Paciente extends Model
             $futuras->each->cancelar($user->id, 'O paciente excluiu a conta no FacilMed');
 
             $paciente->acessibilidade()->delete();
+
+            // 01/10/2026: a foto do perfil é dado pessoal - sai de vez.
+            Foto::where('paciente_id', $paciente->id)->delete();
 
             // Carteirinhas: a que já foi usada em consulta FICA, sem o número e o
             // nome do titular — é ela que diz por qual convênio a consulta foi, e

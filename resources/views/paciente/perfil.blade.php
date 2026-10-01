@@ -1,8 +1,9 @@
 {{--
     Paciente → Meu perfil. Dados: Paciente\PerfilController@edit.
-    Quatro formulários: dados pessoais, senha (rota password.update do Breeze),
-    acessibilidade (dado sensível, só com consentimento — LGPD art. 11) e
-    excluir a conta (30/09, LGPD).
+    Foto (01/10, no banco, só o paciente vê), dados pessoais, senha (rota
+    password.update do Breeze), "Minhas avaliações" (01/10: editar/excluir as
+    que ele fez), acessibilidade (dado sensível, só com consentimento — LGPD
+    art. 11) e excluir a conta (30/09, LGPD).
 --}}
 @extends('layouts.painel')
 
@@ -10,6 +11,10 @@
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/crud.css') }}">
+@endpush
+
+@push('scripts')
+    <script src="{{ asset('javas/foto.js') }}" defer></script>
 @endpush
 
 @php
@@ -31,6 +36,38 @@
     @if (session('status') === 'password-updated')
         <div class="fm-flash fm-flash--ok" role="status">Senha trocada.</div>
     @endif
+
+    {{-- ===================== FOTO (01/10) ===================== --}}
+    <section class="fm-painel fm-foto-perfil" style="margin-top: 18px;">
+        <div class="fm-foto-perfil__imagem">
+            @if ($paciente->foto)
+                <img src="{{ $paciente->foto->url() }}" alt="Sua foto" data-previa-foto>
+            @else
+                <span class="fm-avatar fm-avatar--grande" aria-hidden="true">{{ \App\Support\Formatador::iniciais($user->name) }}</span>
+                <img src="" alt="Prévia da foto" data-previa-foto hidden>
+            @endif
+        </div>
+        <div class="fm-foto-perfil__acoes">
+            <h2 class="fm-painel__titulo"><x-icone nome="user" /> Sua foto</h2>
+            <p class="fm-campo__ajuda">Só você vê a sua foto. JPG, PNG ou WebP; a imagem é reduzida antes de enviar.</p>
+            <form method="POST" action="{{ route('paciente.perfil.foto') }}" enctype="multipart/form-data" class="fm-form fm-form--linha">
+                @csrf
+                <div class="fm-campo {{ $errors->has('foto') ? 'fm-campo--erro' : '' }}">
+                    <label for="foto" class="sr-only">Escolher foto</label>
+                    <input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" data-reduzir-foto required>
+                    @error('foto') <span class="fm-campo__erro">{{ $message }}</span> @enderror
+                </div>
+                <button type="submit" class="fm-botao fm-botao--pequeno">{{ $paciente->foto ? 'Trocar foto' : 'Enviar foto' }}</button>
+            </form>
+            @if ($paciente->foto)
+                <form method="POST" action="{{ route('paciente.perfil.foto.remover') }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="fm-botao fm-botao--suave fm-botao--pequeno">Remover foto</button>
+                </form>
+            @endif
+        </div>
+    </section>
 
     {{-- ===================== DADOS PESSOAIS ===================== --}}
     <section class="fm-painel" style="margin-top: 18px;">
@@ -122,6 +159,76 @@
                 <button type="submit" class="fm-botao">Trocar senha</button>
             </div>
         </form>
+    </section>
+
+    {{-- ===================== MINHAS AVALIAÇÕES (01/10) ===================== --}}
+    {{-- O comentário aparece aqui porque quem lê é o próprio autor. Para
+         qualquer outro paciente e nas páginas públicas, só as estrelas. --}}
+    <section class="fm-painel" style="margin-top: 18px;" id="avaliacoes">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="star" /> Minhas avaliações</h2>
+            <span class="fm-painel__periodo">{{ $avaliacoes->count() }} {{ $avaliacoes->count() === 1 ? 'avaliação' : 'avaliações' }}</span>
+        </header>
+
+        @if ($avaliacoes->isEmpty())
+            <p class="fm-vazio">Você ainda não avaliou nenhuma consulta. Depois de uma consulta realizada, avalie em "Minhas consultas".</p>
+        @else
+            <ul class="fm-lista">
+                @foreach ($avaliacoes as $a)
+                    @php $esteForm = old('_form') === 'avaliacao-' . $a->id; @endphp
+                    <li class="fm-avaliacao-minha" x-data="{ editando: {{ $esteForm ? 'true' : 'false' }}, nota: {{ (int) ($esteForm ? old('estrelas', $a->estrelas) : $a->estrelas) }} }">
+                        <div class="fm-avaliacao-minha__linha">
+                            <div class="fm-avaliacao-minha__info">
+                                <strong>{{ $a->medico->user->name }}</strong>
+                                <span>
+                                    {{ $a->consulta?->especialidade?->nome }}{{ $a->consulta?->vinculo?->local ? ' · ' . $a->consulta->vinculo->local->nome : '' }}
+                                    · {{ \App\Support\Formatador::dataCurta($a->created_at) }}
+                                </span>
+                            </div>
+                            <span class="fm-estrelas" aria-label="{{ $a->estrelas }} de 5 estrelas">
+                                @for ($i = 1; $i <= 5; $i++)<span class="{{ $i <= $a->estrelas ? 'is-cheia' : '' }}">★</span>@endfor
+                            </span>
+                        </div>
+                        @if ($a->comentario)
+                            <p class="fm-avaliacao-minha__texto" x-show="!editando">“{{ $a->comentario }}”</p>
+                        @endif
+                        <div class="fm-consulta__acoes" x-show="!editando">
+                            <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="editando = true"><x-icone nome="pencil" /> Editar</button>
+                            <form method="POST" action="{{ route('paciente.avaliacoes.excluir', $a) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="fm-botao fm-botao--perigo fm-botao--pequeno">Excluir</button>
+                            </form>
+                        </div>
+
+                        <form method="POST" action="{{ route('paciente.avaliacoes.atualizar', $a) }}" class="fm-form fm-form--caixa" x-show="editando" x-cloak>
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="_form" value="avaliacao-{{ $a->id }}">
+                            <input type="hidden" name="estrelas" :value="nota">
+                            <div class="fm-campo">
+                                <label>Sua nota *</label>
+                                <div class="fm-estrelas fm-estrelas--escolher">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        <button type="button" aria-label="{{ $i }} {{ $i === 1 ? 'estrela' : 'estrelas' }}" :class="nota >= {{ $i }} && 'is-cheia'" @click="nota = {{ $i }}">★</button>
+                                    @endfor
+                                </div>
+                                @if ($esteForm) @error('estrelas') <span class="fm-campo__erro">{{ $message }}</span> @enderror @endif
+                            </div>
+                            <div class="fm-campo">
+                                <label for="comentario-{{ $a->id }}">Comentário (opcional)</label>
+                                <textarea id="comentario-{{ $a->id }}" name="comentario" maxlength="1000">{{ $esteForm ? old('comentario') : $a->comentario }}</textarea>
+                                <span class="fm-campo__ajuda">Só o médico, a clínica e a administração leem o comentário.</span>
+                            </div>
+                            <div class="fm-form__acoes">
+                                <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="editando = false">Voltar</button>
+                                <button type="submit" class="fm-botao fm-botao--pequeno">Salvar</button>
+                            </div>
+                        </form>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </section>
 
     {{-- ===================== ACESSIBILIDADE ===================== --}}

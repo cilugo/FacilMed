@@ -5,23 +5,27 @@ namespace Tests\Feature;
 use App\Models\Bloqueio;
 use App\Models\Consulta;
 use App\Models\Disponibilidade;
-use App\Models\Local;
 use App\Models\Medico;
 use App\Models\Preco;
+use App\Models\User;
 use App\Models\Vinculo;
 use App\Services\CalculadoraDeHorarios;
 use Carbon\Carbon;
 use Tests\TestCase;
 
 /**
- * Back-end do médico. Helena (medico 1): vínculo 1 = Vida Plena (seg-sex 08-12),
- * vínculo 2 = Santa Clara (seg-sex 14-18). Vida Plena abre sábado 08-12.
+ * 01/10/2026 (plano novo do grupo): o MÉDICO SÓ VÊ a agenda; horários,
+ * ausências, perfil e realizada/falta/cancelar são da CLÍNICA.
+ *
+ * Helena (medico 1): vínculo 1 = Vida Plena (seg-sex 08-12), vínculo 2 =
+ * Santa Clara (seg-sex 14-18, outra clínica). Vida Plena abre sábado 08-12.
+ * comoClinica() = Vida Plena. Rafael atende na SpSaúde (vínculo 3).
  */
 class MedicoTest extends TestCase
 {
     private function bloco(array $extra = [])
     {
-        return $this->comoMedico()->post('/medico/horarios', array_merge([
+        return $this->comoClinica()->post('/clinica/horarios', array_merge([
             'vinculo_id' => 1, 'dia_semana' => 'sabado', 'hora_inicio' => '08:00', 'hora_fim' => '11:00',
             'duracao_consulta_minutos' => 30,
         ], $extra));
@@ -35,8 +39,36 @@ class MedicoTest extends TestCase
         return [$d, $dias[$d][0]];
     }
 
-    // ---------------- Horários
-    public function test_adiciona_bloco_no_sabado_e_ele_gera_horarios(): void
+    private function agendarComHelena(): Consulta
+    {
+        [$data, $hora] = $this->proximaVaga();
+        $this->comoPaciente()->post('/agendar', ['vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data, 'horario' => $hora, 'forma_pagamento' => 'particular']);
+
+        return Consulta::latest('id')->first();
+    }
+
+    // ---------------- O médico só vê
+    public function test_medico_nao_tem_mais_as_telas_de_editar(): void
+    {
+        foreach (['/medico/horarios', '/medico/ausencias', '/medico/locais', '/medico/precos'] as $url) {
+            $this->comoMedico()->get($url)->assertNotFound();
+        }
+        $this->comoMedico()->post('/medico/horarios', [])->assertNotFound();
+        $this->comoMedico()->put('/medico/perfil/especialidades', ['especialidades' => [2]])->assertNotFound();
+
+        $c = $this->agendarComHelena();
+        $this->comoMedico()->post("/medico/agenda/{$c->id}/cancelar", ['motivo' => 'x'])->assertNotFound();
+        $this->assertSame('agendada', $c->fresh()->status);
+    }
+
+    public function test_medico_nao_entra_nas_telas_da_clinica(): void
+    {
+        $this->comoMedico()->get('/clinica/horarios')->assertForbidden();
+        $this->comoMedico()->post('/clinica/horarios', ['vinculo_id' => 1])->assertForbidden();
+    }
+
+    // ---------------- Horários (pela clínica)
+    public function test_clinica_adiciona_bloco_no_sabado_e_ele_gera_horarios(): void
     {
         $this->bloco()->assertSessionHasNoErrors();
 
@@ -44,46 +76,47 @@ class MedicoTest extends TestCase
         $this->assertContains('08:00', app(CalculadoraDeHorarios::class)->paraData(Vinculo::find(1), $sabado->addWeek()));
     }
 
-    public function test_bloco_fora_do_funcionamento_do_local_e_recusado(): void
+    public function test_bloco_fora_do_funcionamento_da_unidade_e_recusado(): void
     {
         $this->bloco(['hora_fim' => '13:00'])->assertSessionHasErrors('hora_inicio');   // sábado fecha 12h
         $this->bloco(['dia_semana' => 'domingo'])->assertSessionHasErrors('dia_semana'); // não abre
     }
 
-    public function test_bloco_que_choca_com_outro_lugar_e_recusado(): void
+    public function test_bloco_que_choca_com_outro_lugar_do_medico_e_recusado(): void
     {
-        // Segunda 13-15 na Vida Plena choca com Santa Clara 14-18.
+        // Segunda 13-15 na Vida Plena choca com o bloco dela no Santa Clara (14-18),
+        // mesmo sendo outra clínica: ninguém está em dois lugares ao mesmo tempo.
         $this->bloco(['dia_semana' => 'segunda', 'hora_inicio' => '13:00', 'hora_fim' => '15:00'])
             ->assertSessionHasErrors('hora_inicio');
     }
 
-    public function test_nao_mexe_em_vinculo_nem_bloco_de_outro_medico(): void
+    public function test_clinica_nao_mexe_em_horario_de_outra_clinica(): void
     {
-        $this->bloco(['vinculo_id' => 3])->assertSessionHasErrors('vinculo_id');
-        $doRafael = Disponibilidade::where('vinculo_id', 3)->first();
-        $this->comoMedico()->delete("/medico/horarios/{$doRafael->id}")->assertForbidden();
+        // Vínculo 2 = Helena no Santa Clara (outra clínica).
+        $this->bloco(['vinculo_id' => 2])->assertSessionHasErrors('vinculo_id');
+        $doSantaClara = Disponibilidade::where('vinculo_id', 2)->first();
+        $this->comoClinica()->delete("/clinica/horarios/{$doSantaClara->id}")->assertForbidden();
+        $this->assertNotNull($doSantaClara->fresh());
     }
 
     public function test_remover_bloco_avisa_consultas_que_continuam(): void
     {
-        [$data, $hora] = $this->proximaVaga();
-        $this->comoPaciente()->post('/agendar', ['vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data, 'horario' => $hora, 'forma_pagamento' => 'particular']);
-        $dia = Disponibilidade::DIAS[Carbon::parse($data)->dayOfWeek];
+        $consulta = $this->agendarComHelena();
+        $dia = Disponibilidade::DIAS[$consulta->data_consulta->dayOfWeek];
         $bloco = Disponibilidade::where('vinculo_id', 1)->where('dia_semana', $dia)->first();
 
-        $this->comoMedico()->delete("/medico/horarios/{$bloco->id}")->assertSessionHas('sucesso');
+        $this->comoClinica()->delete("/clinica/horarios/{$bloco->id}")->assertSessionHas('sucesso');
         $this->assertStringContainsString('continua', session('sucesso'));
-        $this->assertSame('agendada', Consulta::latest('id')->first()->status);
+        $this->assertSame('agendada', $consulta->fresh()->status);
     }
 
-    // ---------------- Ausências
+    // ---------------- Ausências (pela clínica)
     public function test_ausencia_tira_horarios_e_nao_cancela_consulta_sem_pedir(): void
     {
-        [$data, $hora] = $this->proximaVaga();
-        $this->comoPaciente()->post('/agendar', ['vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data, 'horario' => $hora, 'forma_pagamento' => 'particular']);
-        $consulta = Consulta::latest('id')->first();
+        $consulta = $this->agendarComHelena();
+        $data = $consulta->data_consulta->toDateString();
 
-        $this->comoMedico()->post('/medico/ausencias', ['inicio' => "$data 00:00", 'fim' => "$data 23:59", 'motivo' => 'Congresso'])
+        $this->comoClinica()->post('/clinica/ausencias', ['vinculo_id' => 1, 'inicio' => "$data 00:00", 'fim' => "$data 23:59", 'motivo' => 'Congresso'])
             ->assertSessionHas('erro');
 
         $this->assertSame('agendada', $consulta->fresh()->status);
@@ -92,81 +125,65 @@ class MedicoTest extends TestCase
 
     public function test_ausencia_com_cancelar_consultas_cancela_com_motivo(): void
     {
-        [$data, $hora] = $this->proximaVaga();
-        $this->comoPaciente()->post('/agendar', ['vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data, 'horario' => $hora, 'forma_pagamento' => 'particular']);
-        $consulta = Consulta::latest('id')->first();
+        $consulta = $this->agendarComHelena();
+        $data = $consulta->data_consulta->toDateString();
 
-        $this->comoMedico()->post('/medico/ausencias', ['inicio' => "$data 00:00", 'fim' => "$data 23:59", 'motivo' => 'Congresso', 'cancelar_consultas' => 1])
+        $this->comoClinica()->post('/clinica/ausencias', ['vinculo_id' => 1, 'inicio' => "$data 00:00", 'fim' => "$data 23:59", 'motivo' => 'Congresso', 'cancelar_consultas' => 1])
             ->assertSessionHasNoErrors();
 
         $this->assertSame('cancelada', $consulta->fresh()->status);
         $this->assertSame('Ausência do médico: Congresso', $consulta->fresh()->motivo_cancelamento);
     }
 
-    public function test_ausencia_invalida_e_remover_de_outro_medico(): void
+    public function test_ausencia_so_vale_na_unidade_da_clinica(): void
     {
-        $this->comoMedico()->post('/medico/ausencias', ['inicio' => now()->addDays(3)->toDateString(), 'fim' => now()->addDay()->toDateString()])
+        // A ausência na Vida Plena não mexe nos horários dela no Santa Clara.
+        [$data] = $this->proximaVaga(2);
+        $this->comoClinica()->post('/clinica/ausencias', ['vinculo_id' => 1, 'inicio' => "$data 00:00", 'fim' => "$data 23:59"])
+            ->assertSessionHasNoErrors();
+        $this->assertNotSame([], app(CalculadoraDeHorarios::class)->paraData(Vinculo::find(2), Carbon::parse($data)));
+
+        // E a clínica não registra ausência no vínculo de outra clínica.
+        $this->comoClinica()->post('/clinica/ausencias', ['vinculo_id' => 2, 'inicio' => "$data 00:00", 'fim' => "$data 23:59"])
+            ->assertSessionHasErrors('vinculo_id');
+    }
+
+    public function test_ausencia_invalida_e_remover_de_outra_clinica(): void
+    {
+        $this->comoClinica()->post('/clinica/ausencias', ['vinculo_id' => 1, 'inicio' => now()->addDays(3)->toDateString(), 'fim' => now()->addDay()->toDateString()])
             ->assertSessionHasErrors('fim');
 
-        $b = Bloqueio::create(['medico_id' => 2, 'inicio' => now()->addDay(), 'fim' => now()->addDays(2)]);
-        $this->comoMedico()->delete("/medico/ausencias/{$b->id}")->assertForbidden();
+        $b = Bloqueio::create(['medico_id' => 1, 'vinculo_id' => 2, 'inicio' => now()->addDay(), 'fim' => now()->addDays(2)]);
+        $this->comoClinica()->delete("/clinica/ausencias/{$b->id}")->assertForbidden();
+        $this->comoUsuario('contato@santaclara.test')->delete("/clinica/ausencias/{$b->id}")->assertSessionHas('sucesso');
+        $this->assertNull($b->fresh());
     }
 
-    // ---------------- Consultório próprio e preços
-    public function test_cria_consultorio_proprio_com_vinculo_e_horarios(): void
+    // ---------------- Perfil do médico (pela clínica)
+    public function test_clinica_edita_dados_do_medico_dela(): void
     {
-        $this->comoMedico()->post('/medico/locais', [
-            'nome' => 'Consultório Dra. Helena', 'cep' => '12245-000', 'endereco' => 'Av. Teste', 'numero' => '100',
-            'bairro' => 'Centro', 'cidade' => 'São José dos Campos', 'uf' => 'sp',
-        ])->assertRedirect(route('medico.precos'));
-
-        $local = Local::where('nome', 'Consultório Dra. Helena')->firstOrFail();
-        $this->assertSame(1, $local->medico_id);
-        $this->assertNull($local->clinica_id);
-        $this->assertSame(5, $local->horarios()->count());
-        $this->assertTrue(Vinculo::where('local_id', $local->id)->where('medico_id', 1)->exists());
-    }
-
-    public function test_preco_so_no_consultorio_proprio(): void
-    {
-        $this->test_cria_consultorio_proprio_com_vinculo_e_horarios();
-        $vinculo = Vinculo::whereHas('local', fn ($q) => $q->where('nome', 'Consultório Dra. Helena'))->first();
-
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => $vinculo->id, 'especialidade_id' => 2, 'valor' => '350,00'])
+        $this->comoClinica()->put('/clinica/medicos/1', ['bio' => 'Nova bio', 'anos_atuacao' => 12, 'telefone_profissional' => '(12) 3333-4444'])
             ->assertSessionHasNoErrors();
-        $this->assertSame('350.00', Preco::where('vinculo_id', $vinculo->id)->where('especialidade_id', 2)->value('valor'));
 
-        // Na Vida Plena quem define é a clínica.
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => 1, 'especialidade_id' => 2, 'valor' => '1'])->assertForbidden();
-        // Especialidade que ela não tem.
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => $vinculo->id, 'especialidade_id' => 3, 'valor' => '100'])
-            ->assertSessionHasErrors('especialidade_id');
+        $helena = Medico::find(1);
+        $this->assertSame('Nova bio', $helena->bio);
+        $this->assertSame(12, (int) $helena->anos_atuacao);
+        $this->assertSame('1233334444', $helena->telefone_profissional);
     }
 
-    // ---------------- Perfil
-    public function test_perfil_troca_crm_so_se_a_base_aceitar(): void
+    public function test_clinica_sem_vinculo_nao_edita_o_medico(): void
     {
-        $base = ['name' => 'Dra. Helena Navarro', 'uf' => 'SP', 'bio' => 'Nova bio'];
-
-        $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '998877'])->assertSessionHasErrors('crm'); // cassado
-        $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '223344'])->assertSessionHasErrors();      // do Rafael
-        $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '112233'])->assertSessionHasNoErrors();    // o dela
-        $this->assertSame('Nova bio', Medico::find(1)->bio);
-
-        // 28/09 (3ª revisão): o 445566 está livre, mas é do "Paulo Yamada" — o nome não bate.
-        $this->comoMedico()->put('/medico/perfil', $base + ['crm' => '445566'])->assertSessionHasErrors('crm');
-        $this->assertSame('112233', Medico::find(1)->crm);
-
-        // Um segundo CRM dela (outro estado) é aceito. Só o teste escreve na base, nunca uma tela.
-        \App\Models\BaseCrm::create(['crm' => '778899', 'uf' => 'RJ', 'nome' => 'Helena Navarro', 'situacao' => 'ativo']);
-        $this->comoMedico()->put('/medico/perfil', ['crm' => '778899', 'uf' => 'RJ'] + $base)->assertSessionHasNoErrors();
-        $this->assertSame('778899', Medico::find(1)->crm);
+        // A SpSaúde não tem a Helena.
+        $this->comoUsuario('contato@clinicaspsaude.test')->get('/clinica/medicos/1/editar')->assertForbidden();
+        $this->comoUsuario('contato@clinicaspsaude.test')->put('/clinica/medicos/1', ['bio' => 'invasão'])->assertForbidden();
+        $this->comoUsuario('contato@clinicaspsaude.test')->put('/clinica/medicos/1/convenios', ['convenios' => []])->assertForbidden();
+        $this->assertNotSame('invasão', Medico::find(1)->bio);
     }
 
     public function test_especialidades_com_principal_e_precos_desativados(): void
     {
-        // Helena: Clínica Geral (1) + Cardiologia (2). Fica só com Cardiologia.
-        $this->comoMedico()->put('/medico/perfil/especialidades', ['especialidades' => [2, 5], 'principal' => 5])->assertSessionHasNoErrors();
+        // Helena: Clínica Geral (1) + Cardiologia (2). Fica com Cardiologia + 5.
+        $this->comoClinica()->put('/clinica/medicos/1/especialidades', ['especialidades' => [2, 5], 'principal' => 5])->assertSessionHasNoErrors();
 
         $esp = Medico::find(1)->especialidades()->get();
         $this->assertEqualsCanonicalizing([2, 5], $esp->pluck('id')->all());
@@ -176,24 +193,43 @@ class MedicoTest extends TestCase
 
     public function test_nao_tira_especialidade_com_consulta_futura(): void
     {
-        [$data, $hora] = $this->proximaVaga();
-        $this->comoPaciente()->post('/agendar', ['vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data, 'horario' => $hora, 'forma_pagamento' => 'particular']);
+        $this->agendarComHelena();
 
-        $this->comoMedico()->put('/medico/perfil/especialidades', ['especialidades' => [2]])->assertSessionHas('erro');
+        $this->comoClinica()->put('/clinica/medicos/1/especialidades', ['especialidades' => [2]])->assertSessionHas('erro');
         $this->assertTrue(Medico::find(1)->especialidades()->where('especialidades.id', 1)->exists());
     }
 
-    // ---------------- Agenda
-    public function test_medico_cancela_consulta_futura_com_motivo(): void
+    public function test_convenios_do_medico_pela_clinica(): void
     {
-        [$data, $hora] = $this->proximaVaga();
-        $this->comoPaciente()->post('/agendar', ['vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data, 'horario' => $hora, 'forma_pagamento' => 'particular']);
-        $c = Consulta::latest('id')->first();
+        $this->comoClinica()->put('/clinica/medicos/1/convenios', ['convenios' => [999]])->assertSessionHasErrors('convenios.0');
+        $this->comoClinica()->put('/clinica/medicos/1/convenios', ['convenios' => []])->assertSessionHasNoErrors();
+        $this->assertSame(0, Medico::find(1)->convenios()->count());
+    }
 
-        $this->comoMedico()->post("/medico/agenda/{$c->id}/cancelar")->assertSessionHasErrors('motivo');
-        $this->comoMedico('rafael@facilmed.test')->post("/medico/agenda/{$c->id}/cancelar", ['motivo' => 'x'])->assertForbidden();
-        $this->comoMedico()->post("/medico/agenda/{$c->id}/cancelar", ['motivo' => 'Imprevisto'])->assertSessionHasNoErrors();
+    // ---------------- Agenda (pela clínica)
+    public function test_clinica_cancela_consulta_futura_com_motivo(): void
+    {
+        $c = $this->agendarComHelena();
+
+        $this->comoClinica()->post("/clinica/agenda/{$c->id}/cancelar")->assertSessionHasErrors('motivo');
+        $this->comoUsuario('contato@clinicaspsaude.test')->post("/clinica/agenda/{$c->id}/cancelar", ['motivo' => 'x'])->assertForbidden();
+        $this->comoClinica()->post("/clinica/agenda/{$c->id}/cancelar", ['motivo' => 'Imprevisto do médico'])->assertSessionHasNoErrors();
 
         $this->assertSame('cancelada', $c->fresh()->status);
+        $this->assertSame('Imprevisto do médico', $c->fresh()->motivo_cancelamento);
+    }
+
+    public function test_clinica_marca_realizada_e_falta_so_depois_do_horario(): void
+    {
+        $futura = $this->agendarComHelena();
+        $this->comoClinica()->post("/clinica/agenda/{$futura->id}/realizada")->assertForbidden();
+
+        // Uma consulta de ontem, ainda "agendada", numa unidade da Vida Plena.
+        $passada = Consulta::where('vinculo_id', 1)->where('status', 'realizada')->firstOrFail();
+        $passada->forceFill(['status' => 'agendada'])->save();
+
+        $this->comoUsuario('contato@clinicaspsaude.test')->post("/clinica/agenda/{$passada->id}/falta")->assertForbidden();
+        $this->comoClinica()->post("/clinica/agenda/{$passada->id}/falta")->assertSessionHas('sucesso');
+        $this->assertSame('nao_compareceu', $passada->fresh()->status);
     }
 }

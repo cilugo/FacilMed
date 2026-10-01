@@ -38,8 +38,8 @@
         <x-icone nome="lightbulb" />
         <span>
             No FacilMed, <strong>quem aceita o convênio é o médico</strong>. Aqui você escolhe, em cada unidade,
-            se o médico atende por convênio. Para mudar <em>quais</em> convênios ele aceita, o próprio médico
-            ajusta no perfil dele. Os convênios da plataforma são fictícios, criados para demonstração.
+            se o médico atende por convênio. Para mudar <em>quais</em> convênios ele aceita, use "Perfil" em
+            Meus médicos. Os convênios da plataforma são fictícios, criados para demonstração.
         </span>
     </p>
 

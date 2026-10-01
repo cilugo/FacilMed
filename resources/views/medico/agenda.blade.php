@@ -6,9 +6,8 @@
     aqui pode aparecer porque é o médico daquela consulta (AGENTS.md §3), e só
     enquanto ela está agendada (ConsultaPolicy::verAcessibilidade).
 
-    Botões (a regra está no Model/Policy; a view só esconde o que não cabe):
-      - antes do horário: Cancelar (motivo obrigatório, vai no e-mail);
-      - depois do horário: Realizada / Não compareceu.
+    01/10/2026 (plano novo do grupo): SÓ LEITURA. Quem marca realizada/falta e
+    cancela é a clínica, na agenda dela.
 --}}
 @extends('layouts.painel')
 
@@ -81,7 +80,7 @@
             <ul class="fm-lista">
                 @foreach ($consultas as $c)
                     @php $st = Formatador::status($c->status); @endphp
-                    <li class="fm-consulta" x-data="{ cancelando: {{ $errors->has('motivo') && old('consulta_id') == $c->id ? 'true' : 'false' }} }">
+                    <li class="fm-consulta">
                         <div class="fm-consulta__linha">
                             <span class="fm-agenda__hora">{{ Formatador::hora($c->horario) }}</span>
 
@@ -118,52 +117,6 @@
                             <p class="fm-consulta__extra fm-campo__ajuda">Motivo do cancelamento: {{ $c->motivo_cancelamento }}</p>
                         @endif
 
-                        {{-- Ações --}}
-                        @if ($c->status === 'agendada')
-                            <div class="fm-consulta__acoes">
-                                @if (! $c->inicio->isFuture())
-                                    <form method="POST" action="{{ route('medico.agenda.realizada', $c) }}">
-                                        @csrf
-                                        <button type="submit" class="fm-botao fm-botao--ok fm-botao--pequeno">
-                                            <x-icone nome="check-circle" /> Realizada
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ route('medico.agenda.falta', $c) }}">
-                                        @csrf
-                                        <button type="submit" class="fm-botao fm-botao--suave fm-botao--pequeno">
-                                            <x-icone nome="user-x" /> Não compareceu
-                                        </button>
-                                    </form>
-                                @endif
-
-                                @if ($c->podeSerCancelada())
-                                    <button type="button" class="fm-botao fm-botao--perigo fm-botao--pequeno" @click="cancelando = !cancelando" :aria-expanded="cancelando">
-                                        <x-icone nome="x-circle" /> Cancelar
-                                    </button>
-                                @endif
-                            </div>
-
-                            @if ($c->podeSerCancelada())
-                                <form method="POST" action="{{ route('medico.agenda.cancelar', $c) }}" class="fm-form fm-form--caixa" x-show="cancelando" x-cloak>
-                                    @csrf
-                                    <input type="hidden" name="consulta_id" value="{{ $c->id }}">
-                                    <div class="fm-campo {{ $errors->has('motivo') && old('consulta_id') == $c->id ? 'fm-campo--erro' : '' }}">
-                                        <label for="motivo-{{ $c->id }}">Motivo do cancelamento *</label>
-                                        <input id="motivo-{{ $c->id }}" name="motivo" maxlength="255" required
-                                               value="{{ old('consulta_id') == $c->id ? old('motivo') : '' }}"
-                                               placeholder="Ex.: imprevisto pessoal, precisarei remarcar">
-                                        <span class="fm-campo__ajuda">O paciente recebe esse motivo por e-mail.</span>
-                                        @if (old('consulta_id') == $c->id)
-                                            @error('motivo') <span class="fm-campo__erro">{{ $message }}</span> @enderror
-                                        @endif
-                                    </div>
-                                    <div class="fm-form__acoes">
-                                        <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="cancelando = false">Voltar</button>
-                                        <button type="submit" class="fm-botao fm-botao--perigo fm-botao--pequeno">Confirmar cancelamento</button>
-                                    </div>
-                                </form>
-                            @endif
-                        @endif
                     </li>
                 @endforeach
             </ul>
@@ -171,5 +124,11 @@
             <p class="fm-vazio">Nenhuma consulta neste dia{{ $vinculoAtual ? ' neste lugar' : '' }}.</p>
         @endif
     </section>
+
+    <p class="fm-dica">
+        <x-icone nome="lightbulb" />
+        <span>Seus horários, ausências e as consultas (realizada, falta ou cancelada) são cuidados pela clínica.
+            Precisa mudar algo? Fale com a recepção.</span>
+    </p>
 
 @endsection

@@ -1,7 +1,13 @@
 {{--
-    Admin → Usuários. Dados: Admin\UsuarioController@index (README §7.3).
+    Admin → Contas. Dados: Admin\UsuarioController (README §7.3).
 
-    Filtros (tipo, situação, busca por nome/e-mail) e, por conta:
+    01/10/2026 (pedido do Sidney): três telas no mesmo visual, $tela diz qual —
+      - ativas:     só quem pode entrar, com o botão Bloquear;
+      - bloqueadas: com o motivo (interno) e o botão Desbloquear;
+      - excluidas:  excluídas pelo próprio paciente (LGPD), só consulta.
+    As abas no topo levam de uma para a outra.
+
+    Filtros (tipo, busca por nome/e-mail) e, por conta:
       - Bloquear: motivo obrigatório (mín. 10). Com consulta futura, precisa
         marcar "cancelar as consultas" — senão o back-end devolve session('erro')
         e nada é bloqueado. Não aparece para administrador.
@@ -15,7 +21,7 @@
 --}}
 @extends('layouts.painel')
 
-@section('titulo', 'Usuários')
+@section('titulo', $telas[$tela]['titulo'])
 
 @push('head')
     <link rel="stylesheet" href="{{ asset('css/crud.css') }}">
@@ -26,19 +32,28 @@
     $tipos = ['paciente' => 'Paciente', 'medico' => 'Médico', 'clinica' => 'Clínica', 'admin' => 'Administrador'];
     $situacoes = ['ativo' => ['Ativa', 'verde'], 'bloqueado' => ['Bloqueada', 'rosa'], 'inativo' => ['Inativa', 'cinza']];
     $formVolta = old('_form');
-    $filtrando = request()->filled('tipo') || request()->filled('status') || request()->filled('busca');
+    $filtrando = request()->filled('tipo') || request()->filled('busca');
+    $daTela = $telas[$tela];
 @endphp
 
 @section('conteudo')
 
     <div class="fm-pagina-topo">
         <div>
-            <h1 class="fm-titulo">Usuários</h1>
-            <p class="fm-subtitulo">Todas as contas da plataforma. Bloqueie quem não deve mais acessar.</p>
+            <h1 class="fm-titulo">{{ $daTela['titulo'] }}</h1>
+            <p class="fm-subtitulo">{{ $daTela['subtitulo'] }}</p>
         </div>
     </div>
 
-    <form method="GET" action="{{ route('admin.usuarios') }}" class="fm-filtros">
+    <nav class="fm-abas" aria-label="Situação das contas">
+        @foreach ($telas as $chave => $t)
+            <a href="{{ route($t['rota']) }}" class="fm-aba {{ $chave === $tela ? 'is-ativa' : '' }}" @if ($chave === $tela) aria-current="page" @endif>
+                {{ $t['titulo'] }} ({{ $contagem[$chave] }})
+            </a>
+        @endforeach
+    </nav>
+
+    <form method="GET" action="{{ route($daTela['rota']) }}" class="fm-filtros">
         <div class="fm-campo" style="flex-grow: 2;">
             <label for="busca">Buscar</label>
             <input id="busca" name="busca" value="{{ request('busca') }}" placeholder="Nome ou e-mail" maxlength="100">
@@ -52,24 +67,15 @@
                 @endforeach
             </select>
         </div>
-        <div class="fm-campo">
-            <label for="status">Situação</label>
-            <select id="status" name="status">
-                <option value="">Todas</option>
-                @foreach ($situacoes as $valor => [$rotulo])
-                    <option value="{{ $valor }}" @selected(request('status') === $valor)>{{ $rotulo }}</option>
-                @endforeach
-            </select>
-        </div>
         <button type="submit" class="fm-botao fm-botao--pequeno">Filtrar</button>
         @if ($filtrando)
-            <a href="{{ route('admin.usuarios') }}" class="fm-botao fm-botao--suave fm-botao--pequeno">Limpar</a>
+            <a href="{{ route($daTela['rota']) }}" class="fm-botao fm-botao--suave fm-botao--pequeno">Limpar</a>
         @endif
     </form>
 
     <section class="fm-painel">
         <header class="fm-painel__topo">
-            <h2 class="fm-painel__titulo"><x-icone nome="users" /> Contas</h2>
+            <h2 class="fm-painel__titulo"><x-icone :nome="$daTela['icone']" /> {{ $daTela['titulo'] }}</h2>
             <span class="fm-painel__periodo">{{ $usuarios->total() }} {{ $usuarios->total() === 1 ? 'conta' : 'contas' }}</span>
         </header>
 
@@ -146,7 +152,7 @@
 
             {{ $usuarios->links('painel.parciais.paginacao') }}
         @else
-            <p class="fm-vazio">Nenhuma conta{{ $filtrando ? ' com esses filtros' : '' }}.</p>
+            <p class="fm-vazio">Nenhuma conta {{ ['ativas' => 'ativa', 'bloqueadas' => 'bloqueada', 'excluidas' => 'excluída'][$tela] }}{{ $filtrando ? ' com esses filtros' : '' }}.</p>
         @endif
     </section>
 

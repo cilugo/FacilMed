@@ -120,13 +120,14 @@ class AgendamentoTest extends TestCase
         $this->assertSame('agendada', $daAna->fresh()->status);
     }
 
-    public function test_medico_so_marca_realizada_depois_do_horario(): void
+    public function test_so_marca_realizada_depois_do_horario(): void
     {
         $this->agendar()->assertSessionHasNoErrors();
         $futura = Consulta::latest('id')->first();
 
-        $this->comoMedico()->post("/medico/agenda/{$futura->id}/realizada")->assertForbidden();
-        $this->comoMedico('rafael@facilmed.test')->post("/medico/agenda/{$futura->id}/realizada")->assertForbidden();
+        // 01/10/2026: quem marca é a clínica da unidade (Vida Plena), e só depois do horário.
+        $this->comoClinica()->post("/clinica/agenda/{$futura->id}/realizada")->assertForbidden();
+        $this->comoUsuario('contato@clinicaspsaude.test')->post("/clinica/agenda/{$futura->id}/realizada")->assertForbidden();
     }
 
     // -----------------------------------------------------------------

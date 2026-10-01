@@ -2,18 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\BaseCrm;
 use App\Models\Bloqueio;
 use App\Models\Consulta;
 use App\Models\Especialidade;
-use App\Models\Local;
 use App\Models\Medico;
 use App\Models\PacienteAcessibilidade;
 use App\Models\PacientePlano;
 use App\Models\Plano;
 use App\Models\Preco;
 use App\Models\User;
-use App\Models\Vinculo;
 use App\Services\BaseSimulada;
 use App\Support\Dinheiro;
 use Tests\TestCase;
@@ -184,35 +181,32 @@ class RevisaoRodada3Test extends TestCase
         $this->assertTrue(Medico::where('crm', '445566')->exists());
     }
 
-    public function test_medico_nao_troca_o_nome_para_outro_que_nao_o_do_crm(): void
+    public function test_nome_e_crm_do_medico_nao_mudam_depois_do_cadastro(): void
     {
-        $base = ['crm' => '112233', 'uf' => 'SP'];
+        // 01/10/2026: o médico não edita mais o perfil (a rota PUT saiu) e a
+        // clínica edita só bio, anos, telefone, especialidades e convênios.
+        // Nome e CRM foram conferidos juntos na base simulada e ficam como estão.
+        $helena = Medico::where('crm', '112233')->firstOrFail();
 
-        $this->comoMedico()->put('/medico/perfil', $base + ['name' => 'Paulo Yamada'])->assertSessionHasErrors('crm');
-        $this->assertSame('Dra. Helena Navarro', User::where('email', 'helena@facilmed.test')->value('name'));
+        $this->comoMedico()->put('/medico/perfil', ['name' => 'Paulo Yamada', 'crm' => '445566', 'uf' => 'SP'])
+            ->assertStatus(405);
 
-        // Tirar o "Dra." não é trocar de nome.
-        $this->comoMedico()->put('/medico/perfil', $base + ['name' => 'Helena Navarro'])->assertSessionHasNoErrors();
-        $this->assertSame('Helena Navarro', User::where('email', 'helena@facilmed.test')->value('name'));
+        $this->comoClinica()->put('/clinica/medicos/' . $helena->id, [
+            'name' => 'Paulo Yamada', 'crm' => '445566', 'uf' => 'SP', 'bio' => 'Cardiologista.',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('Dra. Helena Navarro', $helena->user->fresh()->name);
+        $this->assertSame('112233', $helena->fresh()->crm);
+        $this->assertSame('Cardiologista.', $helena->fresh()->bio);
     }
 
-    public function test_medico_rejeitado_continua_rejeitado_ao_trocar_o_crm(): void
+    public function test_medico_rejeitado_fica_fora_da_busca_ate_o_admin_desfazer(): void
     {
         $helena = User::where('email', 'helena@facilmed.test')->first();
         $this->comoAdmin()->post('/admin/verificacoes/' . $helena->medico->id . '/rejeitar', ['motivo' => 'CRM com pendência na revisão'])
             ->assertSessionHas('sucesso');
 
-        // Um segundo CRM dela, válido na base (outro estado). Só o teste escreve na base.
-        BaseCrm::create(['crm' => '778899', 'uf' => 'RJ', 'nome' => 'Helena Navarro', 'situacao' => 'ativo']);
-
-        // Antes: trocar o CRM voltava para "verificado" e ela reaparecia na busca.
-        $this->actingAs($helena->fresh())->put('/medico/perfil', [
-            'name' => 'Dra. Helena Navarro', 'crm' => '778899', 'uf' => 'RJ',
-        ])->assertSessionHasNoErrors()
-          ->assertSessionHas('sucesso', 'Dados salvos. O novo CRM foi conferido na base simulada, mas o seu cadastro continua recusado pela administração do FacilMed.');
-
         $medico = $helena->medico->fresh();
-        $this->assertSame('778899', $medico->crm);
         $this->assertSame('rejeitado', $medico->status_verificacao);
 
         // Ela vê o porquê no menu.
@@ -322,16 +316,18 @@ class RevisaoRodada3Test extends TestCase
         $c = Consulta::where('medico_id', $helena->id)->where('status', 'agendada')
             ->whereDate('data_consulta', '>', now()->addDay())->orderBy('data_consulta')->firstOrFail();
         $dia = $c->data_consulta->toDateString();
-        $dados = ['inicio' => $dia . 'T00:00', 'fim' => $dia . 'T23:59', 'motivo' => 'Congresso'];
+        // 01/10/2026: quem registra a ausência é a clínica da unidade da consulta.
+        $clinica = User::find($c->vinculo->local->clinica->user_id);
+        $dados = ['vinculo_id' => $c->vinculo_id, 'inicio' => $dia . 'T00:00', 'fim' => $dia . 'T23:59', 'motivo' => 'Congresso'];
 
         // 1ª vez, sem "cancelar consultas": a ausência entra, a consulta fica, e o
         // formulário volta preenchido para marcar a caixa e mandar de novo.
-        $this->comoMedico()->post('/medico/ausencias', $dados)
+        $this->actingAs($clinica)->post('/clinica/ausencias', $dados)
             ->assertSessionHas('erro')->assertSessionHasInput('inicio', $dados['inicio']);
         $this->assertSame('agendada', $c->fresh()->status);
 
         // 2ª vez, como a mensagem manda: marcando a caixa.
-        $this->comoMedico()->post('/medico/ausencias', $dados + ['cancelar_consultas' => '1'])->assertSessionHas('sucesso');
+        $this->actingAs($clinica)->post('/clinica/ausencias', $dados + ['cancelar_consultas' => '1'])->assertSessionHas('sucesso');
 
         // Antes: ficavam DUAS ausências iguais na lista.
         $this->assertSame(1, Bloqueio::where('medico_id', $helena->id)->whereDate('inicio', $dia)->count());
@@ -366,22 +362,5 @@ class RevisaoRodada3Test extends TestCase
         $this->comoAdmin()->post('/admin/carteirinhas/' . $certa->id . '/aprovar')->assertSessionHas('sucesso');
         $this->assertSame('ativa', $certa->fresh()->status);
         $this->assertTrue($certa->fresh()->validade->lessThan(now()->addYears(5)->subDay()));
-    }
-
-    public function test_preco_do_consultorio_nao_multiplica_valor_com_ponto(): void
-    {
-        $this->comoMedico()->post('/medico/locais', [
-            'nome' => 'Consultório Dra. Helena', 'cep' => '12245-000', 'endereco' => 'Av. Teste', 'numero' => '100',
-            'bairro' => 'Centro', 'cidade' => 'São José dos Campos', 'uf' => 'SP',
-        ])->assertSessionHasNoErrors();
-        $vinculo = Vinculo::where('local_id', Local::where('nome', 'Consultório Dra. Helena')->value('id'))->firstOrFail();
-
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => $vinculo->id, 'especialidade_id' => 2, 'valor' => '150.00'])
-            ->assertSessionHasNoErrors();
-        $this->assertSame('150.00', Preco::where('vinculo_id', $vinculo->id)->where('especialidade_id', 2)->value('valor'));
-
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => $vinculo->id, 'especialidade_id' => 2, 'valor' => '1,250.00'])
-            ->assertSessionHasErrors('valor');
-        $this->assertSame('150.00', Preco::where('vinculo_id', $vinculo->id)->where('especialidade_id', 2)->value('valor'));
     }
 }

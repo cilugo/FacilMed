@@ -1,7 +1,8 @@
 {{--
     Clínica → Meus médicos. Dados: Clinica\MedicoController@index (README §7.2).
 
-    Um cartão por vínculo (médico × unidade). Desvincular com consulta futura
+    Um cartão por vínculo (médico × unidade). 01/10/2026: com links para o
+    perfil e os horários do médico, que agora são cuidados pela clínica. Desvincular com consulta futura
     exige marcar "cancelar as consultas" — nenhuma consulta é cancelada em
     silêncio (o back-end devolve session('erro') se não marcar).
 --}}
@@ -77,6 +78,8 @@
                     </ul>
 
                     <div class="fm-acoes-topo" style="margin-top: 12px;">
+                        <a href="{{ route('clinica.medicos.editar', $v->medico) }}" class="fm-pilula fm-pilula--pequena">Perfil <x-icone nome="chevron-right" /></a>
+                        <a href="{{ route('clinica.horarios', ['vinculo' => $v->id]) }}#vinculo-{{ $v->id }}" class="fm-pilula fm-pilula--pequena">Horários <x-icone nome="chevron-right" /></a>
                         <a href="{{ route('clinica.precos') }}#vinculo-{{ $v->id }}" class="fm-pilula fm-pilula--pequena">Preços <x-icone nome="chevron-right" /></a>
                         <a href="{{ route('clinica.agenda', ['medico' => $v->medico->id]) }}" class="fm-pilula fm-pilula--pequena">Agenda <x-icone nome="chevron-right" /></a>
                         <button type="button" class="fm-botao fm-botao--perigo fm-botao--pequeno" @click="saindo = !saindo" :aria-expanded="saindo">Desvincular</button>

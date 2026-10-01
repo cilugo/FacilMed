@@ -66,4 +66,32 @@ class AvaliacaoController extends Controller
         return redirect()->route('paciente.consultas')
             ->with('sucesso', 'Obrigado pela avaliação!');
     }
+
+    /**
+     * 01/10/2026: editar a avaliação pelo histórico do perfil. Só o autor
+     * (AvaliacaoPolicy). A média do médico se recalcula sozinha (evento saved).
+     */
+    public function atualizar(Request $request, Avaliacao $avaliacao)
+    {
+        $this->authorize('update', $avaliacao);
+
+        $dados = $request->validate([
+            'estrelas'   => ['required', 'integer', 'between:1,5'],
+            'comentario' => ['nullable', 'string', 'max:1000'],
+        ], ['estrelas.*' => 'Escolha de 1 a 5 estrelas.']);
+
+        $avaliacao->update($dados);
+
+        return redirect()->to(route('paciente.perfil') . '#avaliacoes')->with('sucesso', 'Avaliação atualizada.');
+    }
+
+    /** Excluir a avaliação. A média do médico se recalcula (evento deleted). */
+    public function excluir(Avaliacao $avaliacao)
+    {
+        $this->authorize('delete', $avaliacao);
+
+        $avaliacao->delete();
+
+        return redirect()->to(route('paciente.perfil') . '#avaliacoes')->with('sucesso', 'Avaliação excluída.');
+    }
 }

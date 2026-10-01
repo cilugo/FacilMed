@@ -18,6 +18,8 @@
     $usuario = auth()->user();
     $nomeUsuario = $usuario->name ?? '';
     $iniciais = \App\Support\Formatador::iniciais($nomeUsuario);
+    // 01/10/2026: a foto do paciente (se ele enviou) no lugar das iniciais.
+    $fotoUsuario = $usuario?->ehPaciente() ? $usuario->paciente?->foto?->url() : null;
     $papel = \App\Support\Formatador::PAPEIS[$usuario->tipo ?? ''] ?? '';
     $rotaPerfil = ($usuario && \Illuminate\Support\Facades\Route::has($usuario->tipo . '.perfil'))
         ? route($usuario->tipo . '.perfil')
@@ -74,7 +76,11 @@
                     :aria-expanded="perfil"
                     aria-haspopup="menu"
                 >
-                    <span class="fm-avatar">{{ $iniciais }}</span>
+                    @if ($fotoUsuario)
+                        <img class="fm-avatar fm-avatar--foto" src="{{ $fotoUsuario }}" alt="">
+                    @else
+                        <span class="fm-avatar">{{ $iniciais }}</span>
+                    @endif
                     <span class="fm-usuario__texto">
                         <strong>{{ $nomeUsuario }}</strong>
                         <small>{{ $papel }}</small>

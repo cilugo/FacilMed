@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Medico;
 
 use App\Http\Controllers\Controller;
-use App\Models\Consulta;
 use Illuminate\Http\Request;
 
 class AgendaController extends Controller
@@ -13,6 +12,9 @@ class AgendaController extends Controller
      * acessibilidade do paciente: aqui PODE, porque é o médico daquela
      * consulta (AGENTS.md §3) — mas a tela só mostra nas consultas ainda
      * AGENDADAS (ConsultaPolicy::verAcessibilidade).
+     *
+     * 01/10/2026 (plano novo do grupo): só leitura. Realizada, falta e
+     * cancelar passaram para a agenda da clínica (Clinica\AgendaController).
      */
     public function index(Request $request)
     {
@@ -38,43 +40,5 @@ class AgendaController extends Controller
                 'faltas'     => $consultas->where('status', 'nao_compareceu')->count(),
             ],
         ]);
-    }
-
-    public function marcarRealizada(Consulta $consulta)
-    {
-        $this->authorize('atender', $consulta);
-
-        $consulta->update(['status' => 'realizada']);
-
-        return back()->with('sucesso', 'Consulta marcada como realizada.');
-    }
-
-    /**
-     * Sem este status, quem faltou continua podendo avaliar o medico
-     * e as metricas do painel ficam erradas.
-     */
-    public function marcarFalta(Consulta $consulta)
-    {
-        $this->authorize('atender', $consulta);
-
-        $consulta->update(['status' => 'nao_compareceu']);
-
-        return back()->with('sucesso', 'Falta registrada: o paciente não compareceu.');
-    }
-
-    /**
-     * Médico cancela (consulta ainda não aconteceu). Motivo obrigatório: vai
-     * no aviso ao paciente, que pode já estar a caminho.
-     */
-    public function cancelar(Request $request, Consulta $consulta)
-    {
-        $this->authorize('cancelar', $consulta);
-        abort_unless($consulta->podeSerCancelada(), 422, 'Essa consulta não pode mais ser cancelada.');
-
-        $request->validate(['motivo' => ['required', 'string', 'max:255']], ['motivo.required' => 'Informe o motivo: ele vai no aviso ao paciente.']);
-
-        $consulta->cancelar(auth()->id(), $request->input('motivo'));
-
-        return back()->with('sucesso', 'Consulta cancelada. O paciente é avisado por e-mail.');
     }
 }

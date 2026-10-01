@@ -64,6 +64,12 @@ class Local extends Model
         return $this->hasMany(Vinculo::class);
     }
 
+    /** 01/10/2026: galeria do local (no banco - ver Foto), na ordem. Sem a imagem pesada. */
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(Foto::class)->select(Foto::COLUNAS_LEVES)->orderBy('ordem')->orderBy('id');
+    }
+
     public function ehConsultorioProprio(): bool
     {
         return $this->clinica_id === null;

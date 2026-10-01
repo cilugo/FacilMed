@@ -14,7 +14,10 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    // 01/10/2026: MAIL_MAILER=brevo só vale com a chave (BREVO_API_KEY). Sem
+    // ela, volta para 'log' (o e-mail cai em storage/logs/laravel.log), para o
+    // site nunca quebrar por falta de configuração.
+    'default' => env('MAIL_MAILER') === 'brevo' && ! env('BREVO_API_KEY') ? 'log' : env('MAIL_MAILER', 'log'),
 
     /*
     |--------------------------------------------------------------------------
@@ -65,6 +68,12 @@ return [
             'transport' => 'resend',
         ],
 
+        // 01/10/2026: Brevo pela API (HTTPS). Ver App\Mail\BrevoTransport e README §2.7.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
@@ -111,7 +120,7 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'nao-responda@facilmed.test'),
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
