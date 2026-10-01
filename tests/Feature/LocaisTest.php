@@ -183,7 +183,8 @@ class LocaisTest extends TestCase
 
     public function test_home_e_busca_levam_para_os_locais(): void
     {
-        $this->get('/')->assertOk()->assertSee('Usar minha localização');
+        // 30/09: a busca da home (especialidade + cidade ou CEP) vai para /locais.
+        $this->get('/')->assertOk()->assertSee('action="' . route('busca.locais') . '"', false);
         $this->get('/buscar')->assertOk()->assertSee(route('busca.locais'), false);
     }
 }

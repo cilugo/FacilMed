@@ -15,38 +15,43 @@
     <section class="hero">
         <div class="container hero-content">
             <div class="hero-text">
-                <h1>Agende sua consulta<br>de forma rápida e fácil!</h1>
-                <p>Encontre médicos, hospitais e clínicas perto de você.<br>Pesquise por especialidade, confira os horários disponíveis e encontre a melhor opção para cuidar da sua saúde.</p>
+                {{-- 30/09: a proposta do site mudou - não tem mais agendamento; o
+                     foco é achar hospitais e clínicas perto. --}}
+                <h1>Encontre hospitais e clínicas<br>perto de você!</h1>
+                <p>Escolha a especialidade e veja os lugares mais próximos de você. Confira a nota de outros pacientes e se o local atende pelo seu convênio ou particular.</p>
 
-                <form method="GET" action="{{ route('busca.index') }}" class="busca-caixa" role="search">
+                {{-- 30/09: só dois campos. Sem cadastro: especialidade e cidade.
+                     Logado: especialidade e CEP (BuscaController@locais descobre a
+                     cidade do CEP em config/localizacao.php). Os dois levam para
+                     "Locais perto de você", do mais perto para o mais longe. --}}
+                <form method="GET" action="{{ route('busca.locais') }}" class="busca-caixa" role="search">
                     <div class="busca-campo">
                         <label for="h-especialidade">Especialidade</label>
                         <select id="h-especialidade" name="especialidade">
-                            <option value="">Todas</option>
+                            <option value="">Escolha a especialidade</option>
                             @foreach ($especialidades as $esp)
                                 <option value="{{ $esp->slug }}">{{ $esp->nome }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="busca-campo">
-                        <label for="h-cidade">Cidade</label>
-                        <select id="h-cidade" name="cidade">
-                            <option value="">Todas</option>
-                            @foreach ($cidades as $c)
-                                <option value="{{ $c->cidade }}">{{ $c->cidade }} - {{ $c->uf }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @auth
+                        <div class="busca-campo">
+                            <label for="h-cep">Seu CEP</label>
+                            <input id="h-cep" name="cep" type="text" inputmode="numeric" autocomplete="postal-code"
+                                   placeholder="00000-000" maxlength="9" required>
+                        </div>
+                    @else
+                        <div class="busca-campo">
+                            <label for="h-cidade">Cidade</label>
+                            <select id="h-cidade" name="cidade">
+                                <option value="">Escolha a sua cidade</option>
+                                @foreach ($cidades as $c)
+                                    <option value="{{ $c->cidade }}">{{ $c->cidade }} - {{ $c->uf }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endauth
                     <button type="submit" class="btn btn-primary btn-grande"><x-icone nome="search" /> Buscar</button>
-
-                    {{-- 29/09: leva para "Locais perto de você" com a posição do navegador
-                         (public/javas/localizacao.js). O navegador pede a permissão. --}}
-                    <div class="busca-localizacao">
-                        <button type="button" class="busca-localizacao__botao" data-localizacao="{{ route('busca.locais') }}">
-                            <x-icone nome="localizar" /> Usar minha localização
-                        </button>
-                        <span data-localizacao-status class="localizacao-aviso">e ver clínicas e hospitais perto de você</span>
-                    </div>
                 </form>
 
                 <div class="hero-numeros">
@@ -63,10 +68,10 @@
                         ['si1.jpeg', 'Atendimento humanizado'],
                         ['si2.jpeg', 'Equipe especializada'],
                         ['si3.jpeg', 'Atendimento de confiança'],
-                        ['si4.jpeg', 'Agende em poucos cliques'],
+                        ['si4.jpeg', 'Tudo em poucos cliques'],
                         ['si5.jpeg', 'Encontre a especialidade certa'],
                         ['si6.jpeg', 'Use seu convênio ou particular'],
-                        ['si7.jpeg', 'Veja os horários disponíveis'],
+                        ['si7.jpeg', 'Veja a nota de outros pacientes'],
                         ['si8.jpeg', 'Clínicas perto de você'],
                         ['si9.jpeg', 'Isso é FacilMed'],
                     ];
@@ -89,24 +94,24 @@
         <div class="container">
             <div class="section-header center">
                 <h2>Como funciona?</h2>
-                <p>Agendar sua consulta pelo FacilMed é simples.</p>
+                <p>Achar onde se consultar perto de você leva só três passos.</p>
             </div>
 
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <h3>Encontre um médico</h3>
-                    <p>Pesquise por especialidade, cidade ou convênio.</p>
+                    <h3>Diga o que você precisa</h3>
+                    <p>Escolha a especialidade e a cidade onde você mora. Se já tem cadastro, é só colocar o seu CEP.</p>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
-                    <h3>Escolha o horário</h3>
-                    <p>Veja só os horários que estão livres de verdade na agenda do médico.</p>
+                    <h3>Veja quem está perto</h3>
+                    <p>Mostramos médicos, clínicas e hospitais do mais perto para o mais longe, com a nota dada por outros pacientes.</p>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <h3>Agende sua consulta</h3>
-                    <p>Confirme, pague particular ou use a carteirinha do seu convênio.</p>
+                    <h3>Escolha o melhor para você</h3>
+                    <p>Compare a distância e a nota de cada lugar e veja se ele aceita o seu convênio ou atende particular.</p>
                 </div>
             </div>
         </div>
@@ -180,43 +185,43 @@
         </section>
     @endif
 
-    {{-- ========================= HOSPITAIS E CLÍNICAS ========================= --}}
-    {{-- Vitrine fixa (nomes fictícios, endereços reais), trazida do protótipo.
-         Fotos em public/imgs/sliderhospcli/. --}}
-    @php
-        $estabelecimentos = [
-            ['h1.jpg', 'Hospital Santa Clara', 'Av. Tiradentes, 280 - Centro, Taubaté - SP'],
-            ['h2.jpg', 'Clínica Vida Plena', 'Av. Cassiano Ricardo, 319 - Jardim Aquarius, São José dos Campos - SP'],
-            ['h3.jpg', 'Hospital Vale Sereno', 'Av. Lineu de Moura, 995 - Urbanova, São José dos Campos - SP'],
-            ['h4.jpg', 'Centro Médico Aurora', 'Rua Major Francisco de Paula Elias, 217 - Vila Adyana, São José dos Campos - SP'],
-        ];
-    @endphp
-    <section class="specialties" id="hospitais-clinicas">
-        <div class="container">
-            <div class="section-header">
-                <h2>Hospitais e Clínicas</h2>
-                <a href="{{ route('busca.index') }}" class="view-all">Ver todos</a>
-            </div>
-
-            <div class="specialties-wrapper">
-                <button class="arrow-button left" id="prevClinic" type="button" aria-label="Clínicas anteriores">‹</button>
-
-                <div class="clinicas-list" id="clinicsList">
-                    @foreach ($estabelecimentos as [$foto, $nome, $endereco])
-                        <div class="clinica-card">
-                            <img src="{{ asset('imgs/sliderhospcli/' . $foto) }}" alt="">
-                            <div class="clinica-info">
-                                <span class="nome-clinica">{{ $nome }}</span>
-                                <span class="local-clinica">{{ $endereco }}</span>
-                            </div>
-                        </div>
-                    @endforeach
+    {{-- ========================= CLÍNICAS E HOSPITAIS EM DESTAQUE ========================= --}}
+    {{-- 30/09: no lugar da vitrine fixa do protótipo. Vem do banco
+         (HomeController::locaisDestaque), no mesmo card dos médicos: foto da
+         fachada (locais.foto) e a nota. O id fica, por causa do menu do topo. --}}
+    @if ($locaisDestaque->isNotEmpty())
+        <section class="how-it-works" id="hospitais-clinicas">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Clínicas e hospitais bem avaliados</h2>
+                    <a href="{{ route('busca.locais') }}" class="view-all">Ver todos</a>
                 </div>
 
-                <button class="arrow-button right" id="nextClinic" type="button" aria-label="Próximas clínicas">›</button>
+                <div class="specialties-list">
+                    @foreach ($locaisDestaque as $item)
+                        <a href="{{ route('publico.local', $item->local) }}" class="specialty-card" style="min-width: 200px;">
+                            {{-- Sem foto (ou se o arquivo não carregar), fica o ícone de prédio --}}
+                            <div class="specialty-photo local-foto">
+                                <x-icone nome="building" />
+                                @if ($item->local->foto)
+                                    <img src="{{ asset($item->local->foto) }}" alt="" onerror="this.remove()">
+                                @endif
+                            </div>
+                            <div class="specialty-info">
+                                <span class="nome-medico">{{ $item->local->clinica?->nome_fantasia ?? $item->local->nome }}</span>
+                                <span class="nome-especialidade">{{ $item->local->tipo === 'hospital' ? 'Hospital' : 'Clínica' }} · {{ $item->local->cidade }}</span>
+                                @if ($item->nota)
+                                    <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $item->nota->media, 1, ',', '') }}</span>
+                                @else
+                                    <span class="nome-especialidade">Sem avaliações ainda</span>
+                                @endif
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    @endif
 
     {{-- ========================= SOBRE ========================= --}}
     <section id="sobre">
@@ -233,8 +238,9 @@
         <div class="container">
             <div>
                 <h2>É clínica ou hospital?</h2>
-                {{-- 29/09: o médico não se cadastra sozinho; a clínica cadastra os médicos dela. --}}
-                <p>Cadastre a sua clínica ou hospital, depois os seus médicos, e receba agendamentos pelo FacilMed.</p>
+                {{-- 29/09: o médico não se cadastra sozinho; a clínica cadastra os médicos dela.
+                     30/09: sem agendamento na proposta nova - o texto não promete mais isso. --}}
+                <p>Cadastre a sua clínica ou hospital e os seus médicos, e apareça para os pacientes da sua região.</p>
             </div>
             <div class="acoes">
                 <a href="{{ route('cadastro.clinica') }}" class="btn btn-azul btn-grande">Sou clínica ou hospital</a>
@@ -246,5 +252,4 @@
 
 @push('scripts')
     <script src="{{ asset('javas/home.js') }}"></script>
-    <script src="{{ asset('javas/localizacao.js') }}" defer></script>
 @endpush

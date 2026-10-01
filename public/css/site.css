@@ -132,6 +132,11 @@ body { background-color: var(--site-fundo); }
 .specialty-card { text-align: center; }
 .medico-nota { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--site-ambar); }
 .medico-nota .fm-icone { width: 14px; height: 14px; fill: currentColor; }
+/* 30/09: card de clínica/hospital na home. A foto é da fachada inteira:
+   sem o zoom no rosto que a foto do médico usa. Sem foto, o ícone de prédio. */
+.local-foto { background: #eaf4fc; color: var(--site-marinho); }
+.local-foto .fm-icone { width: 30px; height: 30px; }
+.local-foto img { transform: none; object-position: center; }
 
 .chamada {
     padding: 50px 0;

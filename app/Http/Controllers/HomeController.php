@@ -41,11 +41,38 @@ class HomeController extends Controller
                 ->limit(6)
                 ->get(),
 
+            'locaisDestaque' => $this->locaisDestaque(),
+
             'cidades' => Local::where('ativo', true)
                 ->select('cidade', 'uf')
                 ->distinct()
                 ->orderBy('cidade')
                 ->get(),
         ]);
+    }
+
+    /**
+     * 30/09: "Clínicas e hospitais bem avaliados" - o mesmo card dos médicos,
+     * com a foto da fachada (locais.foto) e a nota.
+     *
+     * Entra quem aparece em "Locais perto de você" (Local::agendaveis: ativo,
+     * dono no ar, com médico visível) e só clínica ou hospital - consultório de
+     * médico autônomo fica de fora. Nota = Local::notas (média das avaliações
+     * das consultas feitas ali). Ordem: maior nota, mais avaliações, nome.
+     */
+    private function locaisDestaque()
+    {
+        $locais = Local::agendaveis()->whereIn('tipo', ['clinica', 'hospital'])->get();
+        $notas = Local::notas($locais->pluck('id'));
+
+        return $locais
+            ->map(fn (Local $local) => (object) ['local' => $local, 'nota' => $notas->get($local->id)])
+            ->sortBy([
+                fn ($a, $b) => (float) ($b->nota->media ?? 0) <=> (float) ($a->nota->media ?? 0),
+                fn ($a, $b) => (int) ($b->nota->total ?? 0) <=> (int) ($a->nota->total ?? 0),
+                fn ($a, $b) => $a->local->nome <=> $b->local->nome,
+            ])
+            ->take(6)
+            ->values();
     }
 }
