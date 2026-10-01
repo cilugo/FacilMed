@@ -185,26 +185,4 @@
         </section>
     </div>
 
-    {{-- Atalhos: os mesmos itens do menu --}}
-    <section class="fm-painel">
-        <header class="fm-painel__topo">
-            <h2 class="fm-painel__titulo">
-                <x-icone nome="bolt" />
-                Acesso rápido
-            </h2>
-        </header>
-
-        <ul class="fm-atalhos fm-atalhos--linha">
-            @foreach ($atalhos as $atalho)
-                <li>
-                    <a href="{{ $atalho['url'] }}" class="fm-atalho">
-                        <span class="fm-atalho__icone"><x-icone :nome="$atalho['icone']" /></span>
-                        <span class="fm-atalho__rotulo">{{ $atalho['rotulo'] }}</span>
-                        <x-icone nome="chevron-right" class="fm-atalho__seta" />
-                    </a>
-                </li>
-            @endforeach
-        </ul>
-    </section>
-
 @endsection
