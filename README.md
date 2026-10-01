@@ -455,9 +455,14 @@ do grupo, depois de aprovar uma imagem de como ia ficar):
 - **Fotos novas** `public/imgs/sliderhospcli/h5.jpg` e `h6.jpg`, gratuitas do Unsplash, escolhidas sem
   nome de clínica real na fachada: h5 de Troy Spoelma (unsplash.com/photos/DSqKAWX0LDY), h6 de XS Xue
   (unsplash.com/photos/3VE_XaFFBHk).
+- **Layout do site:** o `<title>` padrão (o da home) e a descrição da página também não falam mais em
+  "agende sua consulta".
+- **Clínicas em destaque em grade** (`.lista-locais` no `site.css`): com 6 locais, a lista que rola de
+  lado cortava o último card; em grade ficam 6 numa linha no computador e 2 por linha no celular.
 - **Testes:** `HomeTest` novo (8) e 4 novos no `LocaisTest` (CEP); o `test_home_e_busca_levam_para_os_locais`
-  mudou (a home não tem mais o botão de localização). **Não rodaram nesta máquina** — a pasta do
-  repositório estava sem `vendor/` e sem `.env`. Rodar `php artisan test` antes do merge.
+  mudou (a home não tem mais o botão de localização). Conferido: **182 testes passando** (933
+  asserções). Os "warnings" que aparecem são só porque a máquina onde rodou não tinha `.env`
+  (`file_get_contents(.env)`); o `phpunit.xml` já traz tudo o que os testes precisam.
 - **Sobrou no código:** o slider de clínicas do `public/javas/home.js` (`clinicsList`) não tem mais o que
   mover na home; ficou porque ele já confere se os elementos existem.
 
