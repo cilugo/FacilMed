@@ -97,9 +97,41 @@ class LocaisTest extends TestCase
             ->assertDontSee('Santa Clara - Taubaté')->assertDontSee('Vida Plena - Centro');
     }
 
+    // --- CEP (30/09: busca da home para quem está logado) -------------
+
+    public function test_cep_vira_a_cidade_dele(): void
+    {
+        $this->assertSame('São José dos Campos', Localizacao::cidadePorCep('12230-000'));
+        $this->assertSame('Taubaté', Localizacao::cidadePorCep('12020270'));
+        $this->assertSame('Jacareí', Localizacao::cidadePorCep(' 12307-000 '));
+        $this->assertNull(Localizacao::cidadePorCep('99999-999'));
+        $this->assertNull(Localizacao::cidadePorCep('1230'));
+        $this->assertNull(Localizacao::cidadePorCep(null));
+    }
+
+    public function test_com_o_cep_ordena_a_partir_do_centro_da_cidade_dele(): void
+    {
+        $this->get('/locais?cep=12307-000')->assertOk()
+            ->assertSee('Pelo CEP 12307-000')
+            ->assertSeeInOrder(['São Lucas - Jacareí', 'Santa Clara - Taubaté']);
+    }
+
+    public function test_cidade_escolhida_vale_mais_que_o_cep(): void
+    {
+        $this->get('/locais?cep=12307-000&cidade=' . urlencode('Taubaté'))->assertOk()
+            ->assertDontSee('Pelo CEP')
+            ->assertSeeInOrder(['Santa Clara - Taubaté', 'São Lucas - Jacareí']);
+    }
+
+    public function test_cep_que_nao_esta_na_lista_avisa_e_nao_quebra(): void
+    {
+        $this->get('/locais?cep=99999-999')->assertOk()
+            ->assertSee('Não encontramos o CEP 99999-999');
+    }
+
     public function test_parametros_estranhos_na_url_nao_quebram_a_pagina(): void
     {
-        $this->get('/locais?lat[]=1&lng=abc&cidade[]=x&especialidade[]=y')->assertOk();
+        $this->get('/locais?lat[]=1&lng=abc&cidade[]=x&especialidade[]=y&cep[]=1')->assertOk();
         $this->get('/locais?lat=999&lng=999')->assertOk()->assertDontSee(' km de você');
     }
 

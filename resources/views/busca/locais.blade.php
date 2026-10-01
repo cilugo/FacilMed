@@ -67,6 +67,17 @@
     </section>
 
     <div class="container">
+        {{-- 30/09: veio da home com o CEP (quem está logado). --}}
+        @if ($cep && $cidadeDoCep === null)
+            <div class="site-aviso site-aviso--erro" role="status">
+                Não encontramos o CEP {{ $cep }} na nossa lista de cidades. Escolha a cidade acima.
+            </div>
+        @elseif ($cep && $filtros['cidade'] === $cidadeDoCep)
+            <div class="site-aviso site-aviso--info" role="status">
+                Pelo CEP {{ $cep }}: distância a partir do centro de {{ $cidadeDoCep }}.
+            </div>
+        @endif
+
         <div class="resultado-info">
             <span>
                 <strong>{{ $resultados->count() }}</strong>

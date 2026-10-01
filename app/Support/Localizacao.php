@@ -135,6 +135,31 @@ final class Localizacao
         return null;
     }
 
+    /**
+     * De qual cidade é o CEP (30/09/2026, busca da home para quem está logado).
+     * Aceita com ou sem traço ("12230-000" ou "12230000"); olha só os 5
+     * primeiros dígitos, nas faixas de config/localizacao.php ('ceps').
+     * CEP com menos de 8 dígitos ou fora das faixas: null.
+     */
+    public static function cidadePorCep(?string $cep): ?string
+    {
+        $digitos = preg_replace('/\D/', '', (string) $cep);
+
+        if (strlen($digitos) !== 8) {
+            return null;
+        }
+
+        $prefixo = (int) substr($digitos, 0, 5);
+
+        foreach (config('localizacao.ceps', []) as [$de, $ate, $cidade]) {
+            if ($prefixo >= $de && $prefixo <= $ate) {
+                return $cidade;
+            }
+        }
+
+        return null;
+    }
+
     private static function comparavel(string $texto): string
     {
         return Str::of($texto)->ascii()->lower()->squish()->toString();

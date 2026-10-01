@@ -65,4 +65,43 @@ return [
         ],
     ],
 
+    /*
+    |----------------------------------------------------------------------
+    | De qual cidade é o CEP (30/09/2026 — busca da home para quem está logado)
+    |----------------------------------------------------------------------
+    |
+    | Faixas APROXIMADAS dos Correios, pelos 5 primeiros dígitos do CEP:
+    | [de, até, cidade, uf]. A cidade precisa estar em 'cidades' acima - é o
+    | centro dela que vira o ponto de partida da distância.
+    |
+    | Mesmo motivo das coordenadas: o ViaCEP precisaria de internet na banca.
+    | CEP fora de todas as faixas: a tela avisa e pede para escolher a cidade
+    | (App\Support\Localizacao::cidadePorCep).
+    |
+    */
+    'ceps' => [
+        [12200, 12248, 'São José dos Campos', 'SP'],
+        [12000, 12119, 'Taubaté', 'SP'],
+        [12120, 12129, 'Tremembé', 'SP'],
+        [12250, 12250, 'Monteiro Lobato', 'SP'],
+        [12260, 12260, 'Paraibuna', 'SP'],
+        [12270, 12270, 'Jambeiro', 'SP'],
+        [12280, 12299, 'Caçapava', 'SP'],
+        [12300, 12349, 'Jacareí', 'SP'],
+        [12350, 12350, 'Igaratá', 'SP'],
+        [12380, 12380, 'Santa Branca', 'SP'],
+        [12400, 12449, 'Pindamonhangaba', 'SP'],
+        [12460, 12464, 'Campos do Jordão', 'SP'],
+        [12500, 12524, 'Guaratinguetá', 'SP'],
+        [12570, 12579, 'Aparecida', 'SP'],
+        [12600, 12614, 'Lorena', 'SP'],
+        [11600, 11629, 'São Sebastião', 'SP'],
+        [11660, 11674, 'Caraguatatuba', 'SP'],
+        [11680, 11699, 'Ubatuba', 'SP'],
+        [8700, 8899, 'Mogi das Cruzes', 'SP'],
+        [8900, 8900, 'Guararema', 'SP'],
+        [1000, 5999, 'São Paulo', 'SP'],
+        [8000, 8499, 'São Paulo', 'SP'],
+    ],
+
 ];

@@ -103,6 +103,14 @@ class BuscaController extends Controller
     {
         $especialidade = $this->texto($request, 'especialidade');
         $cidade = $this->texto($request, 'cidade');
+
+        // 30/09: a home, para quem está logado, manda o CEP no lugar da cidade.
+        // O CEP vira a cidade dele (Localizacao::cidadePorCep) e a distância
+        // parte do centro dela. Cidade escolhida na lista vale mais que o CEP.
+        $cep = $this->texto($request, 'cep');
+        $cidadeDoCep = Localizacao::cidadePorCep($cep);
+        $cidade ??= $cidadeDoCep;
+
         $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade);
 
         $locais = Local::agendaveis($especialidade)
@@ -135,6 +143,9 @@ class BuscaController extends Controller
             'cidades'        => Local::where('ativo', true)->select('cidade', 'uf')->distinct()->orderBy('cidade')->get(),
             'filtros'        => ['especialidade' => $especialidade, 'cidade' => $cidade],
             'origem'         => $origem,
+            // Para a tela avisar "CEP X: a partir do centro de Y" ou "CEP não encontrado".
+            'cep'            => $cep,
+            'cidadeDoCep'    => $cidadeDoCep,
         ]);
     }
 
