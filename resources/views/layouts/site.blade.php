@@ -22,8 +22,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@hasSection('titulo')@yield('titulo') — FacilMed @else FacilMed — Agende sua consulta @endif</title>
-    <meta name="description" content="Encontre médicos, clínicas e hospitais e agende sua consulta de forma rápida e fácil.">
+    {{-- 30/09: proposta sem agendamento - título e descrição não prometem mais isso. --}}
+    <title>@hasSection('titulo')@yield('titulo') — FacilMed @else FacilMed — Hospitais e clínicas perto de você @endif</title>
+    <meta name="description" content="Encontre hospitais e clínicas de convênio e particulares perto de você, com a nota de outros pacientes.">
     <link rel="icon" href="{{ asset('imgs/marca/logosemslogan.png') }}" type="image/png">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=open-sans:400,600,700|rosario:600,700&display=swap" rel="stylesheet">
