@@ -40,7 +40,7 @@
     <div class="fm-pagina-topo">
         <div>
             <h1 class="fm-titulo">Olá, {{ $saudacao }}!</h1>
-            <p class="fm-subtitulo">Acompanhe a plataforma e gerencie clínicas, médicos e atendimentos.</p>
+            <p class="fm-subtitulo">Acompanhe a plataforma e gerencie clínicas, pacientes e a atividade da plataforma.</p>
         </div>
         <div class="fm-data">
             <x-icone nome="calendar" />
@@ -58,7 +58,7 @@
     <div class="adm-linha adm-linha--grafico">
         <section class="fm-painel">
             <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="chart" /> Consultas realizadas</h2>
+                <h2 class="fm-painel__titulo"><x-icone nome="chart" /> Consultas realizadas</h2> {{-- ================= remover ================= --}}
                 <nav class="fm-abas" aria-label="Período do gráfico">
                     @foreach ($grafico['abas'] as $aba)
                         <a href="{{ $aba['url'] }}" class="fm-aba {{ $aba['ativo'] ? 'is-ativa' : '' }}" @if ($aba['ativo']) aria-current="true" @endif>{{ $aba['rotulo'] }}</a>
