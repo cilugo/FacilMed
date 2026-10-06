@@ -1,10 +1,6 @@
 {{--
-    Dashboard do admin (24/09/2026). Dados prontos de
-    App\Http\Controllers\Admin\DashboardController — ver ali o que mudou
-    em relação ao mockup e por quê.
-
-    Gráficos de linha e rosca: public/javas/graficos.js (data-fm-linha,
-    data-fm-donut), os mesmos dos outros painéis.
+    Dashboard do admin (24/09/2026; refeito em 01/10/2026 sem consultas).
+    Dados prontos de App\Http\Controllers\Admin\DashboardController.
 --}}
 @extends('layouts.painel')
 
@@ -40,7 +36,7 @@
     <div class="fm-pagina-topo">
         <div>
             <h1 class="fm-titulo">Olá, {{ $saudacao }}!</h1>
-            <p class="fm-subtitulo">Acompanhe a plataforma e gerencie clínicas, médicos e atendimentos.</p>
+            <p class="fm-subtitulo">Acompanhe a plataforma: clínicas, médicos, usuários e avaliações.</p>
         </div>
         <div class="fm-data">
             <x-icone nome="calendar" />
@@ -54,125 +50,35 @@
         @endforeach
     </div>
 
-    {{-- ================= Gráfico ================= --}}
-    <div class="adm-linha adm-linha--grafico">
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="chart" /> Consultas realizadas</h2>
-                <nav class="fm-abas" aria-label="Período do gráfico">
-                    @foreach ($grafico['abas'] as $aba)
-                        <a href="{{ $aba['url'] }}" class="fm-aba {{ $aba['ativo'] ? 'is-ativa' : '' }}" @if ($aba['ativo']) aria-current="true" @endif>{{ $aba['rotulo'] }}</a>
-                    @endforeach
-                </nav>
-            </header>
-            <p class="fm-meta" style="margin: -6px 0 8px;"><strong style="color: var(--fm-titulo); font-size: 18px;">{{ $grafico['total'] }}</strong> {{ $grafico['rotulo'] }}</p>
-            <div class="fm-grafico" data-fm-linha='@json($grafico['serie'])' role="img" aria-label="Consultas realizadas no período"></div>
-        </section>
-    </div>
-
-    {{-- ================= Roscas + atividade ================= --}}
     <div class="adm-linha adm-linha--tres">
         <section class="fm-painel">
             <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="building" /> Unidades com mais consultas</h2>
-                <span class="fm-painel__periodo">30 dias</span>
+                <h2 class="fm-painel__titulo"><x-icone nome="building" /> Locais mais bem avaliados</h2>
+                <a href="{{ route('admin.clinicas') }}" class="fm-pilula fm-pilula--pequena">Clínicas <x-icone nome="chevron-right" /></a>
             </header>
-            @if (count($porUnidade['itens']) > 0)
-                <div class="fm-donut-bloco">
-                    <div class="fm-donut" data-fm-donut='@json($porUnidade['donut'])' role="img" aria-label="Consultas por unidade"></div>
-                    <ul class="fm-legenda">
-                        @foreach ($porUnidade['itens'] as $i)
-                            <li>
-                                <span class="fm-legenda__ponto" style="background: {{ $i['cor'] }}"></span>
-                                <span class="fm-legenda__nome">{{ $i['nome'] }}</span>
-                                <span class="fm-legenda__valor">{{ $i['pct'] }}%</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            @else
-                <p class="fm-vazio">Sem consultas realizadas nos últimos 30 dias.</p>
-            @endif
-        </section>
-
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="list" /> Consultas por situação</h2>
-                <span class="fm-painel__periodo">30 dias antes e depois de hoje</span>
-            </header>
-            @if ($porStatus['donut']['centro'] !== '0')
-                <div class="fm-donut-bloco">
-                    <div class="fm-donut" data-fm-donut='@json($porStatus['donut'])' role="img" aria-label="Consultas por situação"></div>
-                    <ul class="fm-legenda">
-                        @foreach ($porStatus['itens'] as $i)
-                            <li>
-                                <span class="fm-legenda__ponto" style="background: {{ $i['cor'] }}"></span>
-                                <span class="fm-legenda__nome">{{ $i['nome'] }}</span>
-                                <span class="fm-legenda__valor">{{ $i['pct'] }}%</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            @else
-                <p class="fm-vazio">Nenhuma consulta nos últimos 30 dias.</p>
-            @endif
-        </section>
-
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="clock" /> Atividade recente</h2>
-                <a href="{{ route('admin.consultas') }}" class="fm-pilula fm-pilula--pequena">Ver todas <x-icone nome="chevron-right" /></a>
-            </header>
-            @forelse ($atividades as $a)
-                <div class="adm-mini">
-                    <span class="adm-mini__icone fm-tom-{{ $a['tom'] }}"><x-icone :nome="$a['icone']" /></span>
-                    <div><strong>{{ $a['titulo'] }}</strong><small>{{ $a['detalhe'] }}</small></div>
-                    <span class="adm-mini__lado">{{ $a['quando'] }}</span>
-                </div>
-            @empty
-                <p class="fm-vazio">Nada por enquanto.</p>
-            @endforelse
-        </section>
-    </div>
-
-    {{-- ================= Listas ================= --}}
-    <div class="adm-linha adm-linha--tres">
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="building" /> Clínicas e hospitais</h2>
-                <a href="{{ route('admin.clinicas') }}" class="fm-pilula fm-pilula--pequena">Ver todas <x-icone nome="chevron-right" /></a>
-            </header>
-            @forelse ($clinicas as $c)
-                <a href="{{ $c['url'] }}" class="adm-mini">
-                    <span class="adm-mini__icone fm-tom-azul"><x-icone :nome="$c['hospital'] ? 'hospital' : 'building'" /></span>
-                    <div>
-                        <strong>{{ $c['nome'] }}</strong>
-                        <small>{{ $c['cidade'] }}</small>
-                        <span class="adm-numeros">
-                            <span><x-icone nome="doctors" /> {{ $c['medicos'] }} {{ $c['medicos'] === 1 ? 'médico' : 'médicos' }}</span>
-                            <span><x-icone nome="calendar-check" /> {{ $c['consultas'] }} em 30 dias</span>
-                        </span>
-                    </div>
-                    <span class="fm-etiqueta fm-etiqueta--{{ $c['tom'] }}">{{ $c['status'] }}</span>
+            @forelse ($locais as $l)
+                <a href="{{ route('publico.local', $l) }}" class="adm-mini" target="_blank" rel="noopener">
+                    <span class="adm-mini__icone fm-tom-azul"><x-icone :nome="$l->tipo === 'hospital' ? 'hospital' : 'building'" /></span>
+                    <div><strong>{{ $l->nome }}</strong><small>{{ $l->cidade }}/{{ $l->uf }} · {{ $l->total_avaliacoes }} {{ $l->total_avaliacoes === 1 ? 'avaliação' : 'avaliações' }}</small></div>
+                    <span class="fm-etiqueta fm-etiqueta--ambar">★ {{ \App\Support\Formatador::numero((float) $l->media_avaliacoes, 1) }}</span>
                 </a>
             @empty
-                <p class="fm-vazio">Nenhuma clínica cadastrada.</p>
+                <p class="fm-vazio">Nenhum local avaliado ainda.</p>
             @endforelse
         </section>
 
         <section class="fm-painel">
             <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo"><x-icone nome="doctors" /> Médicos recentes</h2>
-                <a href="{{ route('admin.usuarios') }}" class="fm-pilula fm-pilula--pequena">Ver todos <x-icone nome="chevron-right" /></a>
+                <h2 class="fm-painel__titulo"><x-icone nome="doctors" /> Médicos mais bem avaliados</h2>
             </header>
             @forelse ($medicos as $m)
-                <div class="adm-mini">
-                    <span class="fm-avatar">{{ $m['iniciais'] }}</span>
-                    <div><strong>{{ $m['nome'] }}</strong><small>{{ $m['especialidade'] }} · {{ $m['local'] }}</small></div>
-                    <span class="fm-etiqueta fm-etiqueta--{{ $m['tom'] }}">{{ $m['status'] }}</span>
-                </div>
+                <a href="{{ route('publico.medico', $m) }}" class="adm-mini" target="_blank" rel="noopener">
+                    <x-avatar :nome="$m->nome" :foto="$m->foto_url" />
+                    <div><strong>{{ $m->nome }}</strong><small>CRM {{ $m->crm }}/{{ $m->uf }} · {{ $m->total_avaliacoes }} {{ $m->total_avaliacoes === 1 ? 'avaliação' : 'avaliações' }}</small></div>
+                    <span class="fm-etiqueta fm-etiqueta--ambar">★ {{ \App\Support\Formatador::numero((float) $m->media_avaliacoes, 1) }}</span>
+                </a>
             @empty
-                <p class="fm-vazio">Nenhum médico cadastrado.</p>
+                <p class="fm-vazio">Nenhum médico avaliado ainda.</p>
             @endforelse
         </section>
 
@@ -183,12 +89,31 @@
             </header>
             @foreach ($ultimosCadastros as $u)
                 <div class="adm-mini">
-                    <span class="adm-mini__icone fm-tom-roxo"><x-icone :nome="$u['icone']" /></span>
-                    <div><strong>{{ $u['nome'] }}</strong><small>{{ $u['tipo'] }}</small></div>
-                    <span class="adm-mini__lado">{{ $u['quando'] }}</span>
+                    <x-avatar :nome="$u->name" :foto="$u->foto_url" />
+                    <div><strong>{{ $u->name }}</strong><small>{{ \App\Support\Formatador::PAPEIS[$u->tipo] ?? $u->tipo }}</small></div>
+                    <span class="adm-mini__lado">{{ $u->created_at?->isToday() ? $u->created_at->format('H:i') : $u->created_at?->format('d/m') }}</span>
                 </div>
             @endforeach
         </section>
     </div>
+
+    <section class="fm-painel" style="margin-top: 18px;">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="star" /> Últimas avaliações</h2>
+        </header>
+        <p class="fm-campo__ajuda" style="margin-bottom: 6px;">Comentários são públicos desde 05/10: aparecem na página do local ou do médico, com o nome encurtado de quem escreveu.</p>
+        @forelse ($ultimasAvaliacoes as $a)
+            <div class="adm-mini">
+                <x-avatar :nome="$a->usuario->user->name" :foto="$a->usuario->user->foto_url" />
+                <div>
+                    <strong>{{ str_repeat('★', $a->estrelas) . str_repeat('☆', 5 - $a->estrelas) }} · {{ $a->alvo_nome }}</strong>
+                    <small>{{ $a->usuario->user->name }}{{ $a->comentario ? ' — “' . \Illuminate\Support\Str::limit($a->comentario, 100) . '”' : '' }}</small>
+                </div>
+                <span class="adm-mini__lado">{{ $a->updated_at->format('d/m') }}</span>
+            </div>
+        @empty
+            <p class="fm-vazio">Nenhuma avaliação ainda.</p>
+        @endforelse
+    </section>
 
 @endsection

@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 /**
  * 29/09/2026 — plano do app: "Locais perto de você" (/locais) e a página do
- * local (/local/{id}). Distância sem serviço externo: a posição do paciente vem
+ * local (/local/{id}). Distância sem serviço externo: a posição do usuário vem
  * do navegador (ou do centro da cidade escolhida) e a de cada local, das
  * coordenadas aproximadas de config/localizacao.php.
  *
@@ -105,20 +105,20 @@ class LocaisTest extends TestCase
 
     // --- /local/{id} --------------------------------------------------
 
-    public function test_pagina_do_local_mostra_endereco_medicos_e_nota_sem_comentario(): void
+    public function test_pagina_do_local_mostra_endereco_medicos_nota_e_comentarios(): void
     {
         $local = $this->local('Vida Plena - Centro');
-        $vinculo = Vinculo::where('local_id', $local->id)->firstOrFail();
-        $media = Avaliacao::whereHas('consulta.vinculo', fn ($v) => $v->where('local_id', $local->id))->avg('estrelas');
-
+        // 01/10/2026: avaliação direto no local (AvaliacaoSeeder: Ana 5 e Marcos 4).
+        $media = Avaliacao::where('local_id', $local->id)->avg('estrelas');
         $this->assertNotNull($media, 'O seed deveria ter avaliação na Vida Plena.');
 
         $this->get("/local/{$local->id}")->assertOk()
             ->assertSee('Rua Quinze de Novembro')
             ->assertSee('Dra. Helena Navarro')
-            ->assertSee(route('agendamento.horario', $vinculo), false)
+            ->assertSee(route('publico.medico', 1), false)
+            ->assertDontSee('/agendar/', false)                              // sem agendamento
             ->assertSee(number_format((float) $media, 1, ',', ''))
-            ->assertDontSee('Atendimento pontual');   // comentário é privado (AGENTS §3)
+            ->assertSee('Recepção atenciosa');   // 05/10: comentário público
     }
 
     public function test_pagina_do_local_repete_o_aviso_do_convenio(): void

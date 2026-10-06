@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\PacientePlano;
+use App\Models\UsuarioPlano;
 use App\Models\Plano;
 use Tests\TestCase;
 
@@ -10,7 +10,7 @@ class CarteirinhaTest extends TestCase
 {
     private function enviar(string $email, string $plano, string $numero)
     {
-        return $this->comoPaciente($email)->post('/paciente/planos', [
+        return $this->comoUsuarioFinal($email)->post('/usuario/planos', [
             'plano_id' => Plano::where('nome', $plano)->value('id'),
             'numero_carteirinha' => $numero,
         ]);
@@ -20,7 +20,7 @@ class CarteirinhaTest extends TestCase
     {
         $this->enviar('marcos@facilmed.test', 'Bem Viver Individual', '300000000002')->assertSessionHasNoErrors();
 
-        $pp = PacientePlano::where('numero_carteirinha', '300000000002')->firstOrFail();
+        $pp = UsuarioPlano::where('numero_carteirinha', '300000000002')->firstOrFail();
         $this->assertSame('ativa', $pp->status);
         $this->assertNotNull($pp->validade);
     }
@@ -37,8 +37,8 @@ class CarteirinhaTest extends TestCase
         foreach ($casos as [$email, $plano, $numero, $motivo]) {
             $this->enviar($email, $plano, $numero)->assertSessionHasErrors();
             $this->assertStringContainsString($motivo, collect(session('errors')->all())->join(' '), "$plano / $numero");
-            $this->assertFalse(PacientePlano::where('numero_carteirinha', $numero)->where('status', 'ativa')
-                ->whereHas('paciente.user', fn ($q) => $q->where('email', $email))->exists());
+            $this->assertFalse(UsuarioPlano::where('numero_carteirinha', $numero)->where('status', 'ativa')
+                ->whereHas('usuario.user', fn ($q) => $q->where('email', $email))->exists());
         }
     }
 }

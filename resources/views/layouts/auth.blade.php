@@ -19,7 +19,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('titulo', 'Entrar') — FacilMed</title>
+    <title>@yield('titulo', 'Entrar') — PointMed</title>
     <link rel="icon" href="{{ asset('imgs/marca/logosemslogan.png') }}" type="image/png">
     <link rel="stylesheet" href="{{ asset('css/login.css') }}">
 </head>
@@ -37,7 +37,7 @@
         <section class="login-form-area">
             <div class="login-container">
                 <a href="{{ route('home') }}">
-                    <img src="{{ asset('imgs/marca/logocomslogan.png') }}" alt="FacilMed — Sua saúde, conectada." class="login-mobile-logo">
+                    <img src="{{ asset('imgs/marca/logocomslogan.png') }}" alt="PointMed — Sua saúde, conectada." class="login-mobile-logo">
                 </a>
 
                 @if (session('status') && session('status') !== 'verification-link-sent')

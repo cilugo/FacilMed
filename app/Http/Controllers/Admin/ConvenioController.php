@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SalvarConvenioRequest;
 use App\Http\Requests\Admin\SalvarPlanoRequest;
-use App\Models\Consulta;
 use App\Models\Convenio;
 use App\Models\Plano;
 use Illuminate\Http\RedirectResponse;
@@ -20,9 +19,8 @@ use Illuminate\Http\Request;
  *
  * NADA SE APAGA AQUI, só se desativa. Motivo: apagar um convênio
  * apagaria em cascata os planos, e apagar um plano apagaria as
- * carteirinhas dos pacientes (paciente_planos é cascadeOnDelete) —
- * e as consultas por convênio perderiam a referência do plano usado.
- * Desativado, some do agendamento mas o histórico continua de pé.
+ * carteirinhas dos usuários (usuario_planos é cascadeOnDelete).
+ * Desativado, some da busca, mas as carteirinhas continuam de pé.
  */
 class ConvenioController extends Controller
 {
@@ -31,7 +29,7 @@ class ConvenioController extends Controller
         $filtro = $request->query('status', 'todos');
 
         $convenios = Convenio::query()
-            ->with(['planos' => fn ($q) => $q->withCount('pacientePlanos')])
+            ->with(['planos' => fn ($q) => $q->withCount('usuarioPlanos')])
             ->withCount('medicos')
             ->when($filtro === 'ativos', fn ($q) => $q->where('ativo', true))
             ->when($filtro === 'inativos', fn ($q) => $q->where('ativo', false))
@@ -74,14 +72,7 @@ class ConvenioController extends Controller
         return back()->with('sucesso', "Convênio {$convenio->nome} atualizado.");
     }
 
-    /**
-     * Ativa/desativa.
-     *
-     * Ao DESATIVAR não cancelamos nada automaticamente: as consultas
-     * futuras já marcadas por esse convênio continuam de pé (o paciente
-     * não pode ser surpreendido). O admin é AVISADO de quantas são, e o
-     * AgendamentoController passa a recusar agendamentos novos.
-     */
+    /** Ativa/desativa. Desativado, sai dos filtros da busca. */
     public function alternar(Convenio $convenio): RedirectResponse
     {
         $convenio->update(['ativo' => ! $convenio->ativo]);
@@ -90,10 +81,7 @@ class ConvenioController extends Controller
             return back()->with('sucesso', "Convênio {$convenio->nome} reativado.");
         }
 
-        $futuras = $this->consultasFuturas(fn ($q) => $q->where('planos.convenio_id', $convenio->id));
-
-        return back()->with('sucesso', "Convênio {$convenio->nome} desativado. Ele não aparece mais para agendamento."
-            . ($futuras > 0 ? " Atenção: {$futuras} consulta(s) futura(s) por este convênio continuam marcadas." : ''));
+        return back()->with('sucesso', "Convênio {$convenio->nome} desativado. Ele não aparece mais na busca.");
     }
 
     // -----------------------------------------------------------------
@@ -122,26 +110,6 @@ class ConvenioController extends Controller
             return back()->with('sucesso', "Plano {$plano->nome} reativado.");
         }
 
-        $futuras = $this->consultasFuturas(fn ($q) => $q->where('planos.id', $plano->id));
-
-        return back()->with('sucesso', "Plano {$plano->nome} desativado."
-            . ($futuras > 0 ? " Atenção: {$futuras} consulta(s) futura(s) com este plano continuam marcadas." : ''));
-    }
-
-    // -----------------------------------------------------------------
-    // Interno
-    // -----------------------------------------------------------------
-
-    /** Consultas por convênio, ainda agendadas, de hoje em diante. */
-    private function consultasFuturas(callable $filtroPlano): int
-    {
-        return Consulta::query()
-            ->join('paciente_planos', 'paciente_planos.id', '=', 'consultas.paciente_plano_id')
-            ->join('planos', 'planos.id', '=', 'paciente_planos.plano_id')
-            ->where('consultas.forma_pagamento', 'convenio')
-            ->where('consultas.status', 'agendada')
-            ->whereDate('consultas.data_consulta', '>=', today())
-            ->where($filtroPlano)
-            ->count();
+        return back()->with('sucesso', "Plano {$plano->nome} desativado.");
     }
 }

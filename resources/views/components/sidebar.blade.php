@@ -1,5 +1,5 @@
 {{--
-    Sidebar do FacilMed, no estilo dos mockups (fundo claro, item ativo
+    Sidebar do PointMed, no estilo dos mockups (fundo claro, item ativo
     em azul-claro, marca no topo).
 
     Lê os itens de config/navegacao.php pelo tipo do usuário logado. Não
@@ -29,19 +29,14 @@
         ->values()
         ->all();
 
-    // Médico pendente não aparece na busca. Ele precisa saber disso, em vez
-    // de estranhar que ninguém agenda com ele.
-    $crmPendente = $usuario?->ehMedico() && $usuario->medico?->status_verificacao === 'pendente';
-    // 28/09 (3ª revisão): o rejeitado pelo admin também some da busca, e antes não via aviso nenhum.
-    $crmRecusado = $usuario?->ehMedico() && $usuario->medico?->status_verificacao === 'rejeitado';
 @endphp
 
 <aside class="fm-sidebar" :class="{ 'is-open': menu }" aria-label="Menu principal">
 
     <div class="fm-sidebar__marca">
-        <a href="{{ url('/') }}" aria-label="FacilMed, ir para o início">
+        <a href="{{ url('/') }}" aria-label="PointMed, ir para o início">
             {{-- 24/09: arquivo antigo nao existia; ver .fm-logo-recorte no painel.css --}}
-            <span class="fm-logo-recorte"><img src="{{ asset('imgs/marca/logo.png') }}" alt="FacilMed"></span>
+            <span class="fm-logo-recorte"><img src="{{ asset('imgs/marca/logo.png') }}" alt="PointMed"></span>
         </a>
 
         <button type="button" class="fm-sidebar__fechar" @click="menu = false" aria-label="Fechar menu">
@@ -67,16 +62,6 @@
     </nav>
 
     <div class="fm-sidebar__rodape">
-        @if ($crmPendente)
-            <p class="fm-aviso">
-                Seu CRM está em verificação. Você ainda não aparece nas buscas.
-            </p>
-        @elseif ($crmRecusado)
-            <p class="fm-aviso">
-                Seu cadastro foi recusado pela administração do FacilMed. Você não aparece nas buscas.
-            </p>
-        @endif
-
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit" class="fm-nav fm-nav--sair">

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Clinica;
 
 use App\Http\Controllers\Controller;
-use App\Models\Consulta;
 use App\Models\Vinculo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,8 +19,9 @@ use Illuminate\Http\Request;
  *   - DEIXA a clínica decidir, por médico e por unidade, se aquele
  *     atendimento aceita convênio (vinculos.aceita_convenio). Isso é da
  *     clínica, porque o vínculo pertence ao dono do local (VinculoPolicy);
- *   - NÃO edita a lista de convênios do médico: ela vale para todos os
- *     lugares onde ele atende, então quem mexe é o próprio médico.
+ *   - a lista de convênios do médico vale para todos os lugares onde ele
+ *     atende; desde 01/10/2026 (médico sem conta) quem edita é a clínica,
+ *     em Meus médicos → Editar perfil.
  */
 class ConvenioController extends Controller
 {
@@ -33,12 +33,11 @@ class ConvenioController extends Controller
             ->where('vinculos.ativo', true)
             ->with([
                 'local',
-                'medico.user',
                 'medico.convenios' => fn ($q) => $q->orderBy('nome'),
                 'medico.convenios.planos',
             ])
             ->get()
-            ->sortBy(fn ($v) => $v->medico->user->name . $v->local->nome)
+            ->sortBy(fn ($v) => $v->medico->nome . $v->local->nome)
             ->values();
 
         // Cobertura: convênio -> planos ativos + médicos que atendem por ele
@@ -55,18 +54,11 @@ class ConvenioController extends Controller
                     'planos'   => $convenio->planos->where('ativo', true)->values(),
                     'medicos'  => collect(),
                 ]);
-                $item['medicos']->put($vinculo->medico_id, $vinculo->medico->user->name);
+                $item['medicos']->put($vinculo->medico_id, $vinculo->medico->nome);
                 $cobertura->put($convenio->id, $item);
             }
         }
         $cobertura = $cobertura->sortBy(fn ($i) => [! $i['convenio']->ativo, $i['convenio']->nome])->values();
-
-        $consultasConvenio = Consulta::query()
-            ->whereIn('vinculo_id', $vinculos->pluck('id'))
-            ->where('forma_pagamento', 'convenio')
-            ->where('status', 'realizada')
-            ->whereDate('data_consulta', '>=', today()->subDays(30))
-            ->count();
 
         return view('clinica.convenios', [
             'vinculos'  => $vinculos,
@@ -84,13 +76,6 @@ class ConvenioController extends Controller
                     'rotulo' => 'Médicos que atendem convênio',
                     'valor'  => $vinculos->where('aceita_convenio', true)->pluck('medico_id')->unique()->count(),
                     'nota'   => 'de ' . $vinculos->pluck('medico_id')->unique()->count() . ' vinculados',
-                ],
-                [
-                    'icone'  => 'calendar-check',
-                    'tom'    => 'roxo',
-                    'rotulo' => 'Consultas por convênio',
-                    'valor'  => $consultasConvenio,
-                    'nota'   => 'realizadas nos últimos 30 dias',
                 ],
             ],
         ]);
@@ -110,14 +95,14 @@ class ConvenioController extends Controller
             'aceita_convenio' => ['required', 'boolean'],
         ]);
 
-        $vinculo = Vinculo::with('local', 'medico.user')->findOrFail($dados['vinculo_id']);
+        $vinculo = Vinculo::with('local', 'medico')->findOrFail($dados['vinculo_id']);
 
         $this->authorize('update', $vinculo);
 
         if ($dados['aceita_convenio'] && $vinculo->medico->convenios()->doesntExist()) {
             return back()->with('erro',
-                "{$vinculo->medico->user->name} ainda não cadastrou nenhum convênio. "
-                . 'O médico precisa informar os convênios que aceita no perfil dele.');
+                "{$vinculo->medico->nome} ainda não tem nenhum convênio no perfil. "
+                . 'Marque os convênios que ele aceita em Meus médicos → Editar perfil.');
         }
 
         $vinculo->update(['aceita_convenio' => (bool) $dados['aceita_convenio']]);
@@ -125,6 +110,6 @@ class ConvenioController extends Controller
         $texto = $dados['aceita_convenio'] ? 'passa a atender' : 'deixa de atender';
 
         return back()->with('sucesso',
-            "{$vinculo->medico->user->name} {$texto} por convênio em {$vinculo->local->nome}.");
+            "{$vinculo->medico->nome} {$texto} por convênio em {$vinculo->local->nome}.");
     }
 }

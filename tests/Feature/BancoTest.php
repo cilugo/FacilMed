@@ -2,10 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Bloqueio;
-use App\Models\Consulta;
-use App\Models\Disponibilidade;
-use App\Models\Preco;
 use Illuminate\Database\QueryException;
 use Tests\TestCase;
 
@@ -25,29 +21,19 @@ class BancoTest extends TestCase
         }
     }
 
-    public function test_dois_pacientes_no_mesmo_horario_barrado_pelo_indice_unico(): void
-    {
-        $dados = ['medico_id' => 1, 'vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => now()->addDays(10)->toDateString(),
-            'horario' => '09:00', 'duracao_minutos' => 30, 'forma_pagamento' => 'particular', 'valor' => 220, 'status' => 'agendada', 'origem' => 'medico'];
-
-        Consulta::create($dados + ['paciente_id' => 1]);
-        $this->espera23000(fn () => Consulta::create($dados + ['paciente_id' => 2]), 'duas consultas no mesmo horário');
-    }
-
-    public function test_horario_de_consulta_cancelada_pode_ser_reusado(): void
-    {
-        $dados = ['medico_id' => 1, 'vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => now()->addDays(10)->toDateString(),
-            'horario' => '09:00', 'duracao_minutos' => 30, 'forma_pagamento' => 'particular', 'valor' => 220, 'status' => 'agendada', 'origem' => 'medico'];
-
-        Consulta::create($dados + ['paciente_id' => 1])->update(['status' => 'cancelada']);
-        $this->assertNotNull(Consulta::create($dados + ['paciente_id' => 2])->id);
-    }
-
     public function test_checks_do_banco(): void
     {
-        $this->espera23000(fn () => Preco::create(['vinculo_id' => 1, 'especialidade_id' => 5, 'valor' => -1]), 'preço negativo');
-        $this->espera23000(fn () => Disponibilidade::create(['vinculo_id' => 1, 'dia_semana' => 'sabado', 'hora_inicio' => '10:00', 'hora_fim' => '09:00']), 'bloco ao contrário');
-        $this->espera23000(fn () => Bloqueio::create(['medico_id' => 1, 'inicio' => now()->addDay(), 'fim' => now()]), 'ausência ao contrário');
-        $this->espera23000(fn () => \App\Models\Avaliacao::create(['consulta_id' => 1, 'paciente_id' => 1, 'medico_id' => 1, 'estrelas' => 6]), 'nota 6');
+        // 05/10/2026: faixa de preço da unidade só de 1 a 4.
+        $this->espera23000(fn () => \App\Models\Local::whereKey(1)->update(['faixa_preco' => 5]), 'faixa 5');
+        // 01/10/2026: avaliação de local OU médico (CHECKs da migration de reorganização).
+        $this->espera23000(fn () => \App\Models\Avaliacao::create(['usuario_id' => 2, 'local_id' => 3, 'estrelas' => 6]), 'nota 6');
+        $this->espera23000(fn () => \App\Models\Avaliacao::create(['usuario_id' => 2, 'estrelas' => 4]), 'avaliação sem alvo');
+        $this->espera23000(fn () => \App\Models\Avaliacao::create(['usuario_id' => 2, 'local_id' => 3, 'medico_id' => 4, 'estrelas' => 4]), 'avaliação com dois alvos');
+        // Uma por usuário em cada local (UNIQUE): a Ana já avaliou a Vida Plena no seed.
+        $this->espera23000(fn () => \App\Models\Avaliacao::create(['usuario_id' => 1, 'local_id' => \App\Models\Local::where('nome', 'Vida Plena - Centro')->value('id'), 'estrelas' => 2]), 'segunda avaliação do mesmo local');
+        // O banco não aceita mais conta de médico (users.tipo sem 'medico').
+        // Valor fora do ENUM dá "Data truncated" (outro código), não 23000.
+        $this->expectException(QueryException::class);
+        \Illuminate\Support\Facades\DB::table('users')->insert(['name' => 'X', 'email' => 'x@facilmed.test', 'password' => 'x', 'tipo' => 'medico']);
     }
 }

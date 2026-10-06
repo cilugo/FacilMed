@@ -30,7 +30,7 @@ final class Formatador
         'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
     ];
 
-    // Índice = Carbon::dayOfWeek (0 = domingo), o mesmo de Disponibilidade::DIAS.
+    // Índice = Carbon::dayOfWeek (0 = domingo), o mesmo de HorarioFuncionamento::DIAS.
     public const DIAS = [
         'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
         'Quinta-feira', 'Sexta-feira', 'Sábado',
@@ -44,8 +44,7 @@ final class Formatador
     ];
 
     public const PAPEIS = [
-        'paciente' => 'Paciente',
-        'medico'   => 'Médico',
+        'usuario' => 'Usuário',
         'clinica'  => 'Clínica',
         'admin'    => 'Administrador',
     ];
@@ -170,6 +169,21 @@ final class Formatador
     }
 
     /** Iniciais para o avatar: "Dra. Helena Navarro" -> "HN". */
+    /**
+     * "Ana Beatriz Lima" → "Ana L." Usado nas avaliações públicas (05/10/2026):
+     * quem lê sabe que é uma pessoa real, sem o nome completo exposto.
+     */
+    public static function nomeCurto(?string $nome): string
+    {
+        $partes = preg_split('/\s+/', trim((string) $nome), -1, PREG_SPLIT_NO_EMPTY);
+
+        if (! $partes || $nome === 'Conta excluída') {
+            return 'Usuário';
+        }
+
+        return count($partes) === 1 ? $partes[0] : $partes[0] . ' ' . mb_substr(end($partes), 0, 1) . '.';
+    }
+
     public static function iniciais(string $nome): string
     {
         $partes = array_values(array_filter(
@@ -185,18 +199,6 @@ final class Formatador
         $ultima   = count($partes) > 1 ? mb_substr($partes[count($partes) - 1], 0, 1) : '';
 
         return mb_strtoupper($primeira . $ultima);
-    }
-
-    /** Rótulo e cor da etiqueta de status de uma consulta. */
-    public static function status(string $status): array
-    {
-        return match ($status) {
-            'agendada'       => ['rotulo' => 'Agendada',       'tom' => 'azul'],
-            'realizada'      => ['rotulo' => 'Realizada',      'tom' => 'verde'],
-            'cancelada'      => ['rotulo' => 'Cancelada',      'tom' => 'rosa'],
-            'nao_compareceu' => ['rotulo' => 'Não compareceu', 'tom' => 'ambar'],
-            default          => ['rotulo' => ucfirst($status), 'tom' => 'cinza'],
-        };
     }
 
     /** Rótulo e cor da carteirinha do plano de saúde. */

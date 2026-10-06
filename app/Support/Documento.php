@@ -5,7 +5,7 @@ namespace App\Support;
 /**
  * CPF, CNPJ e CRM: limpar e formatar.
  *
- * Convenção do projeto (ver CadastroPacienteRequest): no banco fica SÓ
+ * Convenção do projeto (ver CadastroUsuarioRequest): no banco fica SÓ
  * DÍGITO; a máscara é só na tela. Use Documento::cpf($x) na view.
  */
 class Documento

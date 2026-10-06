@@ -15,7 +15,7 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
  * ValidatesRequests embutidos, e muito tutorial na internet ainda
  * assume isso.
  *
- * Nove controllers do FacilMed chamam $this->authorize(...) - sao 14
+ * Nove controllers do PointMed chamam $this->authorize(...) - sao 14
  * chamadas no total. Sem o trait abaixo, TODAS estouram com
  * "Call to undefined method authorize()" no primeiro clique.
  *

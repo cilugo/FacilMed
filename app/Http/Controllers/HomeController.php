@@ -34,8 +34,13 @@ class HomeController extends Controller
             ],
 
             // So medico verificado. O scope ja aplica a regra.
+            // 05/10: com o comentário mais recente de cada um (comentário é público).
             'medicosDestaque' => Medico::visivel()
-                ->with('user', 'especialidades')
+                ->with([
+                    'especialidades',
+                    'avaliacoes' => fn ($a) => $a->whereNotNull('comentario')->latest('updated_at')->limit(1),
+                    'avaliacoes.usuario.user:id,name',
+                ])
                 ->orderByDesc('media_avaliacoes')
                 ->orderByDesc('total_avaliacoes')
                 ->limit(6)

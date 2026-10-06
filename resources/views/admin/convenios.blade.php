@@ -47,9 +47,9 @@
     <p class="fm-dica">
         <x-icone nome="lightbulb" />
         <span>
-            <strong>Todos os convênios e planos são fictícios</strong>, criados para a demonstração do FacilMed.
-            A plataforma não tem contrato com nenhuma operadora real. Convênio ou plano desativado some do
-            agendamento, mas continua aqui — carteirinhas e histórico de consultas são preservados.
+            <strong>Todos os convênios e planos são fictícios</strong>, criados para a demonstração do PointMed.
+            A plataforma não tem contrato com nenhuma operadora real. Convênio ou plano desativado some da
+            busca, mas continua aqui — as carteirinhas dos usuários são preservadas.
         </span>
     </p>
 
@@ -191,7 +191,7 @@
                                         </td>
                                         <td>{{ $p->tipo_rotulo }}</td>
                                         <td>{{ $p->abrangencia_rotulo }}</td>
-                                        <td>{{ $p->paciente_planos_count }}</td>
+                                        <td>{{ $p->usuario_planos_count }}</td>
                                         <td>
                                             @if ($p->ativo && $c->ativo)
                                                 <span class="fm-etiqueta fm-etiqueta--verde">Ativo</span>

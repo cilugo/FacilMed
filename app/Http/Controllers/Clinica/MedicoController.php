@@ -3,16 +3,23 @@
 namespace App\Http\Controllers\Clinica;
 
 use App\Http\Controllers\Controller;
-use App\Services\EstatisticasDeConsultas;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use App\Models\User;
-use App\Models\Medico;
+use App\Http\Requests\Clinica\AtualizarMedicoPelaClinicaRequest;
 use App\Http\Requests\Clinica\CadastrarMedicoPelaClinicaRequest;
+use App\Models\Convenio;
 use App\Models\Especialidade;
+use App\Models\Medico;
 use App\Models\Vinculo;
-use Illuminate\Http\Request;
+use App\Support\FotoDePerfil;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * Clínica → Meus médicos.
+ *
+ * 01/10/2026 (documento de modificações): o médico não tem mais conta.
+ * A clínica/hospital cadastra o PERFIL dele e o mantém (foto, bio, anos
+ * de carreira, especialidades e convênios). O usuário vê esse perfil;
+ * o médico não entra no sistema.
+ */
 class MedicoController extends Controller
 {
     public function index()
@@ -22,9 +29,9 @@ class MedicoController extends Controller
         return view('clinica.medicos', [
             'vinculos' => $clinica->vinculos()
                 ->where('vinculos.ativo', true)
-                ->with('medico.user', 'medico.especialidades', 'local', 'precos.especialidade')
+                ->with('medico.especialidades', 'local')
                 ->get()
-                ->sortBy(fn ($v) => $v->medico->user->name)->values(),
+                ->sortBy(fn ($v) => $v->medico->nome)->values(),
             'unidades' => $clinica->locais()->where('ativo', true)->orderBy('nome')->get(),
         ]);
     }
@@ -38,49 +45,31 @@ class MedicoController extends Controller
     }
 
     /**
-     * A clinica cadastra o medico.
-     *
-     * O sistema gera SENHA TEMPORARIA e marca senha_temporaria = true;
-     * o medico e obrigado a trocar no primeiro login. A clinica nunca
-     * fica sabendo a senha definitiva do profissional.
+     * A clínica cadastra o médico.
      *
      * O CRM de médico NOVO é conferido na base simulada pelo FormRequest
-     * (desde 24/09; e desde 29/09 este é o ÚNICO jeito de um médico entrar
-     * no FacilMed - o autocadastro saiu): se chegou aqui, bateu, e
-     * ele já nasce 'verificado'. A clínica não "verifica" nada.
+     * (desde 24/09): se chegou aqui, bateu, e ele já nasce 'verificado'.
      *
-     * Se o medico JA existe no sistema (mesmo CRM+UF), nao crie outro:
-     * crie so o vinculo com a unidade.
+     * Se o médico JÁ existe no sistema (mesmo CRM+UF), não crie outro:
+     * crie só o vínculo com a unidade.
      */
     public function salvar(CadastrarMedicoPelaClinicaRequest $request)
     {
-        $dados      = $request->validated();
-        $existente  = $request->medicoExistente();
-        $senhaTemp  = null;
+        $dados     = $request->validated();
+        $existente = $request->medicoExistente();
 
-        $vinculo = DB::transaction(function () use ($dados, $existente, $request, &$senhaTemp) {
+        $vinculo = DB::transaction(function () use ($dados, $existente, $request) {
             $medico = $existente;
 
             if (! $medico) {
-                $senhaTemp = Str::password(10, symbols: false);
-
-                $user = User::create([
-                    'name'     => $dados['name'],
-                    'email'    => $dados['email'],
-                    'password' => $senhaTemp,
-                    'tipo'     => User::TIPO_MEDICO,
-                    'status'   => 'ativo',
-                ]);
-
                 $medico = Medico::create([
-                    'user_id'            => $user->id,
+                    'nome'               => $dados['name'],
                     'cpf'                => $dados['cpf'],
                     'crm'                => $dados['crm'],
                     'uf'                 => $dados['uf'],
                     'status_verificacao' => 'verificado',   // conferido na base simulada pelo FormRequest
                     'verificado_em'      => now(),
                     'anos_atuacao'       => 0,
-                    'senha_temporaria'   => true,
                 ]);
 
                 $medico->especialidades()->sync(
@@ -100,38 +89,72 @@ class MedicoController extends Controller
             );
         });
 
-        $nome = $vinculo->medico->user->name;
+        $nome = $vinculo->medico->nome;
         $msg  = $existente
-            ? "{$nome} já tinha conta no FacilMed e foi vinculado(a) à unidade."
-            : "{$nome} cadastrado(a). CRM conferido na base simulada do FacilMed.";
+            ? "{$nome} já estava no PointMed e foi vinculado(a) à unidade."
+            : "{$nome} cadastrado(a). CRM conferido na base simulada do PointMed.";
 
-        return redirect()->route('clinica.precos')
-            ->with('sucesso', $msg . ' Agora defina os preços; os horários o próprio médico cadastra.')
-            // Mostrada UMA vez para a clínica repassar. No primeiro login o
-            // médico é obrigado a trocar (middleware ExigirTrocaDeSenha).
-            ->with('senha_temporaria', $senhaTemp);
+        // 05/10: sem Tabela de preços. Próximo passo: completar o perfil.
+        return redirect()->route('clinica.medicos.editar', $vinculo->medico)
+            ->with('sucesso', $msg . ' Complete a foto, a apresentação e os convênios dele.');
     }
 
-    public function desvincular(Request $request, Vinculo $vinculo)
+    /** Editar o perfil do médico (01/10). Só médico que atende nesta clínica. */
+    public function editar(Medico $medico)
+    {
+        $this->authorize('update', $medico);
+
+        return view('clinica.medicos-editar', [
+            'medico'         => $medico->load('especialidades', 'convenios'),
+            'especialidades' => Especialidade::where('ativo', true)->orderBy('nome')->get(),
+            'convenios'      => Convenio::where('ativo', true)->orderBy('nome')->get(),
+        ]);
+    }
+
+    public function atualizar(AtualizarMedicoPelaClinicaRequest $request, Medico $medico)
+    {
+        $dados = $request->validated();
+        $novas = collect($dados['especialidades'])->map(fn ($id) => (int) $id)->unique()->values();
+        $principal = (int) ($dados['principal'] ?? $novas->first());
+
+        $fotoNova = $request->hasFile('foto') ? FotoDePerfil::salvar($request->file('foto')) : null;
+        $fotoAntiga = $medico->foto;
+
+        try {
+            DB::transaction(function () use ($medico, $dados, $novas, $principal, $fotoNova, $request) {
+                $medico->update([
+                    'bio'                   => $dados['bio'] ?? null,
+                    'anos_atuacao'          => (int) ($dados['anos_atuacao'] ?? 0),
+                    'telefone_profissional' => $dados['telefone_profissional'] ?? null,
+                ] + match (true) {
+                    $fotoNova !== null                   => ['foto' => $fotoNova],
+                    $request->boolean('remover_foto')    => ['foto' => null],
+                    default                              => [],
+                });
+
+                $medico->especialidades()->sync($novas->mapWithKeys(fn ($id) => [$id => ['principal' => $id === $principal]])->all());
+                $medico->convenios()->sync($dados['convenios'] ?? []);
+            });
+        } catch (\Throwable $e) {
+            FotoDePerfil::apagar($fotoNova);   // a gravação falhou: a foto nova não fica órfã
+            throw $e;
+        }
+
+        // O arquivo antigo só sai depois do commit (e nunca as fotos do seeder).
+        if ($fotoNova !== null || $request->boolean('remover_foto')) {
+            FotoDePerfil::apagar($fotoAntiga);
+        }
+
+        return redirect()->route('clinica.medicos')->with('sucesso', "Perfil de {$medico->nome} atualizado.");
+    }
+
+    public function desvincular(Vinculo $vinculo)
     {
         $this->authorize('delete', $vinculo);
 
-        // O vínculo não é apagado (consultas antigas apontam para ele): fica inativo.
-        $futuras = EstatisticasDeConsultas::aPartirDeAgora(
-            $vinculo->consultas()->getQuery()->where('status', 'agendada')
-        )->get();
+        // O vínculo não é apagado (os preços ficam guardados): fica inativo.
+        $vinculo->update(['ativo' => false]);
 
-        if ($futuras->isNotEmpty() && ! $request->boolean('cancelar_consultas')) {
-            return back()->with('erro', "{$vinculo->medico->user->name} tem {$futuras->count()} " .
-                ($futuras->count() === 1 ? 'consulta futura' : 'consultas futuras') . " em {$vinculo->local->nome}. " .
-                'Confirme o desvínculo marcando "cancelar as consultas" (os pacientes são avisados).');
-        }
-
-        DB::transaction(function () use ($vinculo, $futuras, $request) {
-            $futuras->each->cancelar($request->user()->id, 'O médico deixou de atender nesta unidade');
-            $vinculo->update(['ativo' => false]);
-        });
-
-        return back()->with('sucesso', "{$vinculo->medico->user->name} não atende mais em {$vinculo->local->nome}.");
+        return back()->with('sucesso', "{$vinculo->medico->nome} não atende mais em {$vinculo->local->nome}.");
     }
 }

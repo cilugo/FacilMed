@@ -14,18 +14,22 @@ class Local extends Model
     protected $table = 'locais';
 
     protected $fillable = [
-        'clinica_id', 'medico_id', 'nome', 'tipo', 'cep', 'endereco',
+        'clinica_id', 'nome', 'tipo', 'cep', 'endereco',
         'numero', 'complemento', 'bairro', 'cidade', 'uf', 'telefone', 'ativo',
-        'latitude', 'longitude',
+        'latitude', 'longitude', 'faixa_preco',
     ];
 
-    protected $casts = ['ativo' => 'boolean', 'latitude' => 'float', 'longitude' => 'float'];
+    protected $casts = [
+        'ativo' => 'boolean', 'latitude' => 'float', 'longitude' => 'float',
+        'media_avaliacoes' => 'decimal:2',
+        'faixa_preco' => 'integer',
+    ];
 
     /**
      * 29/09/2026: todo local salvo sem coordenada ganha a APROXIMADA do bairro
      * ou do centro da cidade (config/localizacao.php) - e ganha de novo se o
      * endereço mudar. Assim a busca por distância funciona para o que vem do
-     * seeder, do cadastro da clínica, das unidades e do consultório do médico,
+     * seeder, do cadastro da clínica e das unidades,
      * sem cada tela ter que lembrar disso.
      *
      * static::saving = "antes de gravar" (evento do Eloquent). Quem passar a
@@ -48,12 +52,6 @@ class Local extends Model
         return $this->belongsTo(Clinica::class);
     }
 
-    /** Preenchido apenas quando e consultorio proprio de autonomo. */
-    public function medico(): BelongsTo
-    {
-        return $this->belongsTo(Medico::class);
-    }
-
     public function horarios(): HasMany
     {
         return $this->hasMany(HorarioFuncionamento::class);
@@ -64,58 +62,39 @@ class Local extends Model
         return $this->hasMany(Vinculo::class);
     }
 
-    public function ehConsultorioProprio(): bool
+    public function avaliacoes(): HasMany
     {
-        return $this->clinica_id === null;
+        return $this->hasMany(Avaliacao::class);
     }
 
     /**
-     * 29/09: locais que aparecem na busca por distância: ativos e com pelo
-     * menos um vínculo que recebe agendamento (a mesma regra da busca de
-     * médicos: Vinculo::agendaveis). Com $slug, que ofereça essa especialidade.
+     * Locais que aparecem para o usuário (busca por distância, página do
+     * local): ativos e com pelo menos um médico público (Vinculo::publicos).
+     * Com $slug, que tenham essa especialidade.
      */
-    public function scopeAgendaveis(Builder $q, ?string $slug = null): Builder
+    public function scopePublicos(Builder $q, ?string $slug = null): Builder
     {
         return $q->where('locais.ativo', true)
-            ->whereHas('vinculos', fn ($v) => $v->agendaveis()->oferece($slug));
+            ->whereHas('vinculos', fn ($v) => $v->publicos()->oferece($slug));
     }
 
     /**
-     * A página pública do local pode abrir? Local ativo, e o dono no ar: a
-     * clínica com a conta ativa, ou - no consultório próprio - o médico
-     * visível (CRM verificado e conta ativa).
+     * A página pública do local pode abrir? Local ativo e a clínica dona
+     * com a conta ativa. (01/10: todo local é de uma clínica/hospital —
+     * o consultório próprio de médico saiu junto com a conta do médico.)
      */
     public function estaPublico(): bool
     {
-        if (! $this->ativo) {
-            return false;
-        }
-
-        return $this->ehConsultorioProprio()
-            ? Medico::visivel()->whereKey($this->medico_id)->exists()
-            : (bool) $this->clinica?->user?->estaAtivo();
+        return $this->ativo && (bool) $this->clinica?->user?->estaAtivo();
     }
 
-    /**
-     * Nota média e total de avaliações de cada local (29/09).
-     *
-     * A avaliação é por CONSULTA realizada (AGENTS §3), a consulta sabe o
-     * vínculo e o vínculo sabe o local: a nota do local sai daí, sem tabela
-     * nova. Só números - o comentário é privado e nunca sai desta consulta.
-     *
-     * @return Collection<int, object{local_id: int, media: float, total: int}>  indexada pelo id do local
-     */
-    public static function notas(iterable $ids): Collection
+    /** Recalcula o cache de avaliações. Chamado pelo model Avaliacao. */
+    public function recalcularAvaliacoes(): void
     {
-        return Avaliacao::query()
-            ->join('consultas', 'consultas.id', '=', 'avaliacoes.consulta_id')
-            ->join('vinculos', 'vinculos.id', '=', 'consultas.vinculo_id')
-            ->whereIn('vinculos.local_id', collect($ids)->all())
-            ->groupBy('vinculos.local_id')
-            ->selectRaw('vinculos.local_id, AVG(avaliacoes.estrelas) AS media, COUNT(*) AS total')
-            ->toBase()
-            ->get()
-            ->keyBy('local_id');
+        $this->forceFill([
+            'media_avaliacoes' => (float) $this->avaliacoes()->avg('estrelas'),
+            'total_avaliacoes' => $this->avaliacoes()->count(),
+        ])->saveQuietly();
     }
 
     /** Distância em linha reta até um ponto, em km. Null se o local não tem coordenada. */
@@ -128,15 +107,10 @@ class Local extends Model
         return Localizacao::distanciaKm($lat, $lng, $this->latitude, $this->longitude);
     }
 
-    /**
-     * Quem pode editar preco e dados deste local:
-     * a clinica dona, ou o medico autonomo dono.
-     */
+    /** Quem pode editar preço e dados deste local: a clínica dona. */
     public function donoUserId(): ?int
     {
-        return $this->ehConsultorioProprio()
-            ? $this->medico?->user_id
-            : $this->clinica?->user_id;
+        return $this->clinica?->user_id;
     }
 
     public function getEnderecoCompletoAttribute(): string

@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
  *
  * - Onde fica um local: coordenada APROXIMADA do bairro ou do centro da cidade,
  *   tirada de config/localizacao.php (Local::booted chama coordenadas()).
- * - Onde está o paciente: o navegador informa (botão "Usar minha localização")
+ * - Onde está o usuário: o navegador informa (botão "Usar minha localização")
  *   ou ele escolhe a cidade e a conta parte do centro dela.
  * - Distância: fórmula de Haversine, em linha reta. Não é o caminho de carro —
  *   a tela diz "em linha reta" para não prometer o que não calcula.
@@ -106,7 +106,7 @@ final class Localizacao
 
     /**
      * De onde medir a distância, a partir da URL: ?cidade= (o centro dela) ou
-     * ?lat=&lng= (a posição que o navegador do paciente deu). Sem nenhum dos
+     * ?lat=&lng= (a posição que o navegador do usuário deu). Sem nenhum dos
      * dois: null, e a tela lista sem distância.
      *
      * A cidade vem primeiro: se a pessoa usou a localização e depois escolheu

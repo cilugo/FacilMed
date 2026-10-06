@@ -3,13 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\BaseCrm;
-use App\Models\Bloqueio;
-use App\Models\Consulta;
 use App\Models\Especialidade;
 use App\Models\Local;
 use App\Models\Medico;
-use App\Models\PacienteAcessibilidade;
-use App\Models\PacientePlano;
+use App\Models\UsuarioPlano;
 use App\Models\Plano;
 use App\Models\Preco;
 use App\Models\User;
@@ -53,84 +50,9 @@ class RevisaoRodada3Test extends TestCase
         }
     }
 
-    public function test_grade_da_clinica_nao_multiplica_preco_com_ponto(): void
-    {
-        $clinica = User::where('email', 'contato@vidaplena.test')->first()->clinica;
-        $v = $clinica->vinculos()->with('medico.especialidades')->first();
-        $esp = $v->medico->especialidades->first();
-        $valor = fn () => Preco::where('vinculo_id', $v->id)->where('especialidade_id', $esp->id)->value('valor');
-
-        // Antes: "150.00" era salvo como R$ 15.000,00, com a mensagem "salva".
-        $this->comoClinica()->post('/clinica/precos', ['precos' => [$v->id => [$esp->id => '150.00']]])
-            ->assertSessionHasNoErrors()->assertSessionHas('sucesso');
-        $this->assertEquals(150.00, (float) $valor());
-
-        $this->comoClinica()->post('/clinica/precos', ['precos' => [$v->id => [$esp->id => '1.250,00']]])
-            ->assertSessionHasNoErrors();
-        $this->assertEquals(1250.00, (float) $valor());
-
-        // Ambíguo: recusa e não mexe no valor.
-        $this->comoClinica()->post('/clinica/precos', ['precos' => [$v->id => [$esp->id => '1,250.00']]])
-            ->assertSessionHasErrors("precos.{$v->id}.{$esp->id}");
-        $this->assertEquals(1250.00, (float) $valor());
-    }
 
     // -----------------------------------------------------------------
-    // Acessibilidade só para o médico, só com consulta agendada (item 31)
     // -----------------------------------------------------------------
-
-    /** Consulta agendada Ana + Helena, sozinha no dia, com acessibilidade preenchida. */
-    private function consultaDaAnaComAcessibilidade(): Consulta
-    {
-        $ana = User::where('email', 'ana@facilmed.test')->first()->paciente;
-        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
-
-        PacienteAcessibilidade::updateOrCreate(['paciente_id' => $ana->id], [
-            'possui_deficiencia' => true, 'descricao' => 'Uso cadeira de rodas',
-            'consentimento_em' => now(), 'consentimento_versao' => '1.0',
-        ]);
-
-        $c = Consulta::where('paciente_id', $ana->id)->where('medico_id', $helena->id)
-            ->where('status', 'agendada')->orderBy('data_consulta')->firstOrFail();
-
-        // Outras consultas dos dois no mesmo dia sairiam na mesma tela: tira do caminho.
-        Consulta::where('paciente_id', $ana->id)->where('medico_id', $helena->id)
-            ->whereDate('data_consulta', $c->data_consulta)->whereKeyNot($c->id)->delete();
-
-        return $c;
-    }
-
-    public function test_agenda_do_medico_so_mostra_acessibilidade_de_consulta_agendada(): void
-    {
-        $c = $this->consultaDaAnaComAcessibilidade();
-        $url = '/medico/agenda?data=' . $c->data_consulta->toDateString();
-
-        $this->comoMedico()->get($url)->assertOk()->assertSee('Uso cadeira de rodas');
-
-        // Antes: continuava aparecendo depois que a consulta saía de "agendada".
-        foreach (['cancelada', 'realizada', 'nao_compareceu'] as $status) {
-            $c->forceFill(['status' => $status])->save();
-            $this->comoMedico()->get($url)->assertOk()
-                ->assertSee($c->paciente->user->name)
-                ->assertDontSee('Uso cadeira de rodas');
-        }
-    }
-
-    public function test_clinica_nao_ve_acessibilidade_nem_com_consulta_agendada(): void
-    {
-        $c = $this->consultaDaAnaComAcessibilidade();
-        $clinica = User::where('email', 'contato@vidaplena.test')->first();
-        $this->assertSame($clinica->clinica->id, $c->vinculo->local->clinica_id, 'A consulta deveria ser na Vida Plena.');
-
-        // Antes: a agenda da clínica mostrava o texto, contra a Policy e o AGENTS.md §3.
-        $this->comoClinica()->get('/clinica/agenda?data=' . $c->data_consulta->toDateString())
-            ->assertOk()->assertSee($c->paciente->user->name)->assertDontSee('Uso cadeira de rodas');
-
-        $this->assertFalse($clinica->can('verAcessibilidade', $c));
-        $this->assertFalse($clinica->can('view', $c->paciente->acessibilidade));
-        $this->assertTrue(User::where('email', 'helena@facilmed.test')->first()->can('verAcessibilidade', $c));
-        $this->assertFalse(User::where('email', 'rafael@facilmed.test')->first()->can('verAcessibilidade', $c));
-    }
 
     // -----------------------------------------------------------------
     // CRM de outra pessoa (item 32) e médico rejeitado (item 33)
@@ -155,7 +77,7 @@ class RevisaoRodada3Test extends TestCase
     {
         // Antes: "Fulano" entrava verificado com o CRM do Paulo Yamada.
         $this->clinicaCadastraMedico('Fulano Qualquer')
-            ->assertSessionHasErrors(['crm' => 'Esse CRM está registrado em nome de outra pessoa na base simulada do FacilMed. Confira se o nome completo está igual ao do CRM.']);
+            ->assertSessionHasErrors(['crm' => 'Esse CRM está registrado em nome de outra pessoa na base simulada do PointMed. Confira se o nome completo está igual ao do CRM.']);
         $this->assertFalse(Medico::where('crm', '445566')->exists());
 
         // Título, acento e maiúscula não importam.
@@ -184,81 +106,24 @@ class RevisaoRodada3Test extends TestCase
         $this->assertTrue(Medico::where('crm', '445566')->exists());
     }
 
-    public function test_medico_nao_troca_o_nome_para_outro_que_nao_o_do_crm(): void
-    {
-        $base = ['crm' => '112233', 'uf' => 'SP'];
-
-        $this->comoMedico()->put('/medico/perfil', $base + ['name' => 'Paulo Yamada'])->assertSessionHasErrors('crm');
-        $this->assertSame('Dra. Helena Navarro', User::where('email', 'helena@facilmed.test')->value('name'));
-
-        // Tirar o "Dra." não é trocar de nome.
-        $this->comoMedico()->put('/medico/perfil', $base + ['name' => 'Helena Navarro'])->assertSessionHasNoErrors();
-        $this->assertSame('Helena Navarro', User::where('email', 'helena@facilmed.test')->value('name'));
-    }
-
-    public function test_medico_rejeitado_continua_rejeitado_ao_trocar_o_crm(): void
-    {
-        $helena = User::where('email', 'helena@facilmed.test')->first();
-        $this->comoAdmin()->post('/admin/verificacoes/' . $helena->medico->id . '/rejeitar', ['motivo' => 'CRM com pendência na revisão'])
-            ->assertSessionHas('sucesso');
-
-        // Um segundo CRM dela, válido na base (outro estado). Só o teste escreve na base.
-        BaseCrm::create(['crm' => '778899', 'uf' => 'RJ', 'nome' => 'Helena Navarro', 'situacao' => 'ativo']);
-
-        // Antes: trocar o CRM voltava para "verificado" e ela reaparecia na busca.
-        $this->actingAs($helena->fresh())->put('/medico/perfil', [
-            'name' => 'Dra. Helena Navarro', 'crm' => '778899', 'uf' => 'RJ',
-        ])->assertSessionHasNoErrors()
-          ->assertSessionHas('sucesso', 'Dados salvos. O novo CRM foi conferido na base simulada, mas o seu cadastro continua recusado pela administração do FacilMed.');
-
-        $medico = $helena->medico->fresh();
-        $this->assertSame('778899', $medico->crm);
-        $this->assertSame('rejeitado', $medico->status_verificacao);
-
-        // Ela vê o porquê no menu.
-        $this->actingAs($helena->fresh())->get('/medico')->assertOk()
-            ->assertSee('Seu cadastro foi recusado pela administração do FacilMed.');
-
-        // E continua fora da busca (visitante, para o nome dela não vir do menu).
-        auth()->logout();
-        $this->get('/buscar')->assertOk()->assertDontSee('Helena Navarro');
-
-        // Só o admin desfaz — e o "Desfazer rejeição" confere a base de novo, com o nome.
-        $this->comoAdmin()->post('/admin/verificacoes/' . $medico->id . '/aprovar')->assertSessionHas('sucesso');
-        $this->assertSame('verificado', $medico->fresh()->status_verificacao);
-    }
-
-    public function test_admin_nao_aprova_crm_em_nome_de_outra_pessoa(): void
-    {
-        $medico = User::where('email', 'helena@facilmed.test')->first()->medico;
-        $medico->forceFill(['status_verificacao' => 'rejeitado'])->save();
-        $medico->user->forceFill(['name' => 'Outra Pessoa'])->save();
-
-        $this->comoAdmin()->post('/admin/verificacoes/' . $medico->id . '/aprovar')
-            ->assertSessionHas('erro', 'Não dá para aprovar Outra Pessoa. Esse CRM está registrado em nome de outra pessoa na base simulada do FacilMed. Confira se o nome completo está igual ao do CRM.');
-        $this->assertSame('rejeitado', $medico->fresh()->status_verificacao);
-    }
-
     // -----------------------------------------------------------------
     // Perfil público e busca só mostram onde dá para agendar (itens 34 e 35)
     // -----------------------------------------------------------------
 
     public function test_perfil_publico_nao_oferece_clinica_bloqueada(): void
     {
-        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
-        $naVidaPlena = $helena->vinculos()->whereHas('local', fn ($l) => $l->where('nome', 'Vida Plena - Centro'))->firstOrFail();
+        $helena = Medico::where('crm', '112233')->firstOrFail();
+        $vidaPlena = \App\Models\Local::where('nome', 'Vida Plena - Centro')->firstOrFail();
 
-        $this->get('/medico/' . $helena->id)->assertOk()
-            ->assertSee('Vida Plena - Centro')->assertSee(route('agendamento.horario', $naVidaPlena, false));
+        $this->get('/medico/' . $helena->id)->assertOk()->assertSee('Vida Plena - Centro');
 
         User::where('email', 'contato@vidaplena.test')->update(['status' => 'bloqueado']);
 
-        // Antes: o "Agendar aqui" continuava na tela e levava para uma página 404.
+        // Clínica bloqueada some do perfil do médico e a página do local não abre.
         $this->get('/medico/' . $helena->id)->assertOk()
             ->assertDontSee('Vida Plena - Centro')
-            ->assertDontSee(route('agendamento.horario', $naVidaPlena, false))
             ->assertSee('Santa Clara');                 // o outro lugar dela continua
-        $this->comoPaciente('marcos@facilmed.test')->get('/agendar/' . $naVidaPlena->id)->assertNotFound();
+        $this->get('/local/' . $vidaPlena->id)->assertNotFound();
 
         // Na busca, o card também não lista mais a Vida Plena.
         auth()->logout();
@@ -268,7 +133,7 @@ class RevisaoRodada3Test extends TestCase
 
     public function test_perfil_publico_nao_mostra_especialidade_desativada(): void
     {
-        $rafael = User::where('email', 'rafael@facilmed.test')->first()->medico;
+        $rafael = Medico::where('crm', '223344')->firstOrFail();
         $this->get('/medico/' . $rafael->id)->assertOk()->assertSee('Dermatologia');
 
         Especialidade::where('slug', 'dermatologia')->update(['ativo' => false]);
@@ -287,101 +152,18 @@ class RevisaoRodada3Test extends TestCase
         auth()->logout();
         $this->flushSession(); // a mensagem de sucesso da clínica cita o nome dele
 
-        // Antes: aparecia na busca e o paciente não tinha onde agendar.
+        // Antes: aparecia na busca e o usuário não tinha onde agendar.
         $this->get('/buscar')->assertOk()->assertDontSee('Paulo Yamada')->assertSee('Helena Navarro');
         $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertDontSee('Paulo Yamada');
     }
 
-    public function test_busca_por_especialidade_exige_preco_ativo_em_algum_lugar(): void
-    {
-        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
-        $cardio = Especialidade::where('slug', 'cardiologia')->first();
-
-        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertSee('Helena Navarro');
-
-        // A clínica apaga o preço de Cardiologia da Helena em todos os lugares:
-        // ela ainda TEM a especialidade, mas não oferece em lugar nenhum.
-        Preco::whereIn('vinculo_id', $helena->vinculos()->pluck('id'))->where('especialidade_id', $cardio->id)
-            ->update(['ativo' => false]);
-
-        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertDontSee('Helena Navarro');
-        $this->get('/buscar?especialidade=clinica-geral')->assertOk()->assertSee('Helena Navarro');
-        // URL montada à mão com lista no lugar de texto: antes dava erro 500.
-        foreach (['especialidade[]=x', 'cidade[]=y', 'convenio[]=1'] as $q) {
-            $this->get('/buscar?' . $q)->assertOk();
-        }
-    }
 
     // -----------------------------------------------------------------
     // Ausência registrada de novo não duplica (item 36)
     // -----------------------------------------------------------------
 
-    public function test_ausencia_registrada_de_novo_para_cancelar_nao_duplica(): void
-    {
-        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
-        $c = Consulta::where('medico_id', $helena->id)->where('status', 'agendada')
-            ->whereDate('data_consulta', '>', now()->addDay())->orderBy('data_consulta')->firstOrFail();
-        $dia = $c->data_consulta->toDateString();
-        $dados = ['inicio' => $dia . 'T00:00', 'fim' => $dia . 'T23:59', 'motivo' => 'Congresso'];
-
-        // 1ª vez, sem "cancelar consultas": a ausência entra, a consulta fica, e o
-        // formulário volta preenchido para marcar a caixa e mandar de novo.
-        $this->comoMedico()->post('/medico/ausencias', $dados)
-            ->assertSessionHas('erro')->assertSessionHasInput('inicio', $dados['inicio']);
-        $this->assertSame('agendada', $c->fresh()->status);
-
-        // 2ª vez, como a mensagem manda: marcando a caixa.
-        $this->comoMedico()->post('/medico/ausencias', $dados + ['cancelar_consultas' => '1'])->assertSessionHas('sucesso');
-
-        // Antes: ficavam DUAS ausências iguais na lista.
-        $this->assertSame(1, Bloqueio::where('medico_id', $helena->id)->whereDate('inicio', $dia)->count());
-        $this->assertSame('cancelada', $c->fresh()->status);
-        $this->assertSame('Ausência do médico: Congresso', $c->fresh()->motivo_cancelamento);
-    }
-
     // -----------------------------------------------------------------
     // "Aprovar" carteirinha no admin confere a base simulada (item 37)
     // -----------------------------------------------------------------
 
-    public function test_admin_so_aprova_carteirinha_que_bate_com_a_base(): void
-    {
-        $marcos = User::where('email', 'marcos@facilmed.test')->first()->paciente;
-        $pendente = fn (string $plano, string $numero) => PacientePlano::create([
-            'paciente_id' => $marcos->id, 'plano_id' => Plano::where('nome', $plano)->value('id'),
-            'numero_carteirinha' => $numero, 'validade' => now()->addYears(5)->toDateString(), 'status' => 'pendente',
-        ]);
-
-        // Número que não existe na base: antes o admin aprovava e ela virava "ativa".
-        $inventada = $pendente('Bem Viver Individual', '999999999999');
-        $this->comoAdmin()->post('/admin/carteirinhas/' . $inventada->id . '/aprovar')->assertSessionHas('erro');
-        $this->assertSame('pendente', $inventada->fresh()->status);
-
-        // Carteirinha de outra pessoa (outro CPF na base) na conta do Marcos: também não.
-        $deOutro = $pendente('SpSaúde Individual', '100000000005');
-        $this->comoAdmin()->post('/admin/carteirinhas/' . $deOutro->id . '/aprovar')
-            ->assertSessionHas('erro', 'Não dá para aprovar esta carteirinha. Essa carteirinha está em nome de outra pessoa.');
-
-        // A que bate com a base é aprovada, com a validade DA BASE (não a digitada).
-        $certa = $pendente('Bem Viver Individual', '300000000002');
-        $this->comoAdmin()->post('/admin/carteirinhas/' . $certa->id . '/aprovar')->assertSessionHas('sucesso');
-        $this->assertSame('ativa', $certa->fresh()->status);
-        $this->assertTrue($certa->fresh()->validade->lessThan(now()->addYears(5)->subDay()));
-    }
-
-    public function test_preco_do_consultorio_nao_multiplica_valor_com_ponto(): void
-    {
-        $this->comoMedico()->post('/medico/locais', [
-            'nome' => 'Consultório Dra. Helena', 'cep' => '12245-000', 'endereco' => 'Av. Teste', 'numero' => '100',
-            'bairro' => 'Centro', 'cidade' => 'São José dos Campos', 'uf' => 'SP',
-        ])->assertSessionHasNoErrors();
-        $vinculo = Vinculo::where('local_id', Local::where('nome', 'Consultório Dra. Helena')->value('id'))->firstOrFail();
-
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => $vinculo->id, 'especialidade_id' => 2, 'valor' => '150.00'])
-            ->assertSessionHasNoErrors();
-        $this->assertSame('150.00', Preco::where('vinculo_id', $vinculo->id)->where('especialidade_id', 2)->value('valor'));
-
-        $this->comoMedico()->post('/medico/precos', ['vinculo_id' => $vinculo->id, 'especialidade_id' => 2, 'valor' => '1,250.00'])
-            ->assertSessionHasErrors('valor');
-        $this->assertSame('150.00', Preco::where('vinculo_id', $vinculo->id)->where('especialidade_id', 2)->value('valor'));
-    }
 }

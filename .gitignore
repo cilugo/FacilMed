@@ -26,3 +26,8 @@ Thumbs.db
 # FacilMed
 /public/css/*.map
 Desktop.ini
+
+# Fotos de perfil enviadas pelo site (01/10/2026)
+/public/uploads/fotos/*
+!/public/uploads/fotos/.gitkeep
+/public/uploads/fotos-testes/

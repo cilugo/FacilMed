@@ -26,9 +26,6 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        // Senha temporária (médico cadastrado pela clínica) deixa de valer.
-        $request->user()->medico?->update(['senha_temporaria' => false]);
-
         return back()->with('status', 'password-updated');
     }
 }

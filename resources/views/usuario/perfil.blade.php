@@ -1,0 +1,171 @@
+{{--
+    Usuário → Meu perfil. Dados: Usuario\PerfilController@edit.
+    Formulários: foto de perfil (01/10), dados pessoais, senha (rota
+    password.update do Breeze) e excluir a conta (30/09, LGPD).
+    01/10: a acessibilidade saiu junto com as consultas (só o médico DA
+    consulta via esse dado; sem consulta, ficou sem finalidade).
+--}}
+@extends('layouts.painel')
+
+@section('titulo', 'Meu perfil')
+
+@push('head')
+    <link rel="stylesheet" href="{{ asset('css/crud.css') }}">
+@endpush
+
+@php
+    use App\Support\Documento;
+    $user = $usuario->user;
+    $erroSenha = $errors->updatePassword;
+@endphp
+
+@section('conteudo')
+
+    <div class="fm-pagina-topo">
+        <div>
+            <h1 class="fm-titulo">Meu perfil</h1>
+            <p class="fm-subtitulo">Seus dados de cadastro.</p>
+        </div>
+    </div>
+
+    @if (session('status') === 'password-updated')
+        <div class="fm-flash fm-flash--ok" role="status">Senha trocada.</div>
+    @endif
+
+    @include('painel.parciais.foto')
+
+    {{-- ===================== DADOS PESSOAIS ===================== --}}
+    <section class="fm-painel" style="margin-top: 18px;">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="user" /> Dados pessoais</h2>
+        </header>
+
+        <form method="POST" action="{{ route('usuario.perfil.atualizar') }}" class="fm-form fm-form--duas">
+            @csrf
+            @method('PUT')
+
+            <div class="fm-campo {{ $errors->has('name') ? 'fm-campo--erro' : '' }}">
+                <label for="name">Nome completo *</label>
+                <input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="255">
+                @error('name') <span class="fm-campo__erro">{{ $message }}</span> @enderror
+            </div>
+
+            <div class="fm-campo">
+                <label for="email">E-mail</label>
+                <input id="email" value="{{ $user->email }}" disabled>
+                <span class="fm-campo__ajuda">É o seu login; não muda por aqui.</span>
+            </div>
+
+            <div class="fm-campo">
+                <label for="cpf">CPF</label>
+                <input id="cpf" value="{{ Documento::cpf($usuario->cpf) }}" disabled>
+            </div>
+
+            <div class="fm-campo {{ $errors->has('telefone') ? 'fm-campo--erro' : '' }}">
+                <label for="telefone">Telefone</label>
+                <input id="telefone" name="telefone" type="tel" inputmode="numeric" maxlength="15"
+                       value="{{ old('telefone', \App\Support\Formatador::telefone($user->telefone)) }}" placeholder="(12) 99999-9999">
+                @error('telefone') <span class="fm-campo__erro">{{ $message }}</span> @enderror
+            </div>
+
+            <div class="fm-campo {{ $errors->has('data_nascimento') ? 'fm-campo--erro' : '' }}">
+                <label for="data_nascimento">Data de nascimento</label>
+                <input id="data_nascimento" name="data_nascimento" type="date"
+                       value="{{ old('data_nascimento', $usuario->data_nascimento?->toDateString()) }}">
+                @error('data_nascimento') <span class="fm-campo__erro">{{ $message }}</span> @enderror
+            </div>
+
+            <div class="fm-campo">
+                <label for="sexo">Sexo</label>
+                <select id="sexo" name="sexo">
+                    <option value="">Não informar</option>
+                    @foreach (['Masculino', 'Feminino', 'Prefiro nao informar'] as $opcao)
+                        <option value="{{ $opcao }}" @selected(old('sexo', $usuario->sexo) === $opcao)>{{ $opcao === 'Prefiro nao informar' ? 'Prefiro não informar' : $opcao }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="fm-form__acoes">
+                <button type="submit" class="fm-botao">Salvar dados</button>
+            </div>
+        </form>
+    </section>
+
+    {{-- ===================== SENHA ===================== --}}
+    <section class="fm-painel" style="margin-top: 18px;">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="shield" /> Trocar senha</h2>
+        </header>
+
+        <form method="POST" action="{{ route('password.update') }}" class="fm-form fm-form--duas">
+            @csrf
+            @method('PUT')
+
+            <div class="fm-campo {{ $erroSenha->has('current_password') ? 'fm-campo--erro' : '' }}">
+                <label for="current_password">Senha atual *</label>
+                <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+                @if ($erroSenha->has('current_password')) <span class="fm-campo__erro">{{ $erroSenha->first('current_password') }}</span> @endif
+            </div>
+            <div></div>
+
+            <div class="fm-campo {{ $erroSenha->has('password') ? 'fm-campo--erro' : '' }}">
+                <label for="password">Senha nova *</label>
+                <input id="password" name="password" type="password" autocomplete="new-password" required>
+                <span class="fm-campo__ajuda">Mínimo de 8 caracteres.</span>
+                @if ($erroSenha->has('password')) <span class="fm-campo__erro">{{ $erroSenha->first('password') }}</span> @endif
+            </div>
+
+            <div class="fm-campo">
+                <label for="password_confirmation">Repita a senha nova *</label>
+                <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
+            </div>
+
+            <div class="fm-form__acoes">
+                <button type="submit" class="fm-botao">Trocar senha</button>
+            </div>
+        </form>
+    </section>
+
+    {{-- ===================== EXCLUIR CONTA (30/09, LGPD) =====================
+         Regra em Usuario::excluirConta(); confirmação no ExcluirContaRequest,
+         com erros no saco próprio "excluirConta" (não se mistura com a senha). --}}
+    @php $erroExclusao = $errors->excluirConta; @endphp
+    <section class="fm-painel" style="margin-top: 18px;" id="excluir-conta">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="user-x" /> Excluir minha conta</h2>
+        </header>
+
+        <p style="margin: 0 0 10px;">Se você excluir a conta:</p>
+        <ul style="margin: 0 0 16px; padding-left: 20px; display: grid; gap: 6px; list-style: disc;">
+            <li>seu nome, e-mail, telefone, CPF, data de nascimento, foto e as suas carteirinhas são apagados;</li>
+            <li>as notas que você deu continuam valendo para a média dos locais e médicos, mas sem o seu nome e sem o comentário;</li>
+            <li><strong>não dá para desfazer.</strong> Se quiser voltar, é só criar uma conta nova (pode ser com o mesmo e-mail e CPF).</li>
+        </ul>
+
+        <form method="POST" action="{{ route('usuario.perfil.excluir') }}" class="fm-form fm-form--duas">
+            @csrf
+            @method('DELETE')
+
+            {{-- name="current_password": o Laravel nunca guarda esse campo na sessão (ver ExcluirContaRequest) --}}
+            <div class="fm-campo {{ $erroExclusao->has('current_password') ? 'fm-campo--erro' : '' }}">
+                <label for="excluir_senha">Sua senha *</label>
+                <input id="excluir_senha" name="current_password" type="password" autocomplete="current-password" required>
+                @if ($erroExclusao->has('current_password')) <span class="fm-campo__erro">{{ $erroExclusao->first('current_password') }}</span> @endif
+            </div>
+            <div></div>
+
+            <div style="grid-column: 1 / -1;">
+                <label style="display: flex; gap: 8px; align-items: flex-start; font-size: 14px;">
+                    <input type="checkbox" name="confirmacao" value="1" required style="width: 18px; height: 18px; margin-top: 2px;">
+                    Entendo que a exclusão não pode ser desfeita.
+                </label>
+                @if ($erroExclusao->has('confirmacao')) <span class="fm-campo__erro">{{ $erroExclusao->first('confirmacao') }}</span> @endif
+            </div>
+
+            <div class="fm-form__acoes">
+                <button type="submit" class="fm-botao fm-botao--perigo">Excluir minha conta</button>
+            </div>
+        </form>
+    </section>
+
+@endsection

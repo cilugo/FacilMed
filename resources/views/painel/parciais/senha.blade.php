@@ -1,13 +1,12 @@
 {{--
-    Bloco "Trocar senha" dos perfis de médico e clínica (mesmo de paciente/perfil).
+    Bloco "Trocar senha" dos perfis da clínica e do admin (mesmo de usuário/perfil).
     Rota do Breeze: password.update. Erros no bag "updatePassword".
-    $destaque = true quando a senha ainda é a provisória da clínica.
 --}}
 @php $erroSenha = $errors->updatePassword; @endphp
 
-<section class="fm-painel {{ $destaque ? 'fm-painel--destaque' : '' }}" style="margin-top: 18px;">
+<section class="fm-painel" style="margin-top: 18px;">
     <header class="fm-painel__topo">
-        <h2 class="fm-painel__titulo"><x-icone nome="shield" /> {{ $destaque ? 'Crie a sua senha' : 'Trocar senha' }}</h2>
+        <h2 class="fm-painel__titulo"><x-icone nome="shield" /> Trocar senha</h2>
     </header>
 
     <form method="POST" action="{{ route('password.update') }}" class="fm-form fm-form--duas">
@@ -15,7 +14,7 @@
         @method('PUT')
 
         <div class="fm-campo {{ $erroSenha->has('current_password') ? 'fm-campo--erro' : '' }}">
-            <label for="current_password">{{ $destaque ? 'Senha provisória (a que a clínica passou) *' : 'Senha atual *' }}</label>
+            <label for="current_password">Senha atual *</label>
             <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
             @if ($erroSenha->has('current_password')) <span class="fm-campo__erro">{{ $erroSenha->first('current_password') }}</span> @endif
         </div>
@@ -34,7 +33,7 @@
         </div>
 
         <div class="fm-form__acoes">
-            <button type="submit" class="fm-botao">{{ $destaque ? 'Salvar minha senha' : 'Trocar senha' }}</button>
+            <button type="submit" class="fm-botao">Trocar senha</button>
         </div>
     </form>
 </section>

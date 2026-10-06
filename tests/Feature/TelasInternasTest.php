@@ -19,27 +19,23 @@ use Tests\TestCase;
 class TelasInternasTest extends TestCase
 {
     public const TELAS = [
-        // [conta, url, view, variáveis obrigatórias]
-        ['medico',  '/medico/agenda',        'medico.agenda',          ['data', 'anterior', 'seguinte', 'vinculos', 'consultas', 'resumo']],
-        ['medico',  '/medico/horarios',      'medico.disponibilidade', ['vinculos', 'dias', 'duracoes']],
-        ['medico',  '/medico/ausencias',     'medico.bloqueios',       ['bloqueios', 'vinculos']],
-        ['medico',  '/medico/locais',        'medico.locais',          ['vinculos']],
-        ['medico',  '/medico/precos',        'medico.precos',          ['vinculos', 'especialidades']],
-        ['medico',  '/medico/avaliacoes',    'medico.avaliacoes',      ['medico', 'avaliacoes']],
-        ['medico',  '/medico/perfil',        'medico.perfil',          ['medico', 'especialidades', 'convenios']],
-        ['clinica', '/clinica/agenda',       'clinica.agenda',         ['data', 'anterior', 'seguinte', 'consultas', 'filtros', 'unidades', 'medicos', 'especialidades', 'resumo']],
-        ['clinica', '/clinica/medicos',      'clinica.medicos',        ['vinculos', 'unidades']],
-        ['clinica', '/clinica/medicos/novo', 'clinica.medicos-form',   ['especialidades', 'unidades']],
-        ['clinica', '/clinica/unidades',     'clinica.unidades',       ['locais', 'dias']],
-        ['clinica', '/clinica/precos',       'clinica.precos',         ['vinculos']],
-        ['clinica', '/clinica/avaliacoes',   'clinica.avaliacoes',     ['media', 'total', 'porMedico', 'avaliacoes']],
-        ['clinica', '/clinica/perfil',       'clinica.perfil',         ['clinica']],
-        ['admin',   '/admin/usuarios',       'admin.usuarios',         ['usuarios']],
-        ['admin',   '/admin/verificacoes',   'admin.verificacoes',     ['pendentes', 'recentes']],
-        ['admin',   '/admin/carteirinhas',   'admin.carteirinhas',     ['pendentes', 'recentes']],
-        ['admin',   '/admin/clinicas',       'admin.clinicas',         ['clinicas']],
-        ['admin',   '/admin/especialidades', 'admin.especialidades',   ['especialidades']],
-        ['admin',   '/admin/consultas',      'admin.consultas',        ['consultas', 'porStatus', 'filtros']],
+        // [conta, url, view, variáveis obrigatórias] — revisto em 01/10/2026
+        ['usuario', '/usuario',                 'usuario.dashboard',      ['saudacao', 'cartoes', 'especialidades', 'cidades', 'convenios', 'ultimas', 'carteirinhas']],
+        ['usuario', '/usuario/avaliacoes',      'usuario.avaliacoes',     ['avaliacoes']],
+        ['clinica',  '/clinica',                  'clinica.dashboard',       ['cartoes', 'unidades', 'porEspecialidade', 'semFaixa', 'ultimas', 'atalhos']],
+        ['clinica',  '/clinica/medicos',          'clinica.medicos',         ['vinculos', 'unidades']],
+        ['clinica',  '/clinica/medicos/novo',     'clinica.medicos-form',    ['especialidades', 'unidades']],
+        ['clinica',  '/clinica/medicos/1/editar', 'clinica.medicos-editar',  ['medico', 'especialidades', 'convenios']],
+        ['clinica',  '/clinica/especialidades',   'clinica.especialidades',  ['especialidades', 'daClinica']],
+        ['clinica',  '/clinica/unidades',         'clinica.unidades',        ['locais', 'dias']],
+        ['clinica',  '/clinica/avaliacoes',       'clinica.avaliacoes',      ['unidades', 'medicos', 'total', 'avaliacoes']],
+        ['clinica',  '/clinica/perfil',           'clinica.perfil',          ['clinica']],
+        ['admin',    '/admin',                    'admin.dashboard',         ['cartoes', 'locais', 'medicos', 'ultimosCadastros', 'ultimasAvaliacoes']],
+        ['admin',    '/admin/usuarios',           'admin.usuarios',          ['usuarios']],
+        ['admin',    '/admin/cnpjs',              'admin.cnpjs',             ['linhas', 'problemas']],
+        ['admin',    '/admin/clinicas',           'admin.clinicas',          ['clinicas']],
+        ['admin',    '/admin/especialidades',     'admin.especialidades',    ['especialidades']],
+        ['admin',    '/admin/perfil',             'admin.perfil',            []],
     ];
 
     private string $pasta;
@@ -69,7 +65,7 @@ class TelasInternasTest extends TestCase
 
     public function test_controllers_montam_os_dados_das_telas(): void
     {
-        $contas = ['medico' => 'helena@facilmed.test', 'clinica' => 'contato@vidaplena.test', 'admin' => 'admin@facilmed.test'];
+        $contas = ['usuario' => 'ana@facilmed.test', 'clinica' => 'contato@vidaplena.test', 'admin' => 'admin@facilmed.test'];
 
         foreach (self::TELAS as [$conta, $url, $view, $variaveis]) {
             $resposta = $this->comoUsuario($contas[$conta])->get($url);
@@ -81,9 +77,12 @@ class TelasInternasTest extends TestCase
         }
     }
 
-    public function test_comentario_da_avaliacao_so_para_medico_e_clinica(): void
+    public function test_comentario_da_avaliacao_so_para_o_autor_a_clinica_e_o_admin(): void
     {
-        $this->comoMedico()->get('/medico/avaliacoes')->assertViewHas('avaliacoes',
-            fn ($p) => $p->first() === null || array_key_exists('comentario', $p->first()->toArray()));
+        $temComentario = fn ($p) => $p->first() === null || array_key_exists('comentario', $p->first()->toArray());
+
+        // Clínica e admin recebem o comentário (makeVisible no controller).
+        $this->comoClinica()->get('/clinica/avaliacoes')->assertViewHas('avaliacoes', $temComentario);
+        $this->comoAdmin()->get('/admin')->assertViewHas('ultimasAvaliacoes', $temComentario);
     }
 }

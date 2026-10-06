@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Convênio FICTÍCIO (decisão do grupo, 24/09/2026).
  *
- * Nenhum convênio do FacilMed existe de verdade: SpSaúde, Horizonte Med
+ * Nenhum convênio do PointMed existe de verdade: SpSaúde, Horizonte Med
  * e Bem Viver Saúde foram inventados para a demonstração. Isso precisa
  * estar visível na tela e no texto do TCC — a plataforma não tem
  * contrato com nenhuma operadora.
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * convenio_medico — é o MÉDICO que aceita, não o endereço.
  *
  * Nunca apague um convênio: desative (ativo = false). Apagar levaria em
- * cascata os planos e as carteirinhas dos pacientes.
+ * cascata os planos e as carteirinhas dos usuários.
  */
 class Convenio extends Model
 {

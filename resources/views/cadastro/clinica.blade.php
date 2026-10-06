@@ -7,7 +7,7 @@
     - Saem CNES, cargo e usuário: não existem no banco, e o login é pelo e-mail.
     - O "Endereço" único virou o cartão da PRIMEIRA UNIDADE (CEP, rua,
       número, bairro, cidade, UF): é o local onde os médicos vão atender.
-    - Entra o nome fantasia (é o nome que o paciente vê na busca).
+    - Entra o nome fantasia (é o nome que o usuário vê na busca).
 --}}
 @extends('layouts.cadastro')
 
@@ -47,10 +47,10 @@
             @include('cadastro._campo', ['nome' => 'razao_social', 'rotulo' => 'Razão social', 'icone' => 'instituicao', 'obrigatorio' => true,
                 'atributos' => 'placeholder="Como está no CNPJ" maxlength="150"'])
             @include('cadastro._campo', ['nome' => 'cnpj', 'rotulo' => 'CNPJ', 'icone' => 'lista', 'obrigatorio' => true, 'mascara' => 'cnpj',
-                'ajuda' => 'Conferido na base simulada do FacilMed.',
+                'ajuda' => 'Conferido na base simulada do PointMed.',
                 'atributos' => 'inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18"'])
             @include('cadastro._campo', ['nome' => 'nome_fantasia', 'rotulo' => 'Nome fantasia', 'icone' => 'predio', 'obrigatorio' => true,
-                'ajuda' => 'É o nome que o paciente vê na busca.', 'atributos' => 'placeholder="Ex.: Hospital São Lucas" maxlength="150"'])
+                'ajuda' => 'É o nome que o usuário vê na busca.', 'atributos' => 'placeholder="Ex.: Hospital São Lucas" maxlength="150"'])
             @include('cadastro._campo', ['nome' => 'telefone', 'rotulo' => 'Telefone', 'icone' => 'telefone', 'tipo' => 'tel', 'mascara' => 'telefone',
                 'atributos' => 'placeholder="(12) 3333-4444" maxlength="15" autocomplete="tel"'])
             @include('cadastro._campo', ['nome' => 'descricao', 'rotulo' => 'Descrição', 'icone' => 'texto', 'tipo' => 'textarea', 'inteiro' => true,
@@ -72,7 +72,7 @@
                 'opcoes' => array_combine(\App\Support\Uf::TODAS, \App\Support\Uf::TODAS)])
         </x-cadastro.card>
 
-        <x-cadastro.card titulo="Responsável e acesso" nota="É com este e-mail e esta senha que a clínica entra no FacilMed." icone="cadeado">
+        <x-cadastro.card titulo="Responsável e acesso" nota="É com este e-mail e esta senha que a clínica entra no PointMed." icone="cadeado">
             @include('cadastro._campo', ['nome' => 'name', 'rotulo' => 'Nome do responsável', 'icone' => 'pessoa', 'obrigatorio' => true, 'inteiro' => true,
                 'atributos' => 'placeholder="Ex.: Maria Silva Santos" autocomplete="name" maxlength="255"'])
             @include('cadastro._campo', ['nome' => 'email', 'rotulo' => 'E-mail', 'icone' => 'email', 'tipo' => 'email', 'obrigatorio' => true, 'inteiro' => true,

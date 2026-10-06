@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Clinica;
 
-use App\Models\Disponibilidade;
+use App\Models\HorarioFuncionamento;
 use App\Support\Uf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -37,6 +37,7 @@ class SalvarUnidadeRequest extends FormRequest
             'cidade'      => ['required', 'string', 'max:100'],
             'uf'          => ['required', Rule::in(Uf::TODAS)],
             'telefone'    => ['nullable', 'digits_between:10,11'],
+            'faixa_preco' => ['nullable', 'integer', 'between:1,4'],   // 05/10: escolhida pela clínica
             'horarios'    => ['nullable', 'array'],
         ];
 

@@ -59,6 +59,22 @@
                         <p class="fm-local__endereco"><x-icone nome="phone" /> {{ Formatador::telefone($local->telefone) }}</p>
                     @endif
 
+                    {{-- 05/10/2026: a faixa de preço é escolhida aqui (a Tabela de preços saiu). --}}
+                    <form method="POST" action="{{ route('clinica.unidades.faixa', $local) }}" class="fm-filtros" style="margin-top: 10px;">
+                        @csrf
+                        @method('PUT')
+                        <div class="fm-campo">
+                            <label for="faixa-{{ $local->id }}">Faixa de preço da consulta particular</label>
+                            <select id="faixa-{{ $local->id }}" name="faixa_preco">
+                                <option value="">Não informar</option>
+                                @foreach ([1, 2, 3, 4] as $n)
+                                <option value="{{ $n }}" @selected((int) $local->faixa_preco === $n)>{{ str_repeat('$', $n) }} — {{ \App\Support\FaixaDePreco::descricao($n) }}</option>
+                            @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="fm-botao fm-botao--suave fm-botao--pequeno">Salvar faixa</button>
+                    </form>
+
                     <p class="fm-campo__ajuda" style="margin-top: 8px;">
                         {{ $local->vinculos_count }} {{ $local->vinculos_count === 1 ? 'médico atende' : 'médicos atendem' }} aqui
                     </p>
@@ -86,8 +102,7 @@
                         @method('PUT')
                         <input type="hidden" name="_form" value="horarios-{{ $local->id }}">
                         @include('painel.parciais.horarios-funcionamento', ['atuais' => $atuais, 'comOld' => $esteForm])
-                        <p class="fm-campo__ajuda">Dia em branco = fechado. Se o horário diminuir, a parte dos médicos que ficar
-                            de fora deixa de ser oferecida aos pacientes (consultas já marcadas continuam).</p>
+                        <p class="fm-campo__ajuda">Dia em branco = fechado. É o horário que aparece na página da unidade.</p>
                         <div class="fm-form__acoes">
                             <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="editando = false">Cancelar</button>
                             <button type="submit" class="fm-botao fm-botao--pequeno">Salvar horário</button>
@@ -124,6 +139,18 @@
                     <option value="hospital" @selected($v('tipo') === 'hospital')>Hospital</option>
                 </select>
                 @if ($e('tipo')) <span class="fm-campo__erro">{{ $errors->first('tipo') }}</span> @endif
+            </div>
+
+            <div class="fm-campo {{ $e('faixa_preco') ? 'fm-campo--erro' : '' }}">
+                <label for="faixa_preco">Faixa de preço da consulta particular</label>
+                <select id="faixa_preco" name="faixa_preco">
+                    <option value="">Não informar</option>
+                    @foreach ([1, 2, 3, 4] as $n)
+                        <option value="{{ $n }}" @selected((int) $v('faixa_preco') === $n)>{{ str_repeat('$', $n) }} — {{ \App\Support\FaixaDePreco::descricao($n) }}</option>
+                    @endforeach
+                </select>
+                <span class="fm-campo__ajuda">O usuário vê só os $, nunca um valor exato.</span>
+                @if ($e('faixa_preco')) <span class="fm-campo__erro">{{ $errors->first('faixa_preco') }}</span> @endif
             </div>
 
             @foreach ([

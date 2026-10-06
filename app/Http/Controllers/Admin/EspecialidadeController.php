@@ -4,10 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Validation\Rule;
-use App\Services\EstatisticasDeConsultas;
-use App\Models\Consulta;
 use App\Models\Especialidade;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class EspecialidadeController extends Controller
@@ -27,14 +24,11 @@ class EspecialidadeController extends Controller
             'destaque' => ['boolean'],
         ]);
 
-        // 28/09: nomes diferentes podem dar o MESMO slug ("Clínica-Geral" e
-        // "Clínica Geral" viram clinica-geral) e o UNIQUE do banco dava erro 500.
-        $slug = Str::slug($dados['nome']);
-        if ($slug === '' || Especialidade::where('slug', $slug)->exists()) {
-            return back()->withErrors(['nome' => 'Já existe uma especialidade com esse nome.'])->withInput();
-        }
-
-        Especialidade::create([...$dados, 'slug' => $slug, 'ativo' => true]);
+        // A regra do slug repetido mora no model (a clínica também cria, 01/10).
+        Especialidade::criar($dados['nome'], [
+            'icone'    => $dados['icone'] ?? null,
+            'destaque' => (bool) ($dados['destaque'] ?? false),
+        ]);
 
         return back()->with('sucesso', 'Especialidade criada.');
     }
@@ -53,19 +47,6 @@ class EspecialidadeController extends Controller
         ]);
 
         $ativo = $request->has('ativo') ? $request->boolean('ativo') : $especialidade->ativo;
-
-        // Desativar com consulta futura marcada deixaria o paciente com uma
-        // consulta de especialidade que "não existe" mais.
-        if ($especialidade->ativo && ! $ativo) {
-            $futuras = EstatisticasDeConsultas::aPartirDeAgora(
-                Consulta::query()->where('especialidade_id', $especialidade->id)->where('status', 'agendada')
-            )->count();
-
-            if ($futuras > 0) {
-                return back()->with('erro', "Não dá para desativar {$especialidade->nome}: há {$futuras} " .
-                    ($futuras === 1 ? 'consulta futura marcada' : 'consultas futuras marcadas') . '.');
-            }
-        }
 
         // O slug NÃO muda: é o que está nos links (/buscar?especialidade=...).
         $especialidade->update([
