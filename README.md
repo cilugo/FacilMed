@@ -1,4 +1,10 @@
-# FacilMed — documentação do projeto
+# PointMed — documentação do projeto
+
+> **O projeto se chamava FacilMed até 05/10/2026.** O grupo trocou para **PointMed** porque já
+> existe um app "FácilMED" (telemedicina). Os textos e as logos são PointMed; ficaram com o nome
+> antigo, de propósito, só coisas internas: a pasta, o banco `facilmed`, os e-mails
+> `@facilmed.test`, os comandos `facilmed:` e o endereço do site no ar. Cada um troca
+> `APP_NAME=PointMed` no próprio `.env`.
 
 > **Este é o documento único do projeto.** Tudo o que estava espalhado em 14 arquivos
 > (PASSO_A_PASSO, RELATORIO_COMPLETO, PERFIL, AI_HANDOFF, MUDANCAS, REVISAO, LEIA-ME…) foi
@@ -12,7 +18,7 @@ Entrega: **20/10/2026**.
 
 ## Sumário
 
-1. [O que é o FacilMed](#1-o-que-é-o-facilmed)
+1. [O que é o PointMed](#1-o-que-é-o-pointmed)
 2. [Como rodar](#2-como-rodar) · [2.7 No servidor](#27-no-servidor-render--aiven--site-no-ar)
 3. [Contas e dados de teste](#3-contas-e-dados-de-teste)
 4. [Organização das pastas](#4-organização-das-pastas)
@@ -27,20 +33,22 @@ Entrega: **20/10/2026**.
 
 ---
 
-## 1. O que é o FacilMed
+## 1. O que é o PointMed
 
-Guia de clínicas e hospitais perto do paciente. A pessoa busca por especialidade e localização
-(GPS, CEP ou cidade), vê os locais do mais perto para o mais longe, os médicos disponíveis em cada
-um, os convênios aceitos, a **faixa de preço** da consulta particular ($ a $$$$) e a avaliação de
-outros pacientes — e avalia depois.
+Guia de clínicas e hospitais perto do usuário. A pessoa busca por especialidade e localização
+(GPS, CEP com raio de 5/10/20 km, ou cidade), vê os locais do mais perto para o mais longe, os
+médicos disponíveis em cada um, os convênios aceitos, a **faixa de preço** da consulta particular
+($ a $$$$, escolhida pela clínica para cada unidade) e a avaliação de outros usuários — e avalia
+depois. Os comentários das avaliações são públicos, com o autor como "Ana L.".
 
-**Desde 01/10/2026 o FacilMed não agenda consultas** (documento "Modificações - 01/10"): saíram
-agenda, horários, lembretes por e-mail e a conta do médico. Ver §6.
+**Desde 01/10/2026 o PointMed não agenda consultas** (documento "Modificações - 01/10"): saíram
+agenda, horários, lembretes por e-mail e a conta do médico. Desde 05/10 quem busca é **usuário**
+(não "paciente") e a Tabela de preços deu lugar à faixa por unidade. Ver §6.
 
 | Quem usa | O que faz |
 |---|---|
-| **Paciente** | busca locais e médicos, filtra por convênio, avalia locais e médicos, cadastra carteirinha, foto de perfil |
-| **Clínica / hospital** | unidades, médicos (cadastra e mantém o perfil), especialidades, tabela de preços, convênios, avaliações |
+| **Usuário** | busca locais e médicos (cidade, CEP ou localização), filtra por convênio, avalia locais e médicos, cadastra carteirinha, foto de perfil |
+| **Clínica / hospital** | unidades (com a faixa de preço de cada uma), médicos (cadastra e mantém o perfil), especialidades, convênios, avaliações |
 | **Admin** | contas, Verificar CNPJ, clínicas, especialidades, convênios, acompanhamento da plataforma |
 
 O **médico não tem conta**: é um perfil cadastrado pela clínica onde ele atende.
@@ -49,7 +57,7 @@ O **médico não tem conta**: é um perfil cadastrado pela clínica onde ele ate
 carteirinha são tabelas do próprio banco (**bases simuladas**). Nada é consultado no CFM, na
 Receita ou em operadora de verdade — e nenhuma tela diz que é.
 
-**O que o FacilMed NÃO é** (vale para qualquer pessoa ou IA):
+**O que o PointMed NÃO é** (vale para qualquer pessoa ou IA):
 - não é prontuário eletrônico — nada de diagnóstico, receita, atestado, exame;
 - não agenda consultas; não é telemedicina; não processa pagamento (só mostra a faixa de preço); não integra com o SUS;
 - não guarda documento médico (o único upload é a foto de perfil);
@@ -174,12 +182,35 @@ Arquivos do deploy (não mexem no XAMPP): `Dockerfile`, `docker/entrypoint.sh`, 
 3. **Apply**. O primeiro build leva uns 5–10 minutos. O endereço aparece no topo
    (`https://facilmed-xxxx.onrender.com`). Aba **Logs** mostra os erros, se houver.
 
+**E-mail de verdade pelo Brevo (01/10/2026) — para o "Esqueci minha senha" chegar na caixa:**
+O Render grátis **bloqueia SMTP** (Gmail direto não sai). O Brevo recebe o e-mail por HTTPS e é grátis
+(300/dia, sem domínio próprio). Não precisa de pacote novo: `app/Mail/BrevoTransport.php` fala com a API.
+1. Em **brevo.com**, crie a conta com o e-mail do grupo que vai ser o remetente (ex.: um Gmail do grupo).
+   Em *Senders & IP* → *Senders*, confirme esse e-mail (chega um código nele).
+2. Em *SMTP & API* → aba **API keys** → *Generate a new API key* → copie a chave (`xkeysib-...`).
+3. No Render → serviço `facilmed` → **Environment**: `MAIL_MAILER` = `brevo`, `BREVO_API_KEY` = a chave,
+   `MAIL_FROM_ADDRESS` = o e-mail confirmado no passo 1 → *Save* (o site reinicia sozinho).
+4. Teste: crie uma conta de usuário pelo site com um e-mail de integrante e use "Esqueci minha senha".
+Sem `BREVO_API_KEY`, o sistema continua no `log` mesmo com `MAIL_MAILER=brevo` (nada quebra). Se o
+Brevo recusar (chave errada, remetente não confirmado), a tela mostra "Não conseguimos enviar o e-mail
+agora" e o motivo aparece na aba **Logs**. **Só e-mail de integrante do grupo** (AGENTS.md).
+
+**Contas com e-mail real para cada tipo (01/10/2026):** usuário e clínica o grupo cria pelo próprio
+site (Cadastrar; para clínica use o CNPJ 43.300.001/0001-64 ou 12.345.678/0001-95 da §3). O **admin**
+não tem cadastro pelo site: no Render → Environment, coloque `ADMIN_EMAIL` (o e-mail) e
+`ADMIN_PASSWORD` (senha inicial, mínimo 8). A cada boot o `facilmed:garantir-admin` cria essa conta
+**se ainda não existir** — depois disso ele não mexe mais (nem na senha). E-mail real **nunca** vai
+para o Git nem para o seeder.
+
 **Limites do plano grátis (bom saber antes da banca):**
 - O site **dorme depois de 15 minutos** sem visita; a primeira visita depois disso leva ~1 minuto.
   Abra o site uns 2 minutos antes de apresentar.
 - O Aiven pode desligar o banco grátis depois de muito tempo **sem nenhum uso** (avisa por e-mail
   antes). Basta religar no painel.
-- E-mail continua em `MAIL_MAILER=log` (não sai de verdade) e o agendador dos lembretes não roda.
+- E-mail só sai de verdade com o Brevo configurado (acima).
+- ⚠ **Fotos de perfil somem a cada deploy:** elas ficam em `public/uploads/fotos`, e o disco do
+  Render grátis é apagado quando o site é publicado de novo. No XAMPP não acontece. Decisão pendente
+  do grupo (ver §6, 06/10).
 - **Nunca** coloque senha do banco ou `APP_KEY` em arquivo do Git: elas ficam só no painel do Render.
 
 **Apagar tudo e recriar os dados de demonstração no servidor:** no Render, aba **Shell**:
@@ -194,8 +225,8 @@ Arquivos do deploy (não mexem no XAMPP): `Dockerfile`, `docker/entrypoint.sh`, 
 | Tipo | E-mail | Observação |
 |---|---|---|
 | Admin | `admin@facilmed.test` | |
-| Paciente | `ana@facilmed.test` | CPF 802.301.401-30 · tem carteirinha SpSaúde Família ativa |
-| Paciente | `marcos@facilmed.test` | CPF 802.301.402-11 · sem carteirinha |
+| Usuário | `ana@facilmed.test` | CPF 802.301.401-30 · tem carteirinha SpSaúde Família ativa |
+| Usuário | `marcos@facilmed.test` | CPF 802.301.402-11 · sem carteirinha |
 | Clínica | `contato@clinicaspsaude.test` · `contato@vidaplena.test` · `contato@aurora.test` | São José dos Campos |
 | Hospital | `contato@santaclara.test` (Taubaté) · `contato@saolucasdovale.test` (Jacareí) · `contato@hospitalesperanca.test` (Caçapava) | |
 
@@ -216,7 +247,10 @@ Convênios fictícios: **SpSaúde**, **Horizonte Med**, **Bem Viver Saúde** (3 
   `localhost` e no site no ar, que é `https`). Quem está em São José vê as três clínicas de lá primeiro.
 - **Com especialidade:** `/locais?especialidade=pediatria` → só Aurora e Esperança (Dra. Camila).
 - **Com convênio:** `/locais?especialidade=endocrinologia&convenio=3` → só Aurora e Santa Clara (Dr. Thiago aceita Bem Viver Saúde).
-- **Página do local:** clique no nome ou em "Ver local". Vida Plena, SpSaúde e Santa Clara têm nota; o comentário de outras pessoas não aparece. Logado como paciente, o formulário "Avalie este local" fica na coluna da direita.
+- **Com raio:** `/locais?cidade=São José dos Campos&raio=5` → só as clínicas de São José; com `raio=20` entra a SpSaúde.
+- **Pelo CEP:** digite um CEP no campo "Ou o seu CEP" (ex.: 12243-700, Vila Ema). Precisa de internet
+  (ViaCEP + OpenStreetMap); sem internet, aparece "Não encontramos o CEP" e a busca continua.
+- **Página do local:** clique no nome ou em "Ver local". Vida Plena, SpSaúde e Santa Clara têm nota e os comentários aparecem para todos, com o autor como "Ana L.". Logado como usuário, o formulário "Avalie este local" fica na coluna da direita.
 
 ### Para testar a exclusão de conta
 
@@ -237,18 +271,19 @@ Desde 29/09 o médico não se cadastra sozinho: `/cadastro/medico` só volta par
 | 998877 / SP | ❌ cassado |
 | 556677 / RJ | ❌ suspenso |
 | 123456 / SP | ❌ não existe na base |
-| 112233 / SP | já está no FacilMed (Dra. Helena): só ganha o vínculo com a unidade; se já atende nela, ❌ |
+| 112233 / SP | já está no PointMed (Dra. Helena): só ganha o vínculo com a unidade; se já atende nela, ❌ |
 
 **Cadastro de clínica/hospital** (`/cadastro/clinica`)
 
 | CNPJ | Resultado |
 |---|---|
 | 43.300.001/0001-64 | ✅ aceito |
+| 12.345.678/0001-95 | ✅ aceito — CNPJ da Clínica Ferr Inni, conta de demonstração do grupo |
 | 43.300.002/0001-09 | ❌ baixado |
 | 41.100.001/0001-95 | ❌ já cadastrado |
 | 11.111.111/1111-11 | ❌ dígito verificador inválido |
 
-**Carteirinha** (logado como paciente → "Meu plano")
+**Carteirinha** (logado como usuário → "Meu plano")
 
 | Paciente | Plano | Número | Resultado |
 |---|---|---|---|
@@ -435,7 +470,66 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 01/10/2026.**
+**Atualizado em 06/10/2026.**
+
+**06/10 — junção do PointMed com a main do GitHub** (feita com o Claude Code, na branch
+`claude/compassionate-cori-dnjhvu`; o grupo revisa antes de juntar na `main`):
+- **Por quê:** o PointMed (rodadas de 01/10 e 05/10) foi feito a partir da `main` de 29/09
+  (commit `e87d8a2`). Enquanto isso a `main` ganhou 12 commits: a outra versão do plano de 01/10
+  (que mantinha a agenda, agora com a clínica), e-mail pelo Brevo, busca por CEP, o CNPJ da Ferr
+  Inni e os ajustes do cilugo. Os dois lados mexiam nos mesmos arquivos (61 conflitos).
+- **Como:** vale o PointMed, que é a decisão mais nova do grupo. Da `main` vieram só as partes que
+  continuam valendo sem agendamento:
+  - **e-mail pelo Brevo** (`BrevoTransport`, "Esqueci minha senha" com resposta igual com ou sem
+    conta) e **admin com e-mail real** (`facilmed:garantir-admin` no boot do Render) — §2.7;
+  - **busca por CEP com raio de 5/10/20 km** em "Locais perto de você" (`Geocodificador`: ViaCEP +
+    OpenStreetMap; a posição do usuário vai só na URL, arredondada, e não é guardada). Ao salvar uma
+    unidade, a coordenada exata do endereço é procurada; sem internet fica a aproximada do bairro;
+  - **CNPJ da Clínica Ferr Inni** na base simulada (a conta real do grupo);
+  - os commits do cilugo no `prototipo-antigo/` (logos e imagens) e as imagens em `public/imgs/inst/`.
+  - **Não vieram** (eram do plano com agenda ou têm equivalente no PointMed): horários e ausências
+    pela clínica, agenda da clínica, tabela `fotos` (galeria do local), `avaliacoes_locais` e o
+    campo "site" da unidade.
+- **Banco:** as duas migrations de 01/10 da `main` (`create_fotos_table` e
+  `site_e_avaliacoes_dos_locais`) saíram do projeto. Com elas o `migrate:fresh` quebrava, porque a
+  segunda lê `consultas`, que a reorganização apaga. A migration nova
+  `2026_10_06_000100_limpeza_da_juncao_com_a_main` remove as sobras (`fotos`, `avaliacoes_locais`,
+  `locais.site`) de quem já tinha rodado a `main` de 01/10; em banco novo não faz nada. Testado nos
+  dois casos.
+- **Correções:** logo da barra lateral cortada ("PointMec": a logo nova é mais larga;
+  `.fm-logo-recorte` no `painel.css`); no painel do usuário, os 3 cartões ocupam a linha toda (nota
+  do Lucas: "preencher o espaço vazio à direita de Planos de saúde"); "médicos verificados" na home virou "médicos com CRM
+  conferido" (CLAUDE.md, regra 2); `phpunit.xml` voltou (não veio no zip; sem ele os testes usariam o
+  banco `facilmed` e apagariam os dados); permissões de arquivo (`artisan`, `docker/entrypoint.sh`)
+  voltaram ao normal; 3 testes do comportamento antigo atualizados (comentário público, busca sem
+  Tabela de preços, painel da clínica sem "Acesso rápido"); 8 testes novos (`BuscaPorCepTest`).
+- **Testes:** `migrate:fresh --seed` limpo e **117 testes** passando.
+- **Depois de puxar (no XAMPP):** `composer install`, `composer dump-autoload` e
+  `php artisan migrate:fresh --seed` (o banco de cada um é local; o `migrate` simples também
+  funciona, mas as avaliações e os médicos antigos ficam incompletos). Trocar `APP_NAME=PointMed`
+  no `.env`.
+- **Decisão pendente do grupo:** fotos de perfil no Render (§2.7) — guardar no banco, como a `main`
+  fazia, ou aceitar que somem a cada deploy. E, perto da apresentação, tirar as menções a "dados
+  fictícios" (nota do Lucas).
+
+**05/10 — FacilMed vira PointMed** (PDF "Notas sobre FacilMed", do Lucas; decisões do grupo):
+- **Nome:** todos os textos e as 5 logos em `public/imgs/marca/` (mesmo símbolo, "PointMed" na
+  fonte Rosario). Nomes internos mantidos de propósito (ver o topo deste README).
+- **"Paciente" → "usuário"** em textos, código e banco. Migration
+  `2026_10_05_000100_usuario_e_faixa_da_clinica`: `pacientes` → `usuarios`, `paciente_planos` →
+  `usuario_planos`, `paciente_id` → `usuario_id`, `users.tipo` 'paciente' → 'usuario'. Classes
+  `Usuario`, `UsuarioPlano`, `Controllers\Usuario\*`, telas `usuario/*`, rotas `/usuario/...`.
+  ⚠ `users` é a conta de acesso de todos; `usuarios` é o perfil de quem busca.
+- **Tabela de preços saiu:** a clínica escolhe a faixa ($ a $$$$) de cada unidade em Clínica →
+  Unidades (`locais.faixa_preco`, 1 a 4, com CHECK). A migration converte os preços antigos na
+  faixa pela média. Especialidade oferecida num local = especialidade ativa do médico
+  (`Vinculo::scopeOferece`). O painel da clínica avisa "unidades sem faixa".
+- **Comentários das avaliações são públicos:** páginas do local e do médico mostram os 10 mais
+  recentes, com o autor como "Ana L." (`Formatador::nomeCurto`) e sem foto. "Médicos bem avaliados"
+  na home mostra o comentário mais recente.
+- **Outros itens das notas:** "Acesso rápido" saiu dos painéis do usuário e da clínica; terceiro
+  cartão ("Clínicas e hospitais") no painel do usuário; legendas do carrossel da home trocadas por
+  frases sobre o que o site faz.
 
 **01/10 — reorganização: o FacilMed deixa de agendar** (documento "Modificações - 01/10" do grupo;
 decisões do grupo: tirar o agendamento por completo e trocar o valor por faixa de preço). Feito com

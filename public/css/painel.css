@@ -217,12 +217,14 @@
 /* 24/09 — Recorte da logo.png. O PNG é 2000x2000 e o desenho ocupa só a
    faixa x 501-1445 / y 1025-1204 (944 x 179). Esta "janela" com overflow
    escondido mostra só o desenho, sem precisar de arquivo novo. Se um dia
-   exportarem a logo já recortada, apaguem este bloco e usem <img> direto. */
+   exportarem a logo já recortada, apaguem este bloco e usem <img> direto.
+   06/10 — a logo do PointMed é mais larga (x 501-1488, 988 x 179): sem
+   ajustar a largura, o "d" final aparecia cortado ("PointMec"). */
 .fm-logo-recorte {
     position: relative;
     display: block;
     height: var(--fm-logo-altura, 34px);
-    aspect-ratio: 944 / 179;
+    aspect-ratio: 988 / 179;
     overflow: hidden;
 }
 

@@ -247,7 +247,7 @@ body { background-color: var(--site-fundo); }
 .lista-simples small { color: var(--site-suave); }
 
 /* ---------- Locais perto de você e página do local (29/09/2026) ---------- */
-.busca-caixa--local { grid-template-columns: 1.2fr 1fr auto auto; margin-top: 0; }
+.busca-caixa--local { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }   /* 06/10: + CEP e raio */
 .localizacao-aviso { grid-column: 1 / -1; font-size: 12px; color: var(--site-suave); line-height: 1.5; padding: 0 2px; }
 .localizacao-aviso--erro { color: #9b2c2c; font-weight: 600; }
 .distancia { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; color: var(--site-marinho); }

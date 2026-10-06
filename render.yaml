@@ -6,8 +6,9 @@
 # ele monta de novo (Dockerfile) e publica. Se o build falhar, a versão
 # anterior continua no ar.
 #
-# As 3 variáveis com "sync: false" são segredos: o Render pede na hora
-# de criar e elas NUNCA vão para o Git.
+# As variáveis com "sync: false" são segredos ou dados do grupo: o Render
+# pede na hora de criar (ou se preenche em Environment) e elas NUNCA vão
+# para o Git.
 # =====================================================================
 services:
   - type: web
@@ -27,10 +28,20 @@ services:
         sync: false
       - key: MYSQL_CA_CERT    # texto do "CA certificate" do Aiven
         sync: false
+      # 01/10/2026 — e-mail de verdade (README §2.7). Sem a chave, fica no log.
+      - key: BREVO_API_KEY    # Brevo → SMTP & API → API keys ("xkeysib-...")
+        sync: false
+      - key: MAIL_FROM_ADDRESS  # o e-mail remetente CONFIRMADO no Brevo
+        sync: false
+      # 01/10/2026 — admin com e-mail real (facilmed:garantir-admin, no boot).
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD   # senha inicial (mín. 8); depois, troque pelo site
+        sync: false
 
       # --- Fixas ---
       - key: APP_NAME
-        value: FacilMed
+        value: PointMed
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -52,8 +63,6 @@ services:
       - key: QUEUE_CONNECTION
         value: sync
       - key: MAIL_MAILER
-        value: log           # e-mail não sai de verdade (igual ao local)
-      - key: MAIL_FROM_ADDRESS
-        value: nao-responda@facilmed.test
+        value: brevo         # só envia com BREVO_API_KEY; sem ela, volta para "log"
       - key: MAIL_FROM_NAME
-        value: FacilMed
+        value: PointMed

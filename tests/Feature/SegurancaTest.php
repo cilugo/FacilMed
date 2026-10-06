@@ -54,18 +54,25 @@ class SegurancaTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_comentario_de_avaliacao_nao_aparece_no_perfil_publico(): void
+    public function test_comentario_publico_mostra_so_primeiro_nome_e_inicial(): void
     {
-        // AGENTS.md §3: em tela pública só a nota. Vale para local e médico,
-        // para visitante e para OUTRO usuário (o Marcos não vê o comentário da Ana).
+        // 05/10/2026: o comentário passou a ser PÚBLICO (página do local e do
+        // médico), mas o autor aparece só como "Ana L." - nunca o nome completo.
         $doMedico = Avaliacao::whereNotNull('comentario')->whereNotNull('medico_id')->firstOrFail();
         $doLocal = Avaliacao::whereNotNull('comentario')->whereNotNull('local_id')->firstOrFail();
 
-        $this->get("/medico/{$doMedico->medico_id}")->assertOk()->assertDontSee($doMedico->comentario);
-        $this->get("/local/{$doLocal->local_id}")->assertOk()->assertDontSee($doLocal->comentario);
+        foreach (["/medico/{$doMedico->medico_id}" => $doMedico, "/local/{$doLocal->local_id}" => $doLocal] as $url => $avaliacao) {
+            $nome = $avaliacao->usuario->user->name;
+            $this->get($url)->assertOk()
+                ->assertSee($avaliacao->comentario)
+                ->assertSee(\App\Support\Formatador::nomeCurto($nome))
+                ->assertDontSee($nome);
+        }
 
+        // Outro usuário logado também vê o comentário, sem o nome completo do autor.
         $outro = $doLocal->usuario->user->email === 'ana@facilmed.test' ? 'marcos@facilmed.test' : 'ana@facilmed.test';
-        $this->comoUsuarioFinal($outro)->get("/local/{$doLocal->local_id}")->assertOk()->assertDontSee($doLocal->comentario);
+        $this->comoUsuarioFinal($outro)->get("/local/{$doLocal->local_id}")->assertOk()
+            ->assertSee($doLocal->comentario)->assertDontSee($doLocal->usuario->user->name);
     }
 
     /**

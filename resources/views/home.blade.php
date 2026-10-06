@@ -55,7 +55,7 @@
                 </form>
 
                 <div class="hero-numeros">
-                    <div><strong>{{ $totais['medicos'] }}</strong><span>médicos verificados</span></div>
+                    <div><strong>{{ $totais['medicos'] }}</strong><span>médicos com CRM conferido</span></div>
                     <div><strong>{{ $totais['unidades'] }}</strong><span>clínicas e hospitais</span></div>
                     <div><strong>{{ $totais['cidades'] }}</strong><span>{{ $totais['cidades'] === 1 ? 'cidade' : 'cidades' }}</span></div>
                 </div>

@@ -144,17 +144,17 @@ class RevisaoRodada3Test extends TestCase
             ->assertSee('Clínica Geral');
     }
 
-    public function test_busca_so_mostra_medico_com_onde_ser_agendado(): void
+    public function test_medico_novo_aparece_na_busca_sem_tabela_de_precos(): void
     {
-        // Médico novo, com CRM conferido e vinculado à clínica, mas a clínica
-        // ainda não pôs preço: não tem especialidade oferecida em lugar nenhum.
+        // 05/10/2026: a Tabela de preços saiu. Médico com CRM conferido,
+        // vinculado à clínica e com especialidade ativa já aparece na busca -
+        // só na especialidade dele (Vinculo::scopeOferece).
         $this->clinicaCadastraMedico('Paulo Yamada')->assertSessionHasNoErrors();
         auth()->logout();
         $this->flushSession(); // a mensagem de sucesso da clínica cita o nome dele
 
-        // Antes: aparecia na busca e o usuário não tinha onde agendar.
-        $this->get('/buscar')->assertOk()->assertDontSee('Paulo Yamada')->assertSee('Helena Navarro');
-        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertDontSee('Paulo Yamada');
+        $this->get('/buscar?especialidade=cardiologia')->assertOk()->assertSee('Paulo Yamada')->assertSee('Helena Navarro');
+        $this->get('/buscar?especialidade=dermatologia')->assertOk()->assertDontSee('Paulo Yamada');
     }
 
 

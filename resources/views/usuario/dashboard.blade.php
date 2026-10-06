@@ -77,7 +77,8 @@
         </form>
     </section>
 
-    <div class="fm-grade fm-grade--cartoes">
+    {{-- 06/10 (nota do Lucas): 3 cartões ocupam a linha toda, sem espaço vazio à direita. --}}
+    <div class="fm-grade fm-grade--cartoes {{ count($cartoes) === 3 ? 'fm-grade--tres' : '' }}">
         @foreach ($cartoes as $c)
             @include('painel.parciais.cartao', ['c' => $c])
         @endforeach

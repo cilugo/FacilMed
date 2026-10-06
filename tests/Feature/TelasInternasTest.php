@@ -22,7 +22,7 @@ class TelasInternasTest extends TestCase
         // [conta, url, view, variáveis obrigatórias] — revisto em 01/10/2026
         ['usuario', '/usuario',                 'usuario.dashboard',      ['saudacao', 'cartoes', 'especialidades', 'cidades', 'convenios', 'ultimas', 'carteirinhas']],
         ['usuario', '/usuario/avaliacoes',      'usuario.avaliacoes',     ['avaliacoes']],
-        ['clinica',  '/clinica',                  'clinica.dashboard',       ['cartoes', 'unidades', 'porEspecialidade', 'semFaixa', 'ultimas', 'atalhos']],
+        ['clinica',  '/clinica',                  'clinica.dashboard',       ['cartoes', 'unidades', 'porEspecialidade', 'semFaixa', 'ultimas']],   // 05/10: sem "Acesso rápido"
         ['clinica',  '/clinica/medicos',          'clinica.medicos',         ['vinculos', 'unidades']],
         ['clinica',  '/clinica/medicos/novo',     'clinica.medicos-form',    ['especialidades', 'unidades']],
         ['clinica',  '/clinica/medicos/1/editar', 'clinica.medicos-editar',  ['medico', 'especialidades', 'convenios']],
