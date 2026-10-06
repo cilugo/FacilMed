@@ -33,18 +33,11 @@
                     </div>
                 @endif
 
-                <div class="hero-numeros">
-                    <div><strong>{{ $totais['medicos'] }}</strong><span>médicos com CRM conferido</span></div>
-                    <div><strong>{{ $totais['unidades'] }}</strong><span>clínicas e hospitais</span></div>
-                    <div><strong>{{ $totais['cidades'] }}</strong><span>{{ $totais['cidades'] === 1 ? 'cidade' : 'cidades' }}</span></div>
-                </div>
-            </div>
-
             <div class="hero-carousel" id="heroCarousel">
                 {{-- Fotos em public/imgs/sliderinicio/. [arquivo, legenda] --}}
                 @php
                     $slides = [
-                        ['si1.jpeg', 'Atendimento humanizado'],
+                        ['si1.jpeg', 'Atendimento rápido'],
                         ['si2.jpeg', 'Equipe especializada'],
                         ['si3.jpeg', 'Atendimento de confiança'],
                         ['si4.jpeg', 'Agende em poucos cliques'],
