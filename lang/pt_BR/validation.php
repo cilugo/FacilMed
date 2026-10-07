@@ -76,7 +76,7 @@ return [
         'horario'               => 'horário',
         'data_consulta'         => 'data da consulta',
         'especialidade_id'      => 'especialidade',
-        'paciente_plano_id'     => 'carteirinha',
+        'usuário_plano_id'     => 'carteirinha',
         'forma_pagamento'       => 'forma de pagamento',
         'unidade_nome'          => 'nome da unidade',
         'unidade_cep'           => 'CEP',

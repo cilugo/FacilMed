@@ -2,9 +2,9 @@
     Admin → Usuários. Dados: Admin\UsuarioController@index (README §7.3).
 
     Filtros (tipo, situação, busca por nome/e-mail) e, por conta:
-      - Bloquear: motivo obrigatório (mín. 10). Com consulta futura, precisa
-        marcar "cancelar as consultas" — senão o back-end devolve session('erro')
-        e nada é bloqueado. Não aparece para administrador.
+      - Bloquear: motivo obrigatório (mín. 10). Não aparece para administrador.
+    01/10/2026: só usuário, clínica e admin têm conta (o médico é perfil),
+    e a foto de perfil aparece no avatar.
       - Desbloquear: só para quem está bloqueado.
 
     O motivo do bloqueio é interno: a pessoa bloqueada só vê "sua conta está
@@ -23,7 +23,7 @@
 
 @php
     use App\Support\Formatador;
-    $tipos = ['paciente' => 'Paciente', 'medico' => 'Médico', 'clinica' => 'Clínica', 'admin' => 'Administrador'];
+    $tipos = ['usuario' => 'Usuário', 'clinica' => 'Clínica', 'admin' => 'Administrador'];
     $situacoes = ['ativo' => ['Ativa', 'verde'], 'bloqueado' => ['Bloqueada', 'rosa'], 'inativo' => ['Inativa', 'cinza']];
     $formVolta = old('_form');
     $filtrando = request()->filled('tipo') || request()->filled('status') || request()->filled('busca');
@@ -78,13 +78,13 @@
                 @foreach ($usuarios as $u)
                     @php
                         [$rotuloSit, $tomSit] = $u->foiExcluida()
-                            ? ['Excluída', 'cinza']   // 30/09: o próprio paciente excluiu (dados anonimizados)
+                            ? ['Excluída', 'cinza']   // 30/09: o próprio usuário excluiu (dados anonimizados)
                             : ($situacoes[$u->status] ?? [ucfirst($u->status), 'cinza']);
                         $esteForm = $formVolta === 'bloquear-' . $u->id;
                     @endphp
                     <li class="fm-conta" x-data="{ bloqueando: {{ $esteForm ? 'true' : 'false' }} }">
                         <div class="fm-conta__linha">
-                            <span class="fm-avatar">{{ Formatador::iniciais($u->name) }}</span>
+                            <x-avatar :nome="$u->name" :foto="$u->foto_url" />
                             <div class="fm-conta__info">
                                 <strong>{{ $u->name }}</strong>
                                 <span>{{ $u->email }}</span>
@@ -114,7 +114,7 @@
 
                         @if ($u->foiExcluida())
                             <p class="fm-conta__extra fm-campo__ajuda">
-                                Excluída pelo próprio paciente em {{ Formatador::dataCurta($u->excluida_em) }}. Os dados pessoais foram apagados.
+                                Excluída pelo próprio usuário em {{ Formatador::dataCurta($u->excluida_em) }}. Os dados pessoais foram apagados.
                             </p>
                         @endif
 
@@ -125,15 +125,10 @@
                                 <div class="fm-campo {{ $esteForm && $errors->has('motivo') ? 'fm-campo--erro' : '' }}">
                                     <label for="motivo-{{ $u->id }}">Motivo do bloqueio *</label>
                                     <input id="motivo-{{ $u->id }}" name="motivo" minlength="10" maxlength="255" required
-                                           value="{{ $esteForm ? old('motivo') : '' }}" placeholder="Ex.: conta usada para marcar consultas falsas">
+                                           value="{{ $esteForm ? old('motivo') : '' }}" placeholder="Ex.: conta usada para publicar avaliações falsas">
                                     <span class="fm-campo__ajuda">Fica registrado aqui. A pessoa só vê que a conta está bloqueada, sem o motivo.</span>
                                     @if ($esteForm) @error('motivo') <span class="fm-campo__erro">{{ $message }}</span> @enderror @endif
                                 </div>
-                                <label class="fm-marcar">
-                                    <input type="checkbox" name="cancelar_consultas" value="1">
-                                    <span><strong>Cancelar as consultas futuras ligadas a esta conta</strong><br>
-                                        Obrigatório se houver consulta marcada. Os envolvidos recebem e-mail.</span>
-                                </label>
                                 <div class="fm-form__acoes">
                                     <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="bloqueando = false">Voltar</button>
                                     <button type="submit" class="fm-botao fm-botao--perigo fm-botao--pequeno">Confirmar bloqueio</button>

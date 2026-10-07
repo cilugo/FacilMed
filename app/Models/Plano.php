@@ -39,9 +39,9 @@ class Plano extends Model
         return $this->belongsTo(Convenio::class);
     }
 
-    public function pacientePlanos(): HasMany
+    public function usuarioPlanos(): HasMany
     {
-        return $this->hasMany(PacientePlano::class);
+        return $this->hasMany(UsuarioPlano::class);
     }
 
     public function scopeAtivos(Builder $q): Builder

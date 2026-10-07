@@ -4,6 +4,11 @@
     Visual e estrutura vêm da home que o grupo fez no protótipo
     (paginas/home.html + css/home.css), agora com dados do banco:
     especialidades reais, médicos verificados e a busca funcionando.
+
+    01/10/2026: o PointMed não agenda mais consultas. Os textos falam em
+    encontrar e avaliar locais e médicos; a busca do topo leva para os
+    locais perto de você. "Médicos bem avaliados" mostra até 6 médicos do
+    banco (com 3 no seeder, apareciam só 3; agora o seeder tem mais).
 --}}
 @extends('layouts.site')
 
@@ -15,10 +20,10 @@
     <section class="hero">
         <div class="container hero-content">
             <div class="hero-text">
-                <h1>Agende sua consulta<br>de forma rápida e fácil!</h1>
-                <p>Encontre médicos, hospitais e clínicas perto de você.<br>Pesquise por especialidade, confira os horários disponíveis e encontre a melhor opção para cuidar da sua saúde.</p>
+                <h1>Encontre onde se consultar<br>de forma rápida e fácil!</h1>
+                <p>Encontre médicos, hospitais e clínicas perto de você.<br>Pesquise por especialidade, veja quem aceita o seu convênio e confira a avaliação de outros usuários.</p>
 
-                <form method="GET" action="{{ route('busca.index') }}" class="busca-caixa" role="search">
+                <form method="GET" action="{{ route('busca.locais') }}" class="busca-caixa" role="search">
                     <div class="busca-campo">
                         <label for="h-especialidade">Especialidade</label>
                         <select id="h-especialidade" name="especialidade">
@@ -60,15 +65,16 @@
                 {{-- Fotos em public/imgs/sliderinicio/. [arquivo, legenda] --}}
                 @php
                     $slides = [
-                        ['si1.jpeg', 'Atendimento humanizado'],
-                        ['si2.jpeg', 'Equipe especializada'],
-                        ['si3.jpeg', 'Atendimento de confiança'],
-                        ['si4.jpeg', 'Agende em poucos cliques'],
+                        // 05/10: legendas sobre o que o site faz (achar e comparar), não sobre atendimento
+                        ['si1.jpeg', 'Compare antes de escolher'],
+                        ['si2.jpeg', 'Médicos de várias especialidades'],
+                        ['si3.jpeg', 'Hospitais e clínicas da sua região'],
+                        ['si4.jpeg', 'Encontre em poucos cliques'],
                         ['si5.jpeg', 'Encontre a especialidade certa'],
                         ['si6.jpeg', 'Use seu convênio ou particular'],
-                        ['si7.jpeg', 'Veja os horários disponíveis'],
+                        ['si7.jpeg', 'Veja a avaliação de outros usuários'],
                         ['si8.jpeg', 'Clínicas perto de você'],
-                        ['si9.jpeg', 'Isso é FacilMed'],
+                        ['si9.jpeg', 'Escolha com a ajuda de quem já foi'],
                     ];
                 @endphp
                 <div class="carousel-track" id="carouselTrack">
@@ -89,24 +95,24 @@
         <div class="container">
             <div class="section-header center">
                 <h2>Como funciona?</h2>
-                <p>Agendar sua consulta pelo FacilMed é simples.</p>
+                <p>Encontrar onde se consultar pelo PointMed é simples.</p>
             </div>
 
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <h3>Encontre um médico</h3>
-                    <p>Pesquise por especialidade, cidade ou convênio.</p>
+                    <h3>Busque perto de você</h3>
+                    <p>Pesquise por especialidade, cidade ou convênio, ou use a sua localização.</p>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
-                    <h3>Escolha o horário</h3>
-                    <p>Veja só os horários que estão livres de verdade na agenda do médico.</p>
+                    <h3>Compare os locais</h3>
+                    <p>Veja distância, médicos disponíveis, convênios aceitos, faixa de preço e avaliações.</p>
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <h3>Agende sua consulta</h3>
-                    <p>Confirme, pague particular ou use a carteirinha do seu convênio.</p>
+                    <h3>Avalie depois</h3>
+                    <p>Conte como foi: sua nota ajuda outras pessoas a escolher.</p>
                 </div>
             </div>
         </div>
@@ -161,16 +167,21 @@
                             {{-- A foto cobre as iniciais; se o arquivo não carregar, o onerror
                                  tira a imagem e as iniciais aparecem no lugar --}}
                             <div class="specialty-photo" style="background-color: {{ \App\Support\Formatador::corAvatar($i) }};">
-                                {{ \App\Support\Formatador::iniciais($medico->user->name) }}
+                                {{ \App\Support\Formatador::iniciais($medico->nome) }}
                                 @if ($medico->foto)
                                     <img src="{{ asset($medico->foto) }}" alt="" onerror="this.remove()">
                                 @endif
                             </div>
                             <div class="specialty-info">
-                                <span class="nome-medico">{{ $medico->user->name }}</span>
+                                <span class="nome-medico">{{ $medico->nome }}</span>
                                 <span class="nome-especialidade">{{ $medico->especialidades->pluck('nome')->join(' · ') }}</span>
                                 @if ($medico->total_avaliacoes > 0)
-                                    <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $medico->media_avaliacoes, 1, ',', '') }}</span>
+                                    <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $medico->media_avaliacoes, 1, ',', '') }}
+                                        <span style="font-weight: 400; color: #666;">({{ $medico->total_avaliacoes }} {{ $medico->total_avaliacoes === 1 ? 'avaliação' : 'avaliações' }})</span></span>
+                                @endif
+                                {{-- 05/10: o comentário mais recente (comentários são públicos) --}}
+                                @if ($r = $medico->avaliacoes->first())
+                                    <span class="home-review">“{{ \Illuminate\Support\Str::limit($r->comentario, 70) }}” — {{ \App\Support\Formatador::nomeCurto($r->usuario?->user?->name) }}</span>
                                 @endif
                             </div>
                         </a>
@@ -223,7 +234,7 @@
         <div class="container">
             <div class="section-header center">
                 <h2>Sobre nós</h2>
-                <p class="sobre-text">O FacilMed é uma plataforma digital que conecta pacientes a profissionais de saúde, facilitando o agendamento de consultas e melhorando o acesso aos serviços médicos. Surgindo apenas como uma ideia em sala de aula, agora o FacilMed está disponível para ajudar você a encontrar o cuidado de saúde que você precisa, quando e onde precisar. Marque consultas, acompanhe seu histórico de consultas, veja a avaliação de outros pacientes e muito mais em um único lugar.</p>
+                <p class="sobre-text">O PointMed é uma plataforma digital que conecta usuários a profissionais de saúde, ajudando a encontrar clínicas, hospitais e médicos perto de você e melhorando o acesso aos serviços de saúde. Surgindo apenas como uma ideia em sala de aula, agora o PointMed está disponível para ajudar você a encontrar o cuidado de saúde que você precisa, quando e onde precisar. Compare locais, veja quem aceita o seu convênio, confira a avaliação de outros usuários e muito mais em um único lugar.</p>
             </div>
         </div>
     </section>
@@ -234,7 +245,7 @@
             <div>
                 <h2>É clínica ou hospital?</h2>
                 {{-- 29/09: o médico não se cadastra sozinho; a clínica cadastra os médicos dela. --}}
-                <p>Cadastre a sua clínica ou hospital, depois os seus médicos, e receba agendamentos pelo FacilMed.</p>
+                <p>Cadastre a sua clínica ou hospital, depois os seus médicos, e seja encontrado por usuários perto de você.</p>
             </div>
             <div class="acoes">
                 <a href="{{ route('cadastro.clinica') }}" class="btn btn-azul btn-grande">Sou clínica ou hospital</a>

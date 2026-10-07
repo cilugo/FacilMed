@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Clinica;
 
 use App\Http\Controllers\Controller;
-use App\Models\Disponibilidade;
+use App\Models\HorarioFuncionamento;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Clinica\SalvarUnidadeRequest;
 use App\Http\Requests\Clinica\HorariosDeFuncionamento;
@@ -16,7 +16,7 @@ class UnidadeController extends Controller
     {
         return view('clinica.unidades', [
             'locais' => auth()->user()->clinica->locais()->with('horarios')->withCount(['vinculos' => fn ($q) => $q->where('ativo', true)])->get(),
-            'dias'   => Disponibilidade::DIAS,
+            'dias'   => HorarioFuncionamento::DIAS,
         ]);
     }
 
@@ -27,7 +27,6 @@ class UnidadeController extends Controller
         DB::transaction(function () use ($request, $dados) {
             $local = Local::create([
                 'clinica_id'  => $request->user()->clinica->id,
-                'medico_id'   => null,
                 'nome'        => $dados['nome'],
                 'tipo'        => $dados['tipo'],
                 'cep'         => $dados['cep'],
@@ -38,6 +37,7 @@ class UnidadeController extends Controller
                 'cidade'      => $dados['cidade'],
                 'uf'          => $dados['uf'],
                 'telefone'    => ($dados['telefone'] ?? '') ?: null,
+                'faixa_preco' => $dados['faixa_preco'] ?? null,
                 'ativo'       => true,
             ]);
 
@@ -48,9 +48,26 @@ class UnidadeController extends Controller
     }
 
     /**
-     * Horario de FUNCIONAMENTO do lugar - nao confundir com a
-     * disponibilidade do medico. O bloco de agenda de um medico nao
-     * pode cair fora do funcionamento da unidade.
+     * Faixa de preço da consulta particular desta unidade, de $ a $$$$
+     * (05/10/2026: a clínica escolhe; a Tabela de preços saiu). Vazio =
+     * não informar. O usuário vê só os $, nunca valor.
+     */
+    public function salvarFaixa(Request $request, Local $local)
+    {
+        $this->authorize('update', $local);
+
+        $dados = $request->validate(
+            ['faixa_preco' => ['nullable', 'integer', 'between:1,4']],
+            ['faixa_preco.between' => 'Escolha uma faixa de $ a $$$$.'],
+        );
+
+        $local->update(['faixa_preco' => $dados['faixa_preco'] ?? null]);
+
+        return back()->with('sucesso', "Faixa de preço de {$local->nome} salva.");
+    }
+
+    /**
+     * Horario de FUNCIONAMENTO do lugar, mostrado na pagina do local.
      */
     public function salvarHorarios(Request $request, Local $local)
     {
@@ -65,21 +82,7 @@ class UnidadeController extends Controller
 
         DB::transaction(fn () => $local->definirHorarios($horarios));
 
-        // Blocos de médicos que ficaram (em parte) fora do novo horário: a
-        // CalculadoraDeHorarios já não oferece o que cai fora - só avisamos.
-        $foraDoHorario = Disponibilidade::whereIn('vinculo_id', $local->vinculos()->select('id'))
-            ->where('ativo', true)->get()
-            ->filter(function ($d) use ($horarios) {
-                $h = $horarios[$d->dia_semana] ?? null;
-
-                return ! $h || substr($d->hora_inicio, 0, 5) < $h['abre'] || substr($d->hora_fim, 0, 5) > $h['fecha'];
-            })->count();
-
         $msg = "Horário de funcionamento de {$local->nome} salvo.";
-        if ($foraDoHorario > 0) {
-            $msg .= " {$foraDoHorario} " . ($foraDoHorario === 1 ? 'bloco de atendimento de médico ficou' : 'blocos de atendimento de médicos ficaram')
-                . ' fora do novo horário: a parte de fora deixa de ser oferecida aos pacientes.';
-        }
 
         return back()->with('sucesso', $msg);
     }

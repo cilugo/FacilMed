@@ -1,7 +1,7 @@
 {{--
     Admin → Clínicas e hospitais. Dados: Admin\ClinicaController@index (README §7.3).
 
-    Consulta: dados de cadastro (CNPJ conferido na base simulada), situação da
+    Mostra: dados de cadastro (CNPJ conferido na base simulada), situação da
     conta e unidades. Para bloquear uma clínica, o caminho é a tela Usuários
     (o link já vai com o e-mail da conta na busca).
 --}}

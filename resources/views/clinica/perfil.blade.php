@@ -3,7 +3,8 @@
 
     CNPJ e razão social são SÓ LEITURA: foram conferidos na base simulada no
     cadastro. Muda o resto (responsável, nome fantasia, descrição, telefone).
-    Senha: mesmo bloco do perfil do paciente (rota password.update).
+    Senha: mesmo bloco do perfil do usuário (rota password.update).
+    01/10/2026: foto de perfil (aparece na página pública da clínica).
 --}}
 @extends('layouts.painel')
 
@@ -24,7 +25,7 @@
     <div class="fm-pagina-topo">
         <div>
             <h1 class="fm-titulo">Perfil da clínica</h1>
-            <p class="fm-subtitulo">Como a clínica aparece para os pacientes.</p>
+            <p class="fm-subtitulo">Como a clínica aparece para os usuários.</p>
         </div>
         <a href="{{ route('publico.clinica', $clinica) }}" class="fm-pilula" target="_blank" rel="noopener">
             Ver perfil público <x-icone nome="chevron-right" />
@@ -35,10 +36,14 @@
         <div class="fm-flash fm-flash--ok" role="status">Senha trocada.</div>
     @endif
 
+    <div style="margin-top: 18px;">
+        @include('painel.parciais.foto')
+    </div>
+
     <section class="fm-painel" style="margin-top: 18px;">
         <header class="fm-painel__topo">
             <h2 class="fm-painel__titulo"><x-icone nome="building" /> Dados da clínica</h2>
-            <span class="fm-etiqueta fm-etiqueta--verde" title="Conferido na base simulada do FacilMed">CNPJ conferido</span>
+            <span class="fm-etiqueta fm-etiqueta--verde" title="Conferido na base simulada do PointMed">CNPJ conferido</span>
         </header>
 
         <form method="POST" action="{{ route('clinica.perfil.atualizar') }}" class="fm-form fm-form--duas">
@@ -56,7 +61,7 @@
             </div>
 
             <p class="fm-campo__ajuda fm-campo--largo" style="margin-top: -6px;">CNPJ e razão social foram conferidos na base simulada do
-                FacilMed no cadastro e não mudam por aqui.</p>
+                PointMed no cadastro e não mudam por aqui.</p>
 
             <div class="fm-campo {{ $errors->has('nome_fantasia') ? 'fm-campo--erro' : '' }}">
                 <label for="nome_fantasia">Nome fantasia *</label>
@@ -98,6 +103,6 @@
     </section>
 
     {{-- Mesmo bloco de senha do perfil do médico. --}}
-    @include('painel.parciais.senha', ['destaque' => false])
+    @include('painel.parciais.senha')
 
 @endsection

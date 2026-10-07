@@ -1,6 +1,7 @@
 {{--
     Busca de médicos. Dados: BuscaController@index.
-    Só aparecem médicos com CRM verificado e conta ativa (Medico::visivel()).
+    Só aparecem médicos com CRM verificado (Medico::visivel()).
+    01/10: faixa de preço ($ a $$$$) no lugar do valor; sem "ver horários".
 --}}
 @extends('layouts.site')
 
@@ -10,7 +11,6 @@
 @php
     $cidades = \App\Models\Local::where('ativo', true)->select('cidade', 'uf')->distinct()->orderBy('cidade')->get();
     $temFiltro = collect($filtros)->filter()->isNotEmpty();
-    $moeda = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
 @endphp
 
 @section('conteudo')
@@ -67,7 +67,7 @@
                     <label for="ordem" style="font-size: 13px;">Ordenar por</label>
                     <select id="ordem" name="ordem" onchange="this.form.submit()" style="height: 34px; border: 1px solid #d9e2e8; border-radius: 8px; padding: 0 8px; font: inherit; font-size: 13px;">
                         <option value="avaliacao" @selected($ordem === 'avaliacao')>Melhor avaliação</option>
-                        <option value="preco" @selected($ordem === 'preco')>Menor preço</option>
+                        <option value="preco" @selected($ordem === 'preco')>Menor faixa de preço</option>
                         <option value="nome" @selected($ordem === 'nome')>Nome</option>
                     </select>
                 </form>
@@ -87,18 +87,23 @@
             <div class="lista-medicos">
                 @foreach ($medicos as $i => $medico)
                     @php
-                        // Já vêm só os lugares que recebem agendamento (BuscaController).
+                        // Já vêm só os lugares públicos (BuscaController).
                         $vinculos = $medico->vinculos;
-                        $menorPreco = $vinculos->flatMap->precosOferecidos()->min('valor');
+                        // 05/10: média das faixas das unidades onde ele atende particular.
+                        $faixa = \App\Support\FaixaDePreco::mediaDasFaixas(
+                            $vinculos->where('aceita_particular', true)->map(fn ($v) => $v->local->faixa_preco));
                         $aceitaConvenio = $vinculos->contains('aceita_convenio', true);
                     @endphp
                     <article class="card-medico">
                         <div class="avatar" style="background-color: {{ \App\Support\Formatador::corAvatar($i + $medicos->firstItem()) }};">
-                            {{ \App\Support\Formatador::iniciais($medico->user->name) }}
+                            {{ \App\Support\Formatador::iniciais($medico->nome) }}
+                            @if ($medico->foto_url)
+                                <img src="{{ $medico->foto_url }}" alt="" class="avatar__foto" onerror="this.remove()">
+                            @endif
                         </div>
 
                         <div>
-                            <h2><a href="{{ route('publico.medico', $medico) }}">{{ $medico->user->name }}</a></h2>
+                            <h2><a href="{{ route('publico.medico', $medico) }}">{{ $medico->nome }}</a></h2>
                             <span class="crm">CRM {{ $medico->crm }}/{{ $medico->uf }}</span>
                             @if ($medico->total_avaliacoes > 0)
                                 · <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $medico->media_avaliacoes, 1, ',', '') }}
@@ -116,11 +121,7 @@
                                     <div>
                                         <x-icone :nome="$v->local->tipo === 'hospital' ? 'hospital' : 'pin'" />
                                         <span>
-                                            @if ($v->local->clinica_id)
-                                                <a href="{{ route('publico.clinica', $v->local->clinica_id) }}" style="text-decoration: underline;">{{ $v->local->nome }}</a>
-                                            @else
-                                                {{ $v->local->nome }}
-                                            @endif
+                                            <a href="{{ route('publico.local', $v->local_id) }}" style="text-decoration: underline;">{{ $v->local->nome }}</a>
                                             — {{ $v->local->cidade }}/{{ $v->local->uf }}
                                         </span>
                                     </div>
@@ -129,13 +130,13 @@
                         </div>
 
                         <div class="card-medico__lado">
-                            @if ($menorPreco !== null)
-                                <span class="preco-a-partir">Particular a partir de <strong>{{ $moeda($menorPreco) }}</strong></span>
+                            @if ($faixa)
+                                <span class="preco-a-partir">Particular <x-faixa-preco :nivel="$faixa" /></span>
                             @endif
                             @if ($aceitaConvenio)
                                 <span class="chip chip--verde"><x-icone nome="shield" /> Aceita convênio</span>
                             @endif
-                            <a href="{{ route('publico.medico', $medico) }}" class="btn btn-primary">Ver horários</a>
+                            <a href="{{ route('publico.medico', $medico) }}" class="btn btn-primary">Ver perfil</a>
                         </div>
                     </article>
                 @endforeach

@@ -1,5 +1,5 @@
 {{--
-    Escolha do tipo de cadastro. 29/09/2026: só paciente e clínica/hospital -
+    Escolha do tipo de cadastro. 29/09/2026: só usuário e clínica/hospital -
     o médico é cadastrado pela clínica.
     Visual: o do grupo (style1.css de 29/09), com as medidas da tela de login.
     As regras ficam em public/css/cadastro.css, bloco ".pagina--escolha".
@@ -18,7 +18,7 @@
         @include('cadastro._avisos')
 
         <nav class="opcoes" aria-label="Tipo de cadastro">
-            <a class="botao" href="{{ route('cadastro.paciente') }}">Sou Paciente</a>
+            <a class="botao" href="{{ route('cadastro.usuario') }}">Sou Usuário</a>
             <a class="botao" href="{{ route('cadastro.clinica') }}">Sou Clínica/Hospital</a>
         </nav>
 

@@ -12,7 +12,7 @@
  * arredondada para 3 casas (uns 100 m), o suficiente para ordenar por distância.
  *
  * Os navegadores só liberam a localização em https ou em localhost
- * (XAMPP em http://localhost/FacilMed funciona; pelo IP da rede, não).
+ * (XAMPP em http://localhost/PointMed funciona; pelo IP da rede, não).
  */
 (function () {
     'use strict';

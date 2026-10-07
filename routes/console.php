@@ -1,12 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schedule;
-
 /*
- * Tarefas agendadas do FacilMed.
- * Para funcionar localmente, deixe rodando: php artisan schedule:work
+ * Tarefas agendadas do PointMed.
+ *
+ * 01/10/2026: o lembrete de consulta por e-mail (facilmed:enviar-lembretes)
+ * saiu junto com o agendamento. Não há tarefa agendada no momento.
  */
-
-// Lembrete 24h antes. De hora em hora; o UNIQUE em notificacoes_enviadas
-// impede repetir o mesmo lembrete.
-Schedule::command('facilmed:enviar-lembretes')->hourly()->withoutOverlapping();

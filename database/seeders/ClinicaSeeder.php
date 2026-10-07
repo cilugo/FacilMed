@@ -47,7 +47,8 @@ class ClinicaSeeder extends Seeder
 
             $local = Local::updateOrCreate(
                 ['clinica_id' => $clinica->id, 'nome' => $nome],
-                compact('tipo', 'cep', 'endereco', 'numero', 'bairro', 'cidade', 'uf', 'telefone') + ['ativo' => true]
+                compact('tipo', 'cep', 'endereco', 'numero', 'bairro', 'cidade', 'uf', 'telefone')
+                    + ['ativo' => true, 'faixa_preco' => DadosFicticios::FAIXAS[$nome] ?? null]
             );
 
             // Seg-sex 08-18, sábado 08-12 (hospital poderia ter mais; fica

@@ -1,12 +1,13 @@
 {{--
     Página do local (29/09/2026, plano do app). Dados: PerfilPublicoController@local.
 
-    Uma unidade de clínica, um hospital ou o consultório de um médico: endereço,
-    contato, horários, nota média, formas de pagamento, especialidades com preço
-    e os médicos disponíveis, cada um com "Ver horários" (o agendamento de sempre).
+    Uma unidade de clínica ou um hospital: endereço, contato, horários, nota
+    média, formas de pagamento com a faixa de preço da unidade ($ a $$$$,
+    escolhida pela clínica desde 05/10), especialidades e médicos disponíveis.
 
-    Nota do local = média das avaliações das consultas feitas aqui. Comentário
-    nunca aparece (AGENTS.md §3).
+    01/10/2026: sem agendamento. O usuário avalia o local aqui mesmo
+    (publico/parciais/avaliar). 05/10: comentários públicos
+    (publico/parciais/avaliacoes).
 --}}
 @extends('layouts.site')
 
@@ -14,13 +15,10 @@
 @section('menu', 'locais')
 
 @php
-    $moeda = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
     $tipos = ['clinica' => 'Clínica', 'hospital' => 'Hospital', 'consultorio' => 'Consultório'];
     $ordemDias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
     $nomeDia = ['segunda' => 'Segunda', 'terca' => 'Terça', 'quarta' => 'Quarta', 'quinta' => 'Quinta', 'sexta' => 'Sexta', 'sabado' => 'Sábado', 'domingo' => 'Domingo'];
     $horarios = $local->horarios->sortBy(fn ($h) => array_search($h->dia_semana, $ordemDias));
-    $usuario = auth()->user();
-    $podeAgendar = ! $usuario || $usuario->tipo === 'paciente';
     // Mantém a origem (distância) ao trocar o filtro de especialidade.
     $manter = $origem['params'] ?? [];
 @endphp
@@ -45,17 +43,15 @@
                             <span>{{ $tipos[$local->tipo] ?? $local->tipo }}</span>
                             @if ($local->clinica)
                                 <span><a href="{{ route('publico.clinica', $local->clinica) }}" style="text-decoration: underline;">{{ $local->clinica->nome_fantasia }}</a></span>
-                            @elseif ($local->medico)
-                                <span>Consultório de <a href="{{ route('publico.medico', $local->medico) }}" style="text-decoration: underline;">{{ $local->medico->user->name }}</a></span>
                             @endif
                             @if ($distancia !== null)
                                 <span class="distancia"><x-icone nome="localizar" /> {{ \App\Support\Localizacao::formatar($distancia) }} {{ $origem['descricao'] }}</span>
                             @endif
                         </div>
                         <p class="local-nota">
-                            @if ($nota)
-                                <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $nota->media, 1, ',', '') }}</span>
-                                <span class="texto-pequeno">{{ $nota->total }} {{ (int) $nota->total === 1 ? 'avaliação' : 'avaliações' }} de consultas feitas aqui</span>
+                            @if ($local->total_avaliacoes > 0)
+                                <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $local->media_avaliacoes, 1, ',', '') }}</span>
+                                <span class="texto-pequeno">{{ $local->total_avaliacoes }} {{ $local->total_avaliacoes === 1 ? 'avaliação' : 'avaliações' }}</span>
                             @else
                                 <span class="texto-pequeno">Ainda sem avaliações.</span>
                             @endif
@@ -92,40 +88,43 @@
                     <div class="chips" style="margin-top: 0;">
                         <a href="{{ route('publico.local', ['local' => $local] + $manter) }}#medicos" class="chip {{ $slug ? 'chip--cinza' : '' }}">Todas</a>
                         @foreach ($especialidades as $e)
-                            <a href="{{ route('publico.local', ['local' => $local, 'especialidade' => $e->especialidade->slug] + $manter) }}#medicos"
-                               class="chip {{ $slug === $e->especialidade->slug ? '' : 'chip--cinza' }}">{{ $e->especialidade->nome }}</a>
+                            <a href="{{ route('publico.local', ['local' => $local, 'especialidade' => $e->slug] + $manter) }}#medicos"
+                               class="chip {{ $slug === $e->slug ? '' : 'chip--cinza' }}">{{ $e->nome }}</a>
                         @endforeach
                     </div>
                 @endif
 
                 @if ($medicos->isEmpty())
                     <p class="texto-pequeno">
-                        Nenhum médico {{ $escolhida ? 'de ' . $escolhida->nome . ' ' : '' }}disponível para agendamento neste local no momento.
+                        Nenhum médico {{ $escolhida ? 'de ' . $escolhida->nome . ' ' : '' }}disponível neste local no momento.
                     </p>
                 @else
                     <div class="lista-local-medicos">
                         @foreach ($medicos as $i => $v)
-                            @php $precos = $v->precosOferecidos(); @endphp
                             <div class="local-medico">
                                 <span class="avatar" style="background-color: {{ \App\Support\Formatador::corAvatar($i) }};">
-                                    {{ \App\Support\Formatador::iniciais($v->medico->user->name) }}
+                                    {{ \App\Support\Formatador::iniciais($v->medico->nome) }}
+                                    @if ($v->medico->foto_url)
+                                        <img src="{{ $v->medico->foto_url }}" alt="" class="avatar__foto" onerror="this.remove()">
+                                    @endif
                                 </span>
                                 <div>
-                                    <strong><a href="{{ route('publico.medico', $v->medico) }}">{{ $v->medico->user->name }}</a></strong>
+                                    <strong><a href="{{ route('publico.medico', $v->medico) }}">{{ $v->medico->nome }}</a></strong>
                                     <span class="crm">CRM {{ $v->medico->crm }}/{{ $v->medico->uf }}</span>
                                     @if ($v->medico->total_avaliacoes > 0)
                                         · <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $v->medico->media_avaliacoes, 1, ',', '') }}
                                             <span style="font-weight: 400; color: #666;">({{ $v->medico->total_avaliacoes }})</span></span>
                                     @endif
+                                    @if ($v->medico->anos_atuacao > 0)
+                                        <span class="texto-pequeno"> · {{ $v->medico->anos_atuacao }} {{ $v->medico->anos_atuacao === 1 ? 'ano' : 'anos' }} de carreira</span>
+                                    @endif
                                     <div class="chips">
-                                        @foreach ($precos as $p)
-                                            <span class="chip">{{ $p->especialidade->nome }}@if ($v->aceita_particular) · {{ $moeda($p->valor) }}@endif</span>
+                                        @foreach ($v->especialidadesOferecidas() as $esp)
+                                            <span class="chip">{{ $esp->nome }}</span>
                                         @endforeach
                                     </div>
                                 </div>
-                                @if ($podeAgendar)
-                                    <a href="{{ route('agendamento.horario', $v) }}" class="btn btn-primary">Ver horários</a>
-                                @endif
+                                <a href="{{ route('publico.medico', $v->medico) }}" class="btn btn-outline">Ver perfil</a>
                             </div>
                         @endforeach
                     </div>
@@ -137,6 +136,9 @@
             <section class="caixa">
                 <h2><x-icone nome="money" /> Formas de pagamento</h2>
                 <p>{{ $particular ? 'Atende particular.' : 'Não atende particular.' }}</p>
+                @if ($particular && $local->faixa_preco)
+                    <p>Faixa de preço: <x-faixa-preco :nivel="$local->faixa_preco" detalhada /></p>
+                @endif
 
                 @if ($convenios->isNotEmpty())
                     <p class="local-subtitulo">Convênios aceitos pelos médicos daqui</p>
@@ -154,16 +156,21 @@
             @if ($especialidades->isNotEmpty())
                 <section class="caixa">
                     <h2><x-icone nome="stethoscope" /> Especialidades</h2>
-                    <table class="tabela-precos">
-                        @foreach ($especialidades as $e)
-                            <tr>
-                                <td>{{ $e->especialidade->nome }}</td>
-                                <td>{{ $e->aPartirDe !== null ? 'a partir de ' . $moeda($e->aPartirDe) : 'só convênio' }}</td>
-                            </tr>
+                    <div class="chips">
+                        @foreach ($especialidades as $esp)
+                            <a href="{{ route('publico.local', ['local' => $local, 'especialidade' => $esp->slug]) }}#medicos" class="chip">{{ $esp->nome }}</a>
                         @endforeach
-                    </table>
+                    </div>
                 </section>
             @endif
+
+            @include('publico.parciais.avaliacoes', ['avaliacoes' => $avaliacoes, 'total' => $local->total_avaliacoes])
+
+            @include('publico.parciais.avaliar', [
+                'acao' => route('avaliacoes.local', $local),
+                'alvo' => 'local',
+                'minhaAvaliacao' => $minhaAvaliacao,
+            ])
         </aside>
     </div>
 </div>

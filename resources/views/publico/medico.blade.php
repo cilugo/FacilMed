@@ -1,23 +1,23 @@
 {{--
     Perfil público do médico. Dados: PerfilPublicoController@medico.
 
-    Mostra onde ele atende, o preço de cada especialidade em cada lugar e
-    a distribuição das notas. Comentários das avaliações NÃO aparecem:
-    são privados (AGENTS.md §6).
+    Mostra onde ele atende, a faixa de preço ($ a $$$$) de cada lugar (da
+    unidade, escolhida pela clínica desde 05/10), a distribuição das notas e,
+    desde 05/10, as avaliações com comentário (decisão do grupo).
+
+    01/10/2026: o médico não tem conta (perfil mantido pela clínica) e não há
+    agendamento. O usuário logado avalia o médico aqui mesmo.
 --}}
 @extends('layouts.site')
 
-@section('titulo', $medico->user->name)
+@section('titulo', $medico->nome)
 @section('menu', 'busca')
 
 @php
-    $moeda = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
-    // Já vêm só os lugares que recebem agendamento (PerfilPublicoController).
+    // Já vêm só os lugares públicos (PerfilPublicoController).
     $vinculos = $medico->vinculos;
     $ordemDias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
     $nomeDia = ['segunda' => 'Segunda', 'terca' => 'Terça', 'quarta' => 'Quarta', 'quinta' => 'Quinta', 'sexta' => 'Sexta', 'sabado' => 'Sábado', 'domingo' => 'Domingo'];
-    $usuario = auth()->user();
-    $podeAgendar = ! $usuario || $usuario->tipo === 'paciente';
     $totalNotas = max(1, (int) $notas->sum());
 @endphp
 
@@ -33,14 +33,17 @@
             <section class="caixa">
                 <div class="perfil-cabeca">
                     <div class="avatar avatar--grande" style="background-color: {{ \App\Support\Formatador::corAvatar($medico->id) }};">
-                        {{ \App\Support\Formatador::iniciais($medico->user->name) }}
+                        {{ \App\Support\Formatador::iniciais($medico->nome) }}
+                        @if ($medico->foto_url)
+                            <img src="{{ $medico->foto_url }}" alt="Foto de {{ $medico->nome }}" class="avatar__foto" onerror="this.remove()">
+                        @endif
                     </div>
                     <div>
-                        <h1>{{ $medico->user->name }}</h1>
+                        <h1>{{ $medico->nome }}</h1>
                         <div class="dados">
                             <span>CRM {{ $medico->crm }}/{{ $medico->uf }}</span>
                             @if ($medico->anos_atuacao > 0)
-                                <span>{{ $medico->anos_atuacao }} anos de atuação</span>
+                                <span>{{ $medico->anos_atuacao }} {{ $medico->anos_atuacao === 1 ? 'ano' : 'anos' }} de carreira</span>
                             @endif
                             @if ($medico->total_avaliacoes > 0)
                                 <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $medico->media_avaliacoes, 1, ',', '') }} ({{ $medico->total_avaliacoes }})</span>
@@ -60,7 +63,7 @@
 
                 <p class="texto-pequeno" style="margin-top: 14px;">
                     <x-icone nome="badge" style="width: 14px; height: 14px; vertical-align: -2px;" />
-                    CRM conferido na base simulada do FacilMed.
+                    CRM conferido na base simulada do PointMed.
                 </p>
             </section>
 
@@ -79,21 +82,13 @@
                                     @if ($v->aceita_convenio)<span class="chip chip--verde">Convênio</span>@endif
                                 </div>
                             </div>
-                            @if ($podeAgendar)
-                                <a href="{{ route('agendamento.horario', $v) }}" class="btn btn-primary">Agendar aqui</a>
-                            @endif
+                            <a href="{{ route('publico.local', $v->local) }}" class="btn btn-outline">Ver local</a>
                         </div>
 
-                        @php $precos = $v->precosOferecidos(); @endphp
-                        @if ($precos->isNotEmpty())
-                            <table class="tabela-precos">
-                                @foreach ($precos as $preco)
-                                    <tr>
-                                        <td>{{ $preco->especialidade->nome }}</td>
-                                        <td>{{ $moeda($preco->valor) }}</td>
-                                    </tr>
-                                @endforeach
-                            </table>
+                        {{-- 05/10: a faixa é da unidade, escolhida pela clínica. --}}
+                        @if ($v->aceita_particular && $v->local->faixa_preco)
+                            <p class="texto-pequeno" style="margin-top: 8px;">Consulta particular aqui:
+                                <x-faixa-preco :nivel="$v->local->faixa_preco" detalhada /></p>
                         @endif
 
                         @php $horarios = $v->local->horarios->sortBy(fn ($h) => array_search($h->dia_semana, $ordemDias)); @endphp
@@ -110,7 +105,7 @@
                         @endif
                     </div>
                 @empty
-                    <p class="texto-pequeno">Este médico ainda não informou onde atende.</p>
+                    <p class="texto-pequeno">Este médico não está atendendo em nenhum local no momento.</p>
                 @endforelse
             </section>
         </div>
@@ -147,17 +142,18 @@
                             </div>
                         @endfor
                     </div>
-                    <p class="texto-pequeno" style="margin-top: 12px;">Só quem teve consulta realizada pode avaliar.</p>
                 @else
                     <p class="texto-pequeno">Ainda sem avaliações.</p>
                 @endif
             </section>
 
-            @unless ($podeAgendar)
-                <div class="site-aviso site-aviso--info" style="margin-top: 20px;">
-                    Você entrou como {{ \App\Support\Formatador::PAPEIS[$usuario->tipo] ?? $usuario->tipo }}. Só contas de paciente agendam consultas.
-                </div>
-            @endunless
+            @include('publico.parciais.avaliacoes', ['avaliacoes' => $avaliacoes, 'total' => $medico->total_avaliacoes])
+
+            @include('publico.parciais.avaliar', [
+                'acao' => route('avaliacoes.medico', $medico),
+                'alvo' => 'médico',
+                'minhaAvaliacao' => $minhaAvaliacao,
+            ])
         </aside>
     </div>
 </div>

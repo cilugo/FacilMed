@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CadastroClinicaRequest;
-use App\Http\Requests\CadastroPacienteRequest;
+use App\Http\Requests\CadastroUsuarioRequest;
 use App\Models\Clinica;
 use App\Models\HorarioFuncionamento;
 use App\Models\Local;
-use App\Models\Paciente;
-use App\Models\PacienteAcessibilidade;
+use App\Models\Usuario;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 class CadastroController extends Controller
 {
     /**
-     * Cadastro de PACIENTE e de CLINICA/HOSPITAL.
+     * Cadastro de USUÁRIO e de CLINICA/HOSPITAL.
      *
      * 29/09/2026: o autocadastro de medico saiu (plano do grupo de 28/09).
      * O medico entra pela clinica - Clinica\MedicoController@salvar - que
@@ -35,19 +34,19 @@ class CadastroController extends Controller
      * CnpjNaBaseSimulada): se chegou aqui, ja bateu.
      *
      * Transacao em todos: user + perfil nascem juntos. Sem isso, um erro
-     * no meio deixa conta orfa (user sem paciente) que trava o login.
+     * no meio deixa conta orfa (user sem usuário) que trava o login.
      */
     public function escolher()
     {
         return view('cadastro.escolher');
     }
 
-    public function formPaciente()
+    public function formUsuario()
     {
-        return view('cadastro.paciente');
+        return view('cadastro.usuario');
     }
 
-    public function salvarPaciente(CadastroPacienteRequest $request)
+    public function salvarUsuario(CadastroUsuarioRequest $request)
     {
         $dados = $request->validated();
 
@@ -56,29 +55,17 @@ class CadastroController extends Controller
                 'name'     => $dados['name'],
                 'email'    => $dados['email'],
                 'password' => $dados['password'], // o cast 'hashed' do User faz o hash
-                'tipo'     => User::TIPO_PACIENTE,
+                'tipo'     => User::TIPO_USUARIO,
                 'telefone' => ($dados['telefone'] ?? '') ?: null,
                 'status'   => 'ativo',
             ]);
 
-            $paciente = Paciente::create([
+            Usuario::create([
                 'user_id'         => $user->id,
                 'cpf'             => $dados['cpf'],
                 'data_nascimento' => $dados['data_nascimento'] ?? null,
                 'sexo'            => $dados['sexo'] ?? null,
             ]);
-
-            // Acessibilidade: OPCIONAL, dado sensivel (LGPD art. 11).
-            // So grava com consentimento - o FormRequest ja exige.
-            if (! empty($dados['possui_deficiencia'])) {
-                PacienteAcessibilidade::create([
-                    'paciente_id'          => $paciente->id,
-                    'possui_deficiencia'   => true,
-                    'descricao'            => $dados['descricao_deficiencia'],
-                    'consentimento_em'     => now(),
-                    'consentimento_versao' => '1.0',
-                ]);
-            }
 
             return $user;
         });
@@ -142,7 +129,7 @@ class CadastroController extends Controller
             return $user;
         });
 
-        return $this->entrar($user, 'Cadastro concluído! O CNPJ foi conferido na base simulada do FacilMed. Agora cadastre os seus médicos.');
+        return $this->entrar($user, 'Cadastro concluído! O CNPJ foi conferido na base simulada do PointMed. Agora cadastre os seus médicos.');
     }
 
     /** Loga a conta recém-criada e manda para o painel do tipo dela. */

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Clinica;
 
-use App\Models\Disponibilidade;
+use App\Models\HorarioFuncionamento;
 
 /**
  * Regras do campo horarios[dia][abre|fecha], usadas no cadastro de
@@ -13,7 +13,7 @@ final class HorariosDeFuncionamento
     public static function regras(): array
     {
         $regras = [];
-        foreach (Disponibilidade::DIAS as $dia) {
+        foreach (HorarioFuncionamento::DIAS as $dia) {
             $regras["horarios.$dia.abre"]  = ['nullable', 'date_format:H:i', "required_with:horarios.$dia.fecha"];
             $regras["horarios.$dia.fecha"] = ['nullable', 'date_format:H:i', "required_with:horarios.$dia.abre", "after:horarios.$dia.abre"];
         }
@@ -34,7 +34,7 @@ final class HorariosDeFuncionamento
     public static function preenchidos(?array $horarios): array
     {
         return collect($horarios ?? [])
-            ->filter(fn ($h, $dia) => in_array($dia, Disponibilidade::DIAS, true) && ! empty($h['abre']) && ! empty($h['fecha']))
+            ->filter(fn ($h, $dia) => in_array($dia, HorarioFuncionamento::DIAS, true) && ! empty($h['abre']) && ! empty($h['fecha']))
             ->map(fn ($h) => ['abre' => $h['abre'], 'fecha' => $h['fecha']])
             ->all();
     }

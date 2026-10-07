@@ -1,6 +1,5 @@
 {{--
-    Layout dos painéis (paciente, médico, clínica e a tela de consultas
-    realizadas). Quem usa faz:
+    Layout dos painéis (usuário, clínica e admin). Quem usa faz:
 
         @extends('layouts.painel')
         @section('titulo', 'Início')
@@ -17,7 +16,6 @@
 @php
     $usuario = auth()->user();
     $nomeUsuario = $usuario->name ?? '';
-    $iniciais = \App\Support\Formatador::iniciais($nomeUsuario);
     $papel = \App\Support\Formatador::PAPEIS[$usuario->tipo ?? ''] ?? '';
     $rotaPerfil = ($usuario && \Illuminate\Support\Facades\Route::has($usuario->tipo . '.perfil'))
         ? route($usuario->tipo . '.perfil')
@@ -30,7 +28,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('titulo', 'Painel') — FacilMed</title>
+    <title>@yield('titulo', 'Painel') — PointMed</title>
 
     {{-- 24/09: o arquivo antigo (simbolo) nao existia. Nao ha PNG so com o
          simbolo; usa a logo sem slogan, que e quadrada. --}}
@@ -60,10 +58,10 @@
                 <x-icone nome="menu" />
             </button>
 
-            <a href="{{ url('/') }}" class="fm-topo__logo" aria-label="FacilMed, ir para o início">
+            <a href="{{ url('/') }}" class="fm-topo__logo" aria-label="PointMed, ir para o início">
                 {{-- 24/09: logo.png e a versao horizontal; o recorte da margem e feito
                      no CSS (.fm-logo-recorte, no painel.css). --}}
-                <span class="fm-logo-recorte"><img src="{{ asset('imgs/marca/logo.png') }}" alt="FacilMed"></span>
+                <span class="fm-logo-recorte"><img src="{{ asset('imgs/marca/logo.png') }}" alt="PointMed"></span>
             </a>
 
             <div class="fm-usuario" @click.outside="perfil = false">
@@ -74,7 +72,7 @@
                     :aria-expanded="perfil"
                     aria-haspopup="menu"
                 >
-                    <span class="fm-avatar">{{ $iniciais }}</span>
+                    <x-avatar :nome="$nomeUsuario" :foto="$usuario?->foto_url" />
                     <span class="fm-usuario__texto">
                         <strong>{{ $nomeUsuario }}</strong>
                         <small>{{ $papel }}</small>

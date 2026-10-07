@@ -12,10 +12,11 @@ class DatabaseSeeder extends Seeder
      * Desde 24/09 os convenios sao ficticios e o ConvenioSeeder NAO
      * depende mais do CSV da ANS: `php artisan db:seed` sozinho ja
      * monta tudo (admin, 3 clinicas + 3 hospitais, 3 convenios ativos,
-     * bases simuladas, 3 medicos, 2 pacientes, consultas).
+     * bases simuladas, 8 medicos, 2 usuários e avaliacoes de exemplo).
+     * 01/10/2026: sem consultas e sem feriados (sairam com o agendamento).
      *
      * Ordem: Convenio antes de Medico (medico aceita convenio) e de
-     * Paciente (carteirinha aponta para plano).
+     * Usuário (carteirinha aponta para plano).
      */
     public function run(): void
     {
@@ -26,14 +27,8 @@ class DatabaseSeeder extends Seeder
             BaseSimuladaSeeder::class,   // depois do Convenio: carteirinha aponta para plano
             ClinicaSeeder::class,
             MedicoSeeder::class,
-            PacienteSeeder::class,
-
-            // Entra ANTES das consultas: o ConsultaSeeder gera
-            // agendamentos em datas futuras, e nao faz sentido cair
-            // num feriado que o sistema ja conhece.
-            FeriadoSeeder::class,
-
-            ConsultaSeeder::class,
+            UsuarioSeeder::class,
+            AvaliacaoSeeder::class,      // depois de Usuário e Medico
         ]);
     }
 }

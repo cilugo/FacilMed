@@ -2,31 +2,46 @@
 
 namespace Tests\Feature;
 
-use App\Models\Consulta;
+use App\Models\BaseCnpj;
 use App\Models\Especialidade;
 use App\Models\Medico;
 use App\Models\User;
 use Tests\TestCase;
 
 /**
- * As 6 telas internas do admin (28/09/2026), com as views DE VERDADE.
+ * As telas internas do admin (28/09/2026; 01/10 sem Consultas e Carteirinhas,
+ * com Verificar CNPJ e Meu perfil), com as views DE VERDADE.
  */
 class TelasAdminTest extends TestCase
 {
     public function test_todas_as_telas_do_admin_abrem(): void
     {
-        foreach (['/admin/usuarios', '/admin/verificacoes', '/admin/carteirinhas', '/admin/clinicas',
-                  '/admin/especialidades', '/admin/consultas'] as $url) {
+        foreach (['/admin', '/admin/usuarios', '/admin/cnpjs', '/admin/clinicas', '/admin/especialidades',
+                  '/admin/convenios', '/admin/perfil'] as $url) {
             $this->comoAdmin()->get($url)->assertOk();
         }
+
+        // As telas que saíram em 01/10 não existem mais.
+        foreach (['/admin/verificacoes', '/admin/carteirinhas', '/admin/consultas'] as $url) {
+            $this->comoAdmin()->get($url)->assertNotFound();
+        }
+
+        // E o menu não aponta para elas.
+        $this->comoAdmin()->get('/admin')
+            ->assertSee('Verificar CNPJ')
+            ->assertDontSee('Verificar CRM')
+            ->assertDontSee('Conferir carteirinhas');
     }
 
     public function test_usuarios_filtra_e_nao_oferece_bloquear_admin(): void
     {
         $admin = User::where('email', 'admin@facilmed.test')->first();
 
-        $this->comoAdmin()->get('/admin/usuarios?tipo=medico')
-            ->assertOk()->assertSee('helena@facilmed.test')->assertDontSee('ana@facilmed.test');
+        $this->comoAdmin()->get('/admin/usuarios?tipo=usuário')
+            ->assertOk()->assertSee('ana@facilmed.test')->assertDontSee('contato@vidaplena.test');
+
+        // Médico não tem conta desde 01/10: nem aparece como tipo no filtro.
+        $this->comoAdmin()->get('/admin/usuarios')->assertOk()->assertDontSee('helena@facilmed.test');
 
         $this->comoAdmin()->get('/admin/usuarios?tipo=admin')
             ->assertOk()->assertDontSee(route('admin.usuarios.bloquear', $admin), false);
@@ -43,36 +58,29 @@ class TelasAdminTest extends TestCase
             ->assertSee(route('admin.usuarios.desbloquear', $marcos), false);
     }
 
-    public function test_verificacoes_nunca_dizem_validado_no_cfm(): void
+    public function test_verificar_cnpj_mostra_a_situacao_na_base_e_nunca_diz_validado(): void
     {
-        $this->comoAdmin()->get('/admin/verificacoes')
+        $this->comoAdmin()->get('/admin/cnpjs')
             ->assertOk()
-            ->assertSee('base simulada do FacilMed')
+            ->assertSee('base simulada do PointMed')
+            ->assertSee('Clínica Vida Plena')
+            ->assertSee('Todos ativos na base')
             ->assertDontSee('validado', false);
+
+        // CNPJ baixado DEPOIS do cadastro: a tela aponta, e o filtro mostra só ele.
+        BaseCnpj::where('cnpj', '41100002000130')->update(['situacao' => 'baixada']);
+
+        $this->comoAdmin()->get('/admin/cnpjs?situacao=problema')
+            ->assertOk()
+            ->assertSee('Clínica Vida Plena')
+            ->assertSee('Baixada na base simulada')
+            ->assertDontSee('Hospital Santa Clara');
+
+        // Só o admin abre.
+        $this->comoClinica()->get('/admin/cnpjs')->assertForbidden();
     }
 
-    public function test_aprovar_crm_confere_na_base_simulada(): void
-    {
-        // Médico pendente com CRM CASSADO na base (998877/SP): não pode ser aprovado.
-        $helena = User::where('email', 'helena@facilmed.test')->first()->medico;
-        $helena->update(['crm' => '998877', 'uf' => 'SP', 'status_verificacao' => 'pendente']);
 
-        $this->comoAdmin()->from('/admin/verificacoes')->post("/admin/verificacoes/{$helena->id}/aprovar")
-            ->assertRedirect('/admin/verificacoes')
-            ->assertSessionHas('erro');
-        $this->assertSame('pendente', $helena->fresh()->status_verificacao);
-
-        // Com o CRM dela de verdade (ativo na base), aprova.
-        $helena->update(['crm' => '112233']);
-        $this->comoAdmin()->post("/admin/verificacoes/{$helena->id}/aprovar")->assertSessionHas('sucesso');
-        $this->assertSame('verificado', $helena->fresh()->status_verificacao);
-    }
-
-    public function test_carteirinhas_lista_e_filtra_por_situacao(): void
-    {
-        $this->comoAdmin()->get('/admin/carteirinhas')->assertOk()->assertSee('SpSaúde');
-        $this->comoAdmin()->get('/admin/carteirinhas?status=recusada')->assertOk()->assertSee('Nenhuma carteirinha');
-    }
 
     public function test_clinicas_mostra_cnpj_e_unidades(): void
     {
@@ -103,15 +111,4 @@ class TelasAdminTest extends TestCase
         $this->comoAdmin()->get('/admin/especialidades')->assertOk()->assertSee('Reumatologia');
     }
 
-    public function test_consultas_filtra_e_nao_mostra_observacoes(): void
-    {
-        $consulta = Consulta::first();
-        $consulta->update(['observacoes' => 'Texto que o admin nao pode ver']);
-        $medico = Medico::with('user')->find($consulta->medico_id);
-
-        $this->comoAdmin()->get('/admin/consultas?medico=' . $medico->id)
-            ->assertOk()
-            ->assertSee($medico->user->name)
-            ->assertDontSee('Texto que o admin nao pode ver');
-    }
 }

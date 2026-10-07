@@ -4,7 +4,8 @@
     - Nova: nome, ícone, destaque (card na home).
     - Editar: nome, ícone, destaque e ativo. A URL usa o SLUG
       (/admin/especialidades/cardiologia), que não muda quando o nome muda.
-    - Desativar com consulta futura marcada é recusado pelo back-end.
+    - 01/10/2026: a clínica também cria especialidade (Clinica\EspecialidadeController);
+      renomear, destacar e desativar continuam só aqui.
 
     Caixas de marcar: um hidden "0" antes do checkbox "1", porque o controller
     só mexe em destaque/ativo quando o campo vem no formulário.
@@ -34,14 +35,14 @@
     <div class="fm-pagina-topo">
         <div>
             <h1 class="fm-titulo">Especialidades</h1>
-            <p class="fm-subtitulo">As especialidades que médicos podem escolher e pacientes podem buscar.</p>
+            <p class="fm-subtitulo">As especialidades que médicos podem escolher e usuários podem buscar.</p>
         </div>
     </div>
 
     <p class="fm-dica">
         <x-icone nome="lightbulb" />
         <span><strong>Destaque</strong> faz a especialidade aparecer nos cards da página inicial na hora. Especialidade
-            <strong>desativada</strong> some da busca e do cadastro, mas continua no histórico das consultas.</span>
+            <strong>desativada</strong> some da busca e do cadastro dos médicos. As clínicas também podem criar especialidades.</span>
     </p>
 
     {{-- ===================== NOVA ===================== --}}
@@ -143,7 +144,6 @@
                                 </label>
                             </div>
 
-                            <p class="fm-campo__ajuda fm-campo--largo">Não dá para desativar se houver consulta futura marcada nela.</p>
 
                             <div class="fm-form__acoes">
                                 <button type="button" class="fm-botao fm-botao--suave fm-botao--pequeno" @click="editando = false">Cancelar</button>

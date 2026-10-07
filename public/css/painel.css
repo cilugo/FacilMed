@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FacilMed — painéis (paciente, médico, clínica e "Consultas realizadas")
+   PointMed — painéis (paciente, médico, clínica e "Consultas realizadas")
 
    CSS simples, sem build: carregado direto pelo layouts/painel.blade.php.
    Todas as classes começam com "fm-" para nunca brigar com o Tailwind do
@@ -215,14 +215,14 @@
 .fm-topo__logo img { height: 30px; width: auto; }
 
 /* 24/09 — Recorte da logo.png. O PNG é 2000x2000 e o desenho ocupa só a
-   faixa x 501-1445 / y 1025-1204 (944 x 179). Esta "janela" com overflow
+   faixa x 501-1488 / y 1025-1204 (987 x 179). Esta "janela" com overflow
    escondido mostra só o desenho, sem precisar de arquivo novo. Se um dia
    exportarem a logo já recortada, apaguem este bloco e usem <img> direto. */
 .fm-logo-recorte {
     position: relative;
     display: block;
     height: var(--fm-logo-altura, 34px);
-    aspect-ratio: 944 / 179;
+    aspect-ratio: 987 / 179; /* largura do "PointMed" no logo.png (05/10/2026; era 944 com "FacilMed") */
     overflow: hidden;
 }
 
@@ -984,7 +984,8 @@ a.fm-cartao--link:hover { border-color: var(--fm-borda-forte); }
 }
 
 @media (min-width: 900px) {
-    .fm-grade--cartoes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+    /* --fm-cartoes = quantos cartões a tela tem (padrão 4); assim 2 ou 3 cartões ocupam a largura toda. */
+    .fm-grade--cartoes { grid-template-columns: repeat(var(--fm-cartoes, 4), minmax(0, 1fr)); gap: 18px; }
     .fm-duas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
     .fm-duas--agenda { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); }
     .fm-grafico-bloco { grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; }
@@ -1064,3 +1065,10 @@ a.fm-cartao--link:hover { border-color: var(--fm-borda-forte); }
 html { background: var(--fm-fundo); }
 /* fm-info em uma coluna: lista de detalhes dentro de painel estreito. */
 .fm-info.fm-info--lista { grid-template-columns: minmax(0, 1fr) !important; }
+
+/* 01/10/2026: foto de perfil por cima das iniciais (componente x-avatar). */
+.fm-avatar { position: relative; overflow: hidden; }
+.fm-avatar__foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.fm-avatar--foto-perfil { width: 88px; height: 88px; font-size: 26px; }
+.fm-foto-perfil { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.fm-foto-perfil__acoes { display: grid; gap: 10px; flex: 1 1 260px; }

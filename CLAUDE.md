@@ -1,4 +1,4 @@
-# CLAUDE.md — FacilMed
+# CLAUDE.md — PointMed
 
 As regras deste projeto estão no **[`AGENTS.md`](./AGENTS.md)** e a documentação completa no
 **[`README.md`](./README.md)**. Leia os dois antes de qualquer coisa — este arquivo só reforça

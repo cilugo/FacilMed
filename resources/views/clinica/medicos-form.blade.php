@@ -2,11 +2,12 @@
     Clínica → Cadastrar médico. Dados: Clinica\MedicoController@form (README §7.2).
 
     Dois casos, decididos pelo back-end (CadastrarMedicoPelaClinicaRequest):
-      - CRM/UF já existe no FacilMed → só cria o vínculo (nome, e-mail, CPF e
+      - CRM/UF já existe no PointMed → só cria o vínculo (nome, CPF e
         especialidades são ignorados);
-      - CRM novo → conferido na base simulada; os dados pessoais passam a ser
-        obrigatórios e a conta nasce com senha provisória.
-    Depois de salvar, vai para Preços, onde a senha provisória aparece UMA vez.
+      - CRM novo → conferido na base simulada; os dados passam a ser obrigatórios.
+    01/10/2026: o médico é só um PERFIL (sem e-mail de login nem senha).
+    Foto, bio, anos de carreira e convênios: em "Editar perfil", depois.
+    Depois de salvar, vai para Preços.
 --}}
 @extends('layouts.painel')
 
@@ -91,16 +92,16 @@
 
                 <p class="fm-dica">
                     <x-icone nome="lightbulb" />
-                    <span>O CRM é <strong>conferido na hora na base simulada do FacilMed</strong> (projeto acadêmico: não consulta o
-                        CFM de verdade), junto com o <strong>nome completo</strong> do médico. Se o médico <strong>já tem conta</strong>
-                        no FacilMed com esse CRM, ele só é vinculado à unidade — os dados abaixo são ignorados.</span>
+                    <span>O CRM é <strong>conferido na hora na base simulada do PointMed</strong> (projeto acadêmico: não consulta o
+                        CFM de verdade), junto com o <strong>nome completo</strong> do médico. Se o médico <strong>já está</strong>
+                        no PointMed com esse CRM (atende em outra clínica), ele só é vinculado à unidade — os dados abaixo são ignorados.</span>
                 </p>
             </section>
 
             {{-- ============ 2. Dados do médico (só conta nova) ============ --}}
             <section class="fm-painel">
                 <header class="fm-painel__topo">
-                    <h2 class="fm-painel__titulo"><x-icone nome="user" /> Dados do médico <small class="fm-campo__ajuda">(só se ainda não tiver conta)</small></h2>
+                    <h2 class="fm-painel__titulo"><x-icone nome="user" /> Dados do médico <small class="fm-campo__ajuda">(só se ainda não estiver no PointMed)</small></h2>
                 </header>
 
                 <div class="fm-form fm-form--tres">
@@ -110,13 +111,6 @@
                         @error('name') <span class="fm-campo__erro">{{ $message }}</span> @enderror
                     </div>
 
-                    <div class="fm-campo {{ $errors->has('email') ? 'fm-campo--erro' : '' }}">
-                        <label for="email">E-mail</label>
-                        <input id="email" name="email" type="email" maxlength="255" value="{{ old('email') }}">
-                        <span class="fm-campo__ajuda">Vai ser o login do médico.</span>
-                        @error('email') <span class="fm-campo__erro">{{ $message }}</span> @enderror
-                    </div>
-
                     <div class="fm-campo {{ $errors->has('cpf') ? 'fm-campo--erro' : '' }}">
                         <label for="cpf">CPF</label>
                         <input id="cpf" name="cpf" inputmode="numeric" maxlength="14" value="{{ old('cpf') }}" placeholder="000.000.000-00">
@@ -124,7 +118,7 @@
                     </div>
 
                     <div class="fm-campo fm-campo--largo">
-                        <label>Especialidades <span class="fm-campo__ajuda">(a primeira marcada, na ordem da lista, vira a principal — o médico troca depois no perfil)</span></label>
+                        <label>Especialidades <span class="fm-campo__ajuda">(a primeira marcada, na ordem da lista, vira a principal — dá para trocar depois em "Editar perfil")</span></label>
                         <div class="fm-opcoes">
                             @foreach ($especialidades as $esp)
                                 <label class="fm-marcar fm-marcar--linha fm-opcao">
@@ -139,8 +133,8 @@
                 </div>
 
                 <p class="fm-campo__ajuda" style="margin-top: 12px;">
-                    A conta nasce com uma <strong>senha provisória</strong>, mostrada na próxima tela uma única vez para você
-                    repassar ao médico. No primeiro acesso ele é obrigado a criar a senha dele — a clínica nunca sabe a senha final.
+                    O médico <strong>não ganha login</strong>: é a clínica que mantém o perfil dele. Foto, apresentação, anos de
+                    carreira e convênios aceitos você completa depois, em <em>Meus médicos → Editar perfil</em>.
                 </p>
             </section>
 

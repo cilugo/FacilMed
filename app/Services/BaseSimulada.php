@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  * validação e para o controller.
  *
  * ⚠ Na tela, NUNCA escreva "validado no CFM/Receita/operadora". O texto
- * correto é "conferido na base simulada do FacilMed" (AGENTS.md §6).
+ * correto é "conferido na base simulada do PointMed" (AGENTS.md §6).
  */
 class BaseSimulada
 {
@@ -39,7 +39,7 @@ class BaseSimulada
             ->first();
 
         if (! $registro) {
-            return 'Esse CRM não foi encontrado na base simulada do FacilMed para esse estado.';
+            return 'Esse CRM não foi encontrado na base simulada do PointMed para esse estado.';
         }
 
         if ($registro->situacao !== 'ativo') {
@@ -47,7 +47,7 @@ class BaseSimulada
         }
 
         if (trim((string) $nome) !== '' && self::nomeComparavel($nome) !== self::nomeComparavel($registro->nome)) {
-            return 'Esse CRM está registrado em nome de outra pessoa na base simulada do FacilMed. '
+            return 'Esse CRM está registrado em nome de outra pessoa na base simulada do PointMed. '
                 . 'Confira se o nome completo está igual ao do CRM.';
         }
 
@@ -73,7 +73,7 @@ class BaseSimulada
         $registro = BaseCnpj::where('cnpj', Documento::digitos($cnpj))->first();
 
         if (! $registro) {
-            return 'Esse CNPJ não foi encontrado na base simulada do FacilMed.';
+            return 'Esse CNPJ não foi encontrado na base simulada do PointMed.';
         }
 
         if ($registro->situacao !== 'ativa') {
@@ -89,11 +89,11 @@ class BaseSimulada
      *
      * Devolve [erro, registro]. O registro volta junto para o controller
      * copiar a validade oficial — assim a validade gravada é a da base,
-     * não a que o paciente digitou.
+     * não a que o usuário digitou.
      *
      * @return array{0: ?string, 1: ?BaseCarteirinha}
      */
-    public function conferirCarteirinha(int $planoId, ?string $numero, ?string $cpfPaciente): array
+    public function conferirCarteirinha(int $planoId, ?string $numero, ?string $cpfUsuario): array
     {
         $registro = BaseCarteirinha::where('plano_id', $planoId)
             ->where('numero_carteirinha', Documento::digitos($numero))
@@ -103,7 +103,7 @@ class BaseSimulada
             return ['Carteirinha não encontrada nesse plano na base simulada do convênio. Confira o número e o plano escolhido.', null];
         }
 
-        if ($registro->beneficiario_cpf !== Documento::digitos($cpfPaciente)) {
+        if ($registro->beneficiario_cpf !== Documento::digitos($cpfUsuario)) {
             return ['Essa carteirinha está em nome de outra pessoa.', null];
         }
 
