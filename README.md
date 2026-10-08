@@ -472,9 +472,11 @@ Lucas: "a versão do zip é a atual; agora é um site de rastreio de clínica").
   não faz nada. No painel do Render: conferir `APP_NAME=PointMed` e preencher `BREVO_API_KEY`,
   `MAIL_FROM_ADDRESS`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` se quiserem e-mail e admin reais.
 - **Testes:** novos `RecuperarSenhaTest` (trazido e adaptado) e `BuscaCepRaioTest`; fotos e home
-  com testes novos em `ReorganizacaoTest`/`ClinicaTest`. **Ainda não rodados**: o MySQL do XAMPP
-  estava desligado. Antes de juntar na `main`: `composer dump-autoload`,
-  `php artisan migrate:fresh --seed` e `php artisan test`.
+  com testes novos em `ReorganizacaoTest`/`ClinicaTest`. Conferido em 08/10 no XAMPP do Lucas:
+  **116 testes passando** (banco `facilmed_testes`, recriado com migrations + seed pelo
+  `RefreshDatabase`). **Atenção:** os 5 testes de foto precisam da extensão **GD** do PHP, que vem
+  desligada no `php.ini` do XAMPP (`;extension=gd`, linha ~931). Sem ela, 4 falham com "GD extension
+  is not installed". Para ligar: tire o `;` da linha e reinicie o Apache.
 - **Depois de puxar:** os mesmos três comandos (todo mundo precisa do `migrate:fresh`).
 - **Ficou de fora (opcionais da main, não pedidos):** galeria de fotos e site do local, admin com
   três telas de contas, barra Início/Perfil no celular. Imagens de `inst` não foram comprimidas
