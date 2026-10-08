@@ -205,6 +205,7 @@ final class DadosFicticios
     public const CNPJS_EXTRAS = [
         ['43300001000164', 'Bem Estar Jacareí Clínica Médica LTDA', 'Clínica Bem Estar', 'ativa',   'LIVRE: testar cadastro de clínica que dá certo'],
         ['43300002000109', 'Horizonte Azul Serviços de Saúde LTDA', 'Clínica Horizonte Azul', 'baixada', 'testar recusa: CNPJ baixado'],
+        ['12345678000195', 'Clínica Ferr Inni Ltda',                'Clínica Ferr Inni',      'ativa',   'conta de demonstração do grupo (cadastrada pelo formulário)'],
     ];
 
     /**

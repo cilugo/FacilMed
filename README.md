@@ -249,6 +249,7 @@ Desde 29/09 o médico não se cadastra sozinho: `/cadastro/medico` só volta par
 |---|---|
 | 43.300.001/0001-64 | ✅ aceito |
 | 43.300.002/0001-09 | ❌ baixado |
+| 12.345.678/0001-95 | ✅ aceito — CNPJ da Clínica Ferr Inni, conta de demonstração do grupo |
 | 41.100.001/0001-95 | ❌ já cadastrado |
 | 11.111.111/1111-11 | ❌ dígito verificador inválido |
 
