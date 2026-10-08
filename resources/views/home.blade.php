@@ -192,42 +192,44 @@
     @endif
 
     {{-- ========================= HOSPITAIS E CLÍNICAS ========================= --}}
-    {{-- Vitrine fixa (nomes fictícios, endereços reais), trazida do protótipo.
-         Fotos em public/imgs/sliderhospcli/. --}}
-    @php
-        $estabelecimentos = [
-            ['h1.jpg', 'Hospital Santa Clara', 'Av. Tiradentes, 280 - Centro, Taubaté - SP'],
-            ['h2.jpg', 'Clínica Vida Plena', 'Av. Cassiano Ricardo, 319 - Jardim Aquarius, São José dos Campos - SP'],
-            ['h3.jpg', 'Hospital Vale Sereno', 'Av. Lineu de Moura, 995 - Urbanova, São José dos Campos - SP'],
-            ['h4.jpg', 'Centro Médico Aurora', 'Rua Major Francisco de Paula Elias, 217 - Vila Adyana, São José dos Campos - SP'],
-        ];
-    @endphp
-    <section class="specialties" id="hospitais-clinicas">
-        <div class="container">
-            <div class="section-header">
-                <h2>Hospitais e Clínicas</h2>
-                <a href="{{ route('busca.index') }}" class="view-all">Ver todos</a>
-            </div>
-
-            <div class="specialties-wrapper">
-                <button class="arrow-button left" id="prevClinic" type="button" aria-label="Clínicas anteriores">‹</button>
-
-                <div class="clinicas-list" id="clinicsList">
-                    @foreach ($estabelecimentos as [$foto, $nome, $endereco])
-                        <div class="clinica-card">
-                            <img src="{{ asset('imgs/sliderhospcli/' . $foto) }}" alt="">
-                            <div class="clinica-info">
-                                <span class="nome-clinica">{{ $nome }}</span>
-                                <span class="local-clinica">{{ $endereco }}</span>
-                            </div>
-                        </div>
-                    @endforeach
+    {{-- 07/10/2026: do banco (HomeController::locaisDestaque), com o endereço e a
+         nota cadastrados e o link para a página de cada local. Imagens em
+         public/imgs/inst/ (HomeController::IMAGENS_DA_VITRINE). --}}
+    @if ($locaisDestaque->isNotEmpty())
+        <section class="specialties" id="hospitais-clinicas">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Hospitais e Clínicas</h2>
+                    <a href="{{ route('busca.locais') }}" class="view-all">Ver todos</a>
                 </div>
 
-                <button class="arrow-button right" id="nextClinic" type="button" aria-label="Próximas clínicas">›</button>
+                <div class="specialties-wrapper">
+                    <button class="arrow-button left" id="prevClinic" type="button" aria-label="Clínicas anteriores">‹</button>
+
+                    <div class="clinicas-list" id="clinicsList">
+                        @foreach ($locaisDestaque as $l)
+                            <a href="{{ route('publico.local', $l) }}" class="clinica-card">
+                                @if ($l->imagem_vitrine)
+                                    <img src="{{ $l->imagem_vitrine }}" alt="" loading="lazy">
+                                @else
+                                    <span class="clinica-card__sem-foto"><x-icone :nome="$l->tipo === 'hospital' ? 'hospital' : 'building'" /></span>
+                                @endif
+                                <div class="clinica-info">
+                                    <span class="nome-clinica">{{ $l->nome }}</span>
+                                    <span class="local-clinica">{{ $l->endereco_completo }}</span>
+                                    @if ($l->total_avaliacoes > 0)
+                                        <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $l->media_avaliacoes, 1, ',', '') }} ({{ $l->total_avaliacoes }})</span>
+                                    @endif
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    <button class="arrow-button right" id="nextClinic" type="button" aria-label="Próximas clínicas">›</button>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    @endif
 
     {{-- ========================= SOBRE ========================= --}}
     <section id="sobre">

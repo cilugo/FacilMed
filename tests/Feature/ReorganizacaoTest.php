@@ -150,6 +150,28 @@ class ReorganizacaoTest extends TestCase
         $this->assertFileExists(public_path('imgs/medicos/medico3.jpeg'));
     }
 
+    public function test_home_mostra_hospitais_e_clinicas_do_banco_com_a_imagem_de_cada_um(): void
+    {
+        $resposta = $this->get('/')->assertOk()->assertSee('Hospitais e Clínicas');
+
+        // 07/10: a lista fixa saiu; o hospital que não existia não aparece mais.
+        $resposta->assertDontSee('Vale Sereno');
+
+        foreach (\App\Http\Controllers\HomeController::IMAGENS_DA_VITRINE as $nome => $imagem) {
+            $local = Local::where('nome', $nome)->firstOrFail();
+            $this->assertFileExists(public_path($imagem));
+            $resposta->assertSee($local->nome)
+                ->assertSee($local->endereco_completo)
+                ->assertSee(asset($imagem), false)
+                ->assertSee(route('publico.local', $local), false);
+        }
+
+        // Local sem imagem na lista aparece com o ícone, sem imagem quebrada.
+        Local::where('nome', 'Aurora - Vila Ema')->update(['nome' => 'Aurora - Unidade nova']);
+        $this->get('/')->assertSee('Aurora - Unidade nova')->assertDontSee('imgs/inst/aurora.png', false)
+            ->assertSee('clinica-card__sem-foto', false);
+    }
+
     public function test_excluir_conta_apaga_a_foto(): void
     {
         $this->comoUsuarioFinal()->post('/minha-foto', ['foto' => UploadedFile::fake()->image('eu.png', 120, 120)]);
