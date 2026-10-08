@@ -86,7 +86,8 @@ class PerfilPublicoController extends Controller
 
         $slug = is_string($s = $request->query('especialidade')) && $s !== '' ? $s : null;
         $cidade = is_string($c = $request->query('cidade')) && $c !== '' ? $c : null;
-        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade);
+        $cep = is_string($c = $request->query('cep_origem')) ? $c : null;   // 07/10: veio de uma busca por CEP
+        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade, $cep);
 
         $local->load(['horarios', 'clinica.user']);
 

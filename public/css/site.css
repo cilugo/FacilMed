@@ -253,7 +253,11 @@ a.clinica-card:hover .nome-clinica { text-decoration: underline; }
 .lista-simples small { color: var(--site-suave); }
 
 /* ---------- Locais perto de você e página do local (29/09/2026) ---------- */
-.busca-caixa--local { grid-template-columns: 1.2fr 1fr auto auto; margin-top: 0; }
+/* 07/10: com CEP e distância são 5 campos na 1ª linha; os botões vão para a 2ª */
+.busca-caixa--local { grid-template-columns: 1.2fr 1fr .8fr .8fr 1fr; margin-top: 0; }
+.busca-caixa--local .btn { justify-self: start; }
+/* Home com o campo de CEP (07/10) */
+.busca-caixa--cep { grid-template-columns: 1.3fr 1fr .9fr auto; }
 .localizacao-aviso { grid-column: 1 / -1; font-size: 12px; color: var(--site-suave); line-height: 1.5; padding: 0 2px; }
 .localizacao-aviso--erro { color: #9b2c2c; font-weight: 600; }
 .distancia { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 700; color: var(--site-marinho); }
@@ -268,7 +272,8 @@ a.clinica-card:hover .nome-clinica { text-decoration: underline; }
 .local-medico .chips { margin: 8px 0 0; }
 
 @media (max-width: 800px) {
-    .busca-caixa--local { grid-template-columns: 1fr; }
+    .busca-caixa--local, .busca-caixa--cep { grid-template-columns: 1fr; }
+    .busca-caixa--local .btn { justify-self: stretch; }
     .local-medico { grid-template-columns: auto 1fr; }
     .local-medico .btn { grid-column: 1 / -1; }
 }

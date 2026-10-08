@@ -129,6 +129,11 @@ class CadastroController extends Controller
             return $user;
         });
 
+        // 07/10/2026 (trazido da main): coordenada exata do endereço (Nominatim),
+        // FORA da transação (é um pedido pela internet; se falhar, fica a
+        // aproximada do bairro/cidade).
+        \App\Support\Geocodificador::atualizarLocal($user->clinica->locais()->first());
+
         return $this->entrar($user, 'Cadastro concluído! O CNPJ foi conferido na base simulada do PointMed. Agora cadastre os seus médicos.');
     }
 

@@ -65,4 +65,19 @@ return [
         ],
     ],
 
+    /*
+    | 07/10/2026 (trazido da main de 01/10): CEP → coordenada pela internet, para
+    | o raio de 5/10/20 km fazer sentido (o centro do bairro é pouco para 5 km).
+    |   - ViaCEP (viacep.com.br): CEP → rua, bairro, cidade, UF. Grátis, sem chave.
+    |   - Nominatim (OpenStreetMap): endereço → latitude/longitude. Grátis, sem
+    |     chave; pede um "User-Agent" que identifique o sistema e no máximo 1
+    |     pedido por segundo (por isso o local é procurado UMA vez, ao salvar).
+    | Sem internet (XAMPP offline na banca) ou com o serviço fora do ar, vale a
+    | coordenada aproximada do bairro/cidade acima - nada quebra.
+    | Nos testes fica DESLIGADO (phpunit.xml): teste não fala com a internet.
+    */
+    'servico_externo' => env('LOCALIZACAO_EXTERNA', true),
+    'user_agent'      => 'PointMed/1.0 (TCC Etec Ilza Nascimento Pintus; https://facilmed.onrender.com)',
+    'timeout'         => 6,
+
 ];

@@ -23,7 +23,7 @@
                 <h1>Encontre onde se consultar<br>de forma rápida e fácil!</h1>
                 <p>Encontre médicos, hospitais e clínicas perto de você.<br>Pesquise por especialidade, veja quem aceita o seu convênio e confira a avaliação de outros usuários.</p>
 
-                <form method="GET" action="{{ route('busca.locais') }}" class="busca-caixa" role="search">
+                <form method="GET" action="{{ route('busca.locais') }}" class="busca-caixa busca-caixa--cep" role="search">
                     <div class="busca-campo">
                         <label for="h-especialidade">Especialidade</label>
                         <select id="h-especialidade" name="especialidade">
@@ -41,6 +41,12 @@
                                 <option value="{{ $c->cidade }}">{{ $c->cidade }} - {{ $c->uf }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    {{-- 07/10: ou o CEP (RF03). O BuscaController acha a coordenada e
+                         ordena os locais pela distância a partir dele. --}}
+                    <div class="busca-campo">
+                        <label for="h-cep">Ou o CEP</label>
+                        <input id="h-cep" name="cep" type="text" inputmode="numeric" maxlength="9" autocomplete="postal-code" placeholder="00000-000">
                     </div>
                     <button type="submit" class="btn btn-primary btn-grande"><x-icone nome="search" /> Buscar</button>
 

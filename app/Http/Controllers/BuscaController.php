@@ -7,6 +7,7 @@ use App\Models\Especialidade;
 use App\Models\Local;
 use App\Models\Medico;
 use App\Models\Vinculo;
+use App\Support\Geocodificador;
 use App\Support\Localizacao;
 use Illuminate\Http\Request;
 
@@ -97,13 +98,45 @@ class BuscaController extends Controller
      * aceitam aquele convênio — um médico daquele local, da especialidade
      * buscada, aceita o convênio (convenio_medico) e a clínica liga "aceita
      * convênio" para ele ali (vinculos.aceita_convenio).
+     *
+     * 07/10/2026 (trazido da main; slides da defesa: RF03 e RN07):
+     *  - ?cep= (o que a pessoa DIGITOU agora): o Geocodificador acha a
+     *    coordenada (ViaCEP + Nominatim, ou o bairro/cidade se falhar) e a tela
+     *    é REDIRECIONADA para ?lat=&lng=&cep_origem=, arredondados. Assim a
+     *    posição não fica guardada em lugar nenhum (AGENTS.md §3) e trocar um
+     *    filtro depois não consulta o CEP de novo. CEP digitado vale mais que
+     *    a cidade e a posição que já estavam no formulário.
+     *  - ?raio= (5, 10 ou 20 km): só com origem (sem ela não há distância).
      */
     public function locais(Request $request)
     {
         $especialidade = $this->texto($request, 'especialidade');
         $cidade = $this->texto($request, 'cidade');
         $convenio = $this->texto($request, 'convenio');
-        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade);
+        $cepDigitado = preg_replace('/\D/', '', (string) $this->texto($request, 'cep'));
+        $aviso = null;
+
+        if ($cepDigitado !== '') {
+            $achou = strlen($cepDigitado) === 8 ? Geocodificador::doCep($cepDigitado) : null;
+
+            if ($achou) {
+                return redirect()->route('busca.locais', array_filter([
+                    'especialidade' => $especialidade,
+                    'convenio'      => $convenio,
+                    'raio'          => $request->query('raio'),
+                    'lat'           => round($achou['lat'], 3),
+                    'lng'           => round($achou['lng'], 3),
+                    'cep_origem'    => $cepDigitado,
+                ], fn ($v) => is_scalar($v) && $v !== ''));
+            }
+
+            $aviso = strlen($cepDigitado) === 8
+                ? 'Não encontramos o CEP ' . Localizacao::formatarCep($cepDigitado) . '. Confira os números, use a sua localização ou escolha a cidade.'
+                : 'O CEP precisa ter 8 números.';
+        }
+
+        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade, $this->texto($request, 'cep_origem'));
+        $raio = in_array((int) $request->query('raio'), Localizacao::RAIOS, true) ? (int) $request->query('raio') : null;
 
         // O mesmo filtro de vínculo para "quais locais" e "quais médicos mostrar".
         $vinculosQueServem = fn ($v) => $v->publicos()->oferece($especialidade)
@@ -125,6 +158,16 @@ class BuscaController extends Controller
             'distancia' => $origem ? $local->distanciaAte($origem['lat'], $origem['lng']) : null,
         ]);
 
+        // Raio: local sem coordenada fica de fora, porque não dá para garantir
+        // que está dentro. A tela conta quantos ficaram fora, para a pessoa
+        // saber que vale aumentar o raio.
+        $foraDoRaio = 0;
+        if ($origem && $raio) {
+            $dentro = $resultados->filter(fn ($r) => $r->distancia !== null && $r->distancia <= $raio);
+            $foraDoRaio = $resultados->count() - $dentro->count();
+            $resultados = $dentro;
+        }
+
         // Com origem: mais perto primeiro; local sem coordenada vai para o fim.
         // "<=>" com listas compara item a item: sem coordenada?, distância, nome.
         $resultados = $origem
@@ -137,8 +180,10 @@ class BuscaController extends Controller
             'especialidades' => Especialidade::where('ativo', true)->orderBy('nome')->get(),
             'cidades'        => Local::where('ativo', true)->select('cidade', 'uf')->distinct()->orderBy('cidade')->get(),
             'convenios'      => Convenio::where('ativo', true)->orderBy('nome')->get(),
-            'filtros'        => ['especialidade' => $especialidade, 'cidade' => $cidade, 'convenio' => $convenio],
+            'filtros'        => ['especialidade' => $especialidade, 'cidade' => $cidade, 'convenio' => $convenio, 'raio' => $raio],
             'origem'         => $origem,
+            'aviso'          => $aviso,
+            'foraDoRaio'     => $foraDoRaio,
         ]);
     }
 

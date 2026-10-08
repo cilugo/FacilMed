@@ -60,10 +60,13 @@
             campo(form, 'lat', posicao.coords.latitude.toFixed(3));
             campo(form, 'lng', posicao.coords.longitude.toFixed(3));
 
-            var cidade = form.querySelector('[name="cidade"]');
-            if (cidade) {
-                cidade.value = '';
-            }
+            // A posição nova vale mais que a cidade e o CEP que estavam no formulário.
+            ['cidade', 'cep', 'cep_origem'].forEach(function (nome) {
+                var outro = form.querySelector('[name="' + nome + '"]');
+                if (outro) {
+                    outro.value = '';
+                }
+            });
 
             form.action = botao.getAttribute('data-localizacao');
             form.submit();

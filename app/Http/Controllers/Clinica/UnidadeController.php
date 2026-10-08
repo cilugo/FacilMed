@@ -24,7 +24,7 @@ class UnidadeController extends Controller
     {
         $dados = $request->validated();
 
-        DB::transaction(function () use ($request, $dados) {
+        $local = DB::transaction(function () use ($request, $dados) {
             $local = Local::create([
                 'clinica_id'  => $request->user()->clinica->id,
                 'nome'        => $dados['nome'],
@@ -42,7 +42,14 @@ class UnidadeController extends Controller
             ]);
 
             $local->definirHorarios(HorariosDeFuncionamento::preenchidos($dados['horarios'] ?? []));
+
+            return $local;
         });
+
+        // 07/10/2026 (trazido da main): coordenada exata do endereço (Nominatim),
+        // FORA da transação - é um pedido pela internet e não pode segurar o banco.
+        // Sem internet, fica a aproximada do bairro/cidade (Local::booted).
+        \App\Support\Geocodificador::atualizarLocal($local);
 
         return back()->with('sucesso', 'Unidade cadastrada. Agora vincule os médicos que atendem nela.');
     }

@@ -3,7 +3,8 @@
 
     Clínicas e hospitais no ar, do mais perto para o mais longe. 01/10: filtro
     de convênio e faixa de preço ($ a $$$$) no lugar do valor. De onde medir: a posição do navegador (botão "Usar minha
-    localização", public/javas/localizacao.js) ou o centro da cidade escolhida.
+    localização", public/javas/localizacao.js), o CEP digitado (07/10) ou o centro da cidade escolhida.
+    07/10: raio de 5, 10 ou 20 km.
     Distância em linha reta e coordenadas aproximadas (config/localizacao.php).
 --}}
 @extends('layouts.site')
@@ -49,6 +50,22 @@
                         @endforeach
                     </select>
                 </div>
+                {{-- 07/10: CEP (RF03). Fica vazio: o CEP atual vai escondido em cep_origem,
+                     para trocar um filtro não consultar o CEP de novo. --}}
+                <div class="busca-campo">
+                    <label for="l-cep">Ou digite o CEP</label>
+                    <input id="l-cep" name="cep" type="text" inputmode="numeric" maxlength="9" autocomplete="postal-code"
+                           placeholder="{{ ($origem['params']['cep_origem'] ?? null) ? \App\Support\Localizacao::formatarCep($origem['params']['cep_origem']) : '00000-000' }}">
+                </div>
+                <div class="busca-campo">
+                    <label for="l-raio">Distância</label>
+                    <select id="l-raio" name="raio">
+                        <option value="">Qualquer distância</option>
+                        @foreach (\App\Support\Localizacao::RAIOS as $km)
+                            <option value="{{ $km }}" @selected($filtros['raio'] === $km)>Até {{ $km }} km</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="busca-campo">
                     <label for="l-convenio">Convênio</label>
                     <select id="l-convenio" name="convenio">
@@ -66,6 +83,7 @@
                 {{-- Preenchidos pelo botão de localização. Escolher uma cidade tem prioridade. --}}
                 <input type="hidden" name="lat" value="{{ $origem['params']['lat'] ?? '' }}">
                 <input type="hidden" name="lng" value="{{ $origem['params']['lng'] ?? '' }}">
+                <input type="hidden" name="cep_origem" value="{{ $origem['params']['cep_origem'] ?? '' }}">
 
                 <p class="localizacao-aviso" data-localizacao-status>
                     Ao usar sua localização, o navegador pergunta se você permite o acesso a ela. Ela só serve para
@@ -76,6 +94,10 @@
     </section>
 
     <div class="container">
+        @if ($aviso)
+            <p class="localizacao-aviso localizacao-aviso--erro" role="alert" style="margin-top: 20px;">{{ $aviso }}</p>
+        @endif
+
         <div class="resultado-info">
             <span>
                 <strong>{{ $resultados->count() }}</strong>
@@ -84,9 +106,12 @@
                     · aceitando {{ $convenioEscolhido->nome }}
                 @endif
                 @if ($origem)
+                    @if ($filtros['raio'])
+                        · até {{ $filtros['raio'] }} km
+                    @endif
                     · distância aproximada, em linha reta, {{ $origem['descricao'] }}
                 @else
-                    · em ordem alfabética. Use sua localização ou escolha a cidade para ver a distância.
+                    · em ordem alfabética. Use sua localização, digite o CEP ou escolha a cidade para ver a distância.
                 @endif
             </span>
             <span style="display: flex; gap: 14px; align-items: center;">
@@ -97,10 +122,18 @@
             </span>
         </div>
 
+        {{-- 07/10: quantos ficaram fora do raio, com o atalho para ver todos. --}}
+        @if ($foraDoRaio > 0)
+            <p class="texto-pequeno" style="margin-bottom: 14px;">
+                {{ $foraDoRaio }} {{ $foraDoRaio === 1 ? 'local fica' : 'locais ficam' }} fora dos {{ $filtros['raio'] }} km.
+                <a href="{{ route('busca.locais', array_filter(['especialidade' => $filtros['especialidade'], 'convenio' => $filtros['convenio']]) + ($origem['params'] ?? [])) }}" class="limpar-filtros">Ver todos</a>
+            </p>
+        @endif
+
         @if ($resultados->isEmpty())
             <div class="vazio">
                 <h2>Nenhum local com esses filtros</h2>
-                <p>Tente outra especialidade{{ $convenioEscolhido ? ' ou tire o filtro de convênio' : '' }}.</p>
+                <p>Tente outra especialidade{{ $convenioEscolhido ? ' ou tire o filtro de convênio' : '' }}{{ $foraDoRaio > 0 ? ' ou aumente a distância' : '' }}.</p>
             </div>
         @else
             <div class="lista-medicos">

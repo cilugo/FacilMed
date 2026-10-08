@@ -440,7 +440,45 @@ médico, clínica, admin, segurança, e-mails, travas do banco e as telas. Rodam
 > Esta seção é a "passagem de bastão" entre quem trabalha no projeto (pessoas e IAs).
 > **Atualize ao terminar cada etapa.**
 
-**Atualizado em 06/10/2026.**
+**Atualizado em 08/10/2026.**
+
+**07–08/10 — integração: a linha PointMed vira a principal** (decisão do grupo, comunicada pelo
+Lucas: "a versão do zip é a atual; agora é um site de rastreio de clínica"). Branch
+`integracao/pointmed`, feita com o Claude a partir de `reorganizacao-05-10`.
+- **Como foi juntado:** merge da `main` com a estratégia `ours` (o histórico registra a junção, o
+  conteúdo fica o do PointMed). Agenda, consultas, login de médico e comentário privado da `main`
+  **não** voltam. Da `main` foram trazidos, um commit cada:
+  1. **CNPJ da Clínica Ferr Inni** na base simulada (tabela do §3).
+  2. **E-mail pelo Brevo** (`App\Mail\BrevoTransport`, `MAIL_MAILER=brevo` + `BREVO_API_KEY`) e
+     "Esqueci minha senha" com a mesma resposta com ou sem conta; falha no envio vira aviso, não 500.
+  3. **Admin com e-mail real no Render** (`facilmed:garantir-admin`, variáveis `ADMIN_EMAIL` e
+     `ADMIN_PASSWORD`, chamado no `docker/entrypoint.sh`).
+  4. **Busca por CEP com raio** (5/10/20 km — RF03/RN07): campo CEP na home e em `/locais`,
+     `App\Support\Geocodificador` (ViaCEP + Nominatim, com reserva no bairro/cidade), a URL leva
+     `lat`/`lng`/`cep_origem` arredondados (a posição não é guardada). Unidade nova e cadastro de
+     clínica gravam a coordenada exata do endereço. Nos testes a internet fica desligada
+     (`LOCALIZACAO_EXTERNA=false` no `phpunit.xml`).
+- **Fotos de perfil no banco** (decisão do grupo): tabela `fotos` (migration
+  `2026_10_07_000100_fotos_no_banco`). `users.foto`/`medicos.foto` guardam `foto:<chave>`; a rota
+  pública `/foto/{chave}` devolve a imagem. Motivo: o Render apaga arquivo enviado a cada deploy.
+  Fotos do seeder continuam arquivos em `public/imgs/medicos`.
+- **Home — "Hospitais e Clínicas" do banco**, com as imagens de `public/imgs/inst`
+  (`HomeController::IMAGENS_DA_VITRINE`, pelo nome do local). Saiu a lista fixa com o "Hospital Vale
+  Sereno", que não existia. `esperaca.png` virou `esperanca.png`.
+- **⚠ Render, banco zerado UMA vez (decisão do grupo, opção "a"):** o banco do Aiven estava no
+  formato da versão com agendamento. O `entrypoint.sh` confere se a tabela `consultas` existe; se
+  existe, roda `migrate:fresh --seed` e o site volta com os dados de demonstração. Contas criadas
+  direto no site antigo (ex.: Clínica Ferr Inni) precisam ser criadas de novo. Depois disso o passo
+  não faz nada. No painel do Render: conferir `APP_NAME=PointMed` e preencher `BREVO_API_KEY`,
+  `MAIL_FROM_ADDRESS`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` se quiserem e-mail e admin reais.
+- **Testes:** novos `RecuperarSenhaTest` (trazido e adaptado) e `BuscaCepRaioTest`; fotos e home
+  com testes novos em `ReorganizacaoTest`/`ClinicaTest`. **Ainda não rodados**: o MySQL do XAMPP
+  estava desligado. Antes de juntar na `main`: `composer dump-autoload`,
+  `php artisan migrate:fresh --seed` e `php artisan test`.
+- **Depois de puxar:** os mesmos três comandos (todo mundo precisa do `migrate:fresh`).
+- **Ficou de fora (opcionais da main, não pedidos):** galeria de fotos e site do local, admin com
+  três telas de contas, barra Início/Perfil no celular. Imagens de `inst` não foram comprimidas
+  (~2,5 MB cada).
 
 **05/10 — PointMed, "usuário", faixa da clínica e comentário público** (PDF "Notas sobre FacilMed",
 do Lucas; decisões do grupo). Feito com o Claude numa cópia do projeto, conferido em 06/10; branch
