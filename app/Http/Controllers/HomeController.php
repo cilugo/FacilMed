@@ -17,12 +17,12 @@ class HomeController extends Controller
      * a linha aqui.
      */
     public const IMAGENS_DA_VITRINE = [
-        'Santa Clara - Taubaté'     => 'imgs/inst/santaclara.png',
-        'Vida Plena - Centro'       => 'imgs/inst/vidaplena.png',
-        'SpSaúde - Jardim Satélite' => 'imgs/inst/spsaude.png',
-        'Aurora - Vila Ema'         => 'imgs/inst/aurora.png',
-        'São Lucas - Jacareí'       => 'imgs/inst/saolucas.png',
-        'Esperança - Caçapava'      => 'imgs/inst/esperanca.png',
+        'Santa Clara - Taubaté'     => 'imgs/inst/santaclara.jpg',
+        'Vida Plena - Centro'       => 'imgs/inst/vidaplena.jpg',
+        'SpSaúde - Jardim Satélite' => 'imgs/inst/spsaude.jpg',
+        'Aurora - Vila Ema'         => 'imgs/inst/aurora.jpg',
+        'São Lucas - Jacareí'       => 'imgs/inst/saolucas.jpg',
+        'Esperança - Caçapava'      => 'imgs/inst/esperanca.jpg',
     ];
 
     /**

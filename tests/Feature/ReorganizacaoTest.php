@@ -168,7 +168,7 @@ class ReorganizacaoTest extends TestCase
 
         // Local sem imagem na lista aparece com o ícone, sem imagem quebrada.
         Local::where('nome', 'Aurora - Vila Ema')->update(['nome' => 'Aurora - Unidade nova']);
-        $this->get('/')->assertSee('Aurora - Unidade nova')->assertDontSee('imgs/inst/aurora.png', false)
+        $this->get('/')->assertSee('Aurora - Unidade nova')->assertDontSee('imgs/inst/aurora.jpg', false)
             ->assertSee('clinica-card__sem-foto', false);
     }
 
