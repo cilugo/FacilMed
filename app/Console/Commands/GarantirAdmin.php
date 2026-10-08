@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
  * Conta de administrador com e-mail DE VERDADE (01/10/2026, plano do grupo:
  * "criar e-mails reais para cada função e testar o Relembrar senha").
  *
- * Paciente e clínica com e-mail real o grupo cria pelo próprio site
+ * Usuário e clínica com e-mail real o grupo cria pelo próprio site
  * (Cadastrar). Administrador não tem cadastro pelo site - então o servidor
  * cria esta conta ao ligar, a partir de duas variáveis do Render:
  *   ADMIN_EMAIL     o e-mail (de integrante do grupo)
@@ -64,7 +64,7 @@ class GarantirAdmin extends Command
         }
 
         $user = User::create([
-            'name'     => 'Administração FacilMed',
+            'name'     => 'Administração PointMed',
             'email'    => $email,
             'password' => $senha,                 // o cast 'hashed' do User guarda só o hash
             'tipo'     => User::TIPO_ADMIN,
