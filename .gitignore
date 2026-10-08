@@ -27,7 +27,8 @@ Thumbs.db
 /public/css/*.map
 Desktop.ini
 
-# Fotos de perfil enviadas pelo site (01/10/2026)
+# Fotos de perfil enviadas pelo site (01/10/2026). Desde 07/10 elas ficam no
+# banco (tabela fotos); estas linhas só escondem arquivos antigos que sobraram.
 /public/uploads/fotos/*
 !/public/uploads/fotos/.gitkeep
 /public/uploads/fotos-testes/

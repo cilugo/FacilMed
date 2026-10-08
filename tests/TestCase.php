@@ -30,14 +30,6 @@ abstract class TestCase extends BaseTestCase
         \Illuminate\Database\Eloquent\Model::preventSilentlyDiscardingAttributes(true);
     }
 
-    /** 01/10/2026: fotos enviadas nos testes vão para uma pasta só deles, apagada aqui. */
-    protected function tearDown(): void
-    {
-        \Illuminate\Support\Facades\File::deleteDirectory(public_path(\App\Support\FotoDePerfil::PASTA_TESTES));
-
-        parent::tearDown();
-    }
-
     /** Loga com uma das contas do seed pelo e-mail (senha não importa aqui). */
     protected function comoUsuario(string $email): static
     {

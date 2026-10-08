@@ -67,15 +67,16 @@ class Usuario extends Model
      */
     public function excluirConta(): void
     {
-        $foto = null;
-
-        DB::transaction(function () use (&$foto) {
+        DB::transaction(function () {
             // Trava a linha do usuário: duas abas excluindo ao mesmo tempo
             // fazem o trabalho uma vez só.
             $usuario = self::whereKey($this->id)->lockForUpdate()->firstOrFail();
             $user = $usuario->user;
             $emailAntigo = $user->email;
-            $foto = $user->foto;
+
+            // 07/10: a foto está no banco, então sai na mesma transação —
+            // se algo falhar, ela continua junto com o resto da conta.
+            FotoDePerfil::apagar($user->foto);
 
             $usuario->planos()->delete();
 
@@ -102,8 +103,5 @@ class Usuario extends Model
                 'excluida_em'       => now(),
             ])->save();
         });
-
-        // O arquivo só sai depois do commit: se a transação falhar, a foto continua.
-        FotoDePerfil::apagar($foto);
     }
 }

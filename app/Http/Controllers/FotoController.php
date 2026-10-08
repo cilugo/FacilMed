@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Foto;
 use App\Support\FotoDePerfil;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,27 @@ use Illuminate\Http\Request;
  */
 class FotoController extends Controller
 {
+    /**
+     * 07/10/2026: devolve a imagem guardada no banco (rota pública /foto/{chave}).
+     *
+     * Pública como era o arquivo em public/uploads: a foto aparece na página da
+     * clínica e do médico para qualquer visitante. Quem não tem a chave
+     * sorteada (40 letras) não acha a foto de ninguém.
+     *
+     * Cache longo: cada foto nova ganha chave nova, então a imagem de uma
+     * chave nunca muda e o navegador pode guardar à vontade.
+     */
+    public function mostrar(string $chave)
+    {
+        $foto = Foto::where('chave', $chave)->firstOrFail();
+
+        return response(base64_decode($foto->conteudo), 200, [
+            'Content-Type'           => $foto->mime,
+            'Cache-Control'          => 'public, max-age=31536000, immutable',
+            'X-Content-Type-Options' => 'nosniff',   // o navegador não "adivinha" outro tipo
+        ]);
+    }
+
     public function atualizar(Request $request)
     {
         $request->validate(

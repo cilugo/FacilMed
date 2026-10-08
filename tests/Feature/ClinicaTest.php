@@ -78,10 +78,10 @@ class ClinicaTest extends TestCase
             ->assertSessionHasErrors('foto');
 
         $this->editarHelena(['foto' => UploadedFile::fake()->image('helena.jpg', 200, 200)])->assertSessionHasNoErrors();
-        $caminho = Medico::find(1)->foto;
-        $this->assertStringStartsWith(\App\Support\FotoDePerfil::PASTA_TESTES . '/', $caminho);
-        $this->assertStringEndsWith('.jpg', $caminho);
-        $this->assertFileExists(public_path($caminho));
+        // 07/10: a foto fica no banco, com o tipo real do arquivo.
+        $chave = \App\Support\FotoDePerfil::chave(Medico::find(1)->foto);
+        $this->assertNotNull($chave);
+        $this->assertDatabaseHas('fotos', ['chave' => $chave, 'mime' => 'image/jpeg']);
 
     }
 

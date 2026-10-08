@@ -140,7 +140,7 @@ class MedicoController extends Controller
             throw $e;
         }
 
-        // O arquivo antigo só sai depois do commit (e nunca as fotos do seeder).
+        // A foto antiga só sai depois do commit (e nunca as fotos do seeder).
         if ($fotoNova !== null || $request->boolean('remover_foto')) {
             FotoDePerfil::apagar($fotoAntiga);
         }

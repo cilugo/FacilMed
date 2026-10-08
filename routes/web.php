@@ -78,6 +78,10 @@ Route::any('/cadastro/medico', fn () => redirect()->route('cadastro.escolher'));
 // Foto de perfil (01/10) — usuário, clínica e admin, cada um a sua.
 // ---------------------------------------------------------------------
 
+// 07/10: a imagem fica no banco; esta rota a devolve (FotoController::mostrar).
+Route::get('/foto/{chave}', [FotoController::class, 'mostrar'])
+    ->where('chave', '[A-Za-z0-9]{40}')->name('foto.mostrar');
+
 Route::middleware('auth')->group(function () {
     Route::post('/minha-foto', [FotoController::class, 'atualizar'])->name('foto.atualizar');
     Route::delete('/minha-foto', [FotoController::class, 'remover'])->name('foto.remover');

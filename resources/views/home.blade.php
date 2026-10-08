@@ -168,8 +168,8 @@
                                  tira a imagem e as iniciais aparecem no lugar --}}
                             <div class="specialty-photo" style="background-color: {{ \App\Support\Formatador::corAvatar($i) }};">
                                 {{ \App\Support\Formatador::iniciais($medico->nome) }}
-                                @if ($medico->foto)
-                                    <img src="{{ asset($medico->foto) }}" alt="" onerror="this.remove()">
+                                @if ($medico->foto_url)
+                                    <img src="{{ $medico->foto_url }}" alt="" onerror="this.remove()">
                                 @endif
                             </div>
                             <div class="specialty-info">

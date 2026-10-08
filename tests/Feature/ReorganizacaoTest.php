@@ -7,6 +7,7 @@ use App\Models\Local;
 use App\Models\Medico;
 use App\Models\User;
 use App\Support\FaixaDePreco;
+use App\Support\FotoDePerfil;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
@@ -104,14 +105,15 @@ class ReorganizacaoTest extends TestCase
             $this->comoUsuario($email)->post('/minha-foto', ['foto' => UploadedFile::fake()->image('eu.png', 120, 120)])
                 ->assertSessionHas('sucesso');
 
+            // 07/10: a foto fica no banco (tabela fotos), não numa pasta.
             $user = User::where('email', $email)->first();
-            $this->assertStringStartsWith(\App\Support\FotoDePerfil::PASTA_TESTES . '/', $user->foto);
-            $this->assertFileExists(public_path($user->foto));
-            $arquivo = $user->foto;
+            $chave = FotoDePerfil::chave($user->foto);
+            $this->assertNotNull($chave);
+            $this->assertDatabaseHas('fotos', ['chave' => $chave, 'mime' => 'image/png']);
 
             $this->comoUsuario($email)->delete('/minha-foto')->assertSessionHas('sucesso');
             $this->assertNull($user->fresh()->foto);
-            $this->assertFileDoesNotExist(public_path($arquivo));
+            $this->assertDatabaseMissing('fotos', ['chave' => $chave]);
         }
 
         // Só imagem.
@@ -127,21 +129,36 @@ class ReorganizacaoTest extends TestCase
         $this->comoClinica()->post('/minha-foto', ['foto' => UploadedFile::fake()->image('logo.png', 120, 120)]);
         $vidaPlena = User::where('email', 'contato@vidaplena.test')->first();
 
-        $this->comoAdmin()->get('/admin/usuarios?busca=vidaplena')->assertSee($vidaPlena->foto, false);
+        $this->comoAdmin()->get('/admin/usuarios?busca=vidaplena')->assertSee($vidaPlena->foto_url, false);
         auth()->logout();
-        $this->get('/clinica/' . $vidaPlena->clinica->id)->assertSee($vidaPlena->foto, false);
+        $this->get('/clinica/' . $vidaPlena->clinica->id)->assertSee($vidaPlena->foto_url, false);
 
+        // E o endereço devolve a imagem, para qualquer visitante (como a página da clínica).
+        $this->get($vidaPlena->foto_url)->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    public function test_foto_no_banco_chave_desconhecida_e_foto_do_seeder(): void
+    {
+        // Chave que não existe: 404, sem erro 500.
+        $this->get('/foto/' . str_repeat('a', 40))->assertNotFound();
+
+        // Foto de demonstração do seeder continua sendo arquivo em public/ e nunca é apagada.
+        $this->assertSame(asset('imgs/medicos/medico3.jpeg'), FotoDePerfil::url('imgs/medicos/medico3.jpeg'));
+        FotoDePerfil::apagar('imgs/medicos/medico3.jpeg');
+        $this->assertFileExists(public_path('imgs/medicos/medico3.jpeg'));
     }
 
     public function test_excluir_conta_apaga_a_foto(): void
     {
         $this->comoUsuarioFinal()->post('/minha-foto', ['foto' => UploadedFile::fake()->image('eu.png', 120, 120)]);
-        $arquivo = User::where('email', 'ana@facilmed.test')->first()->foto;
-        $this->assertFileExists(public_path($arquivo));
+        $chave = FotoDePerfil::chave(User::where('email', 'ana@facilmed.test')->first()->foto);
+        $this->assertDatabaseHas('fotos', ['chave' => $chave]);
 
         $this->comoUsuarioFinal()->delete('/usuario/perfil', ['current_password' => 'facilmed2026', 'confirmacao' => '1'])
             ->assertRedirect(route('login'));
 
-        $this->assertFileDoesNotExist(public_path($arquivo));
+        $this->assertDatabaseMissing('fotos', ['chave' => $chave]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Foto;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
@@ -9,53 +10,68 @@ use Illuminate\Support\Str;
  * Foto de perfil (01/10/2026): usuário, clínica, admin e o médico
  * (este, enviado pela clínica).
  *
- * POR QUE public/uploads/fotos E NÃO storage/: o projeto roda no XAMPP
- * sem `php artisan storage:link`. Arquivo em public/ é servido direto
- * pelo .htaccess da raiz (regra 2), sem link simbólico.
+ * 07/10/2026: a imagem fica NO BANCO (tabela `fotos`), não mais em
+ * public/uploads/fotos — o Render apaga os arquivos enviados a cada deploy.
+ * Ver a migration fotos_no_banco.
  *
- * Segurança: o FormRequest só aceita imagem (jpg, png ou webp, até 2 MB)
- * e o nome do arquivo é sorteado aqui, com a extensão do TIPO REAL do
- * arquivo — nunca o nome que veio do computador de quem enviou.
+ * O que vai em `users.foto` / `medicos.foto`:
+ *  - "foto:<chave>"  foto enviada pelo site (linha da tabela `fotos`);
+ *  - "imgs/..."      foto de demonstração do seeder, arquivo em public/.
+ * Só esta classe sabe a diferença; as telas usam sempre `foto_url`.
+ *
+ * Segurança: o FormRequest só aceita imagem (jpg, png ou webp, até 2 MB) e o
+ * tipo gravado é o tipo REAL do arquivo (fileinfo do PHP), nunca o nome que
+ * veio do computador de quem enviou.
  */
 final class FotoDePerfil
 {
-    public const PASTA = 'uploads/fotos';
-
-    /** Nos testes, outra pasta: o teste apaga ela inteira no fim sem tocar nas fotos de verdade. */
-    public const PASTA_TESTES = 'uploads/fotos-testes';
-
-    public static function pasta(): string
-    {
-        return app()->runningUnitTests() ? self::PASTA_TESTES : self::PASTA;
-    }
+    /** Marca da foto que está no banco. */
+    public const PREFIXO = 'foto:';
 
     /** Regras de validação, iguais em todo formulário com foto. */
     public const REGRAS = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'];
 
-    /** Grava a foto e devolve o caminho relativo a public/ (vai no banco). */
+    /** Grava a foto no banco, apaga a anterior e devolve o texto que vai em `foto`. */
     public static function salvar(UploadedFile $arquivo, ?string $anterior = null): string
     {
-        $nome = Str::random(32) . '.' . ($arquivo->guessExtension() ?: 'jpg');
-        $arquivo->move(public_path(self::pasta()), $nome);
+        $mime = $arquivo->getMimeType();
+
+        $foto = Foto::create([
+            'chave'    => Str::random(40),
+            'mime'     => in_array($mime, Foto::TIPOS, true) ? $mime : 'image/jpeg',
+            'conteudo' => base64_encode((string) file_get_contents($arquivo->getRealPath())),
+        ]);
 
         self::apagar($anterior);
 
-        return self::pasta() . '/' . $nome;
+        return self::PREFIXO . $foto->chave;
     }
 
     /**
-     * Apaga o arquivo SÓ se ele foi enviado pelo site (uploads/fotos).
+     * Apaga SÓ foto enviada pelo site (a que está no banco).
      * As fotos de demonstração do seeder (imgs/medicos) nunca são apagadas.
      */
-    public static function apagar(?string $caminho): void
+    public static function apagar(?string $foto): void
     {
-        if ($caminho && str_starts_with($caminho, self::pasta() . '/') && ! str_contains($caminho, '..')) {
-            @unlink(public_path($caminho));
+        if ($chave = self::chave($foto)) {
+            Foto::where('chave', $chave)->delete();
         }
     }
 
-    public static function url(?string $caminho): ?string
+    public static function url(?string $foto): ?string
     {
-        return $caminho ? asset($caminho) : null;
+        if (! $foto) {
+            return null;
+        }
+
+        $chave = self::chave($foto);
+
+        return $chave ? route('foto.mostrar', $chave) : asset($foto);
+    }
+
+    /** "foto:abc..." → "abc..."; caminho de arquivo → null. */
+    public static function chave(?string $foto): ?string
+    {
+        return $foto && str_starts_with($foto, self::PREFIXO) ? substr($foto, strlen(self::PREFIXO)) : null;
     }
 }

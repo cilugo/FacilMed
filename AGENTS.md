@@ -30,7 +30,8 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
   avaliações. Agenda, horários do médico e lembretes por e-mail **não** voltam sem decisão do grupo.
 - **Não armazena documento médico** (nenhum upload de laudo). A acessibilidade do usuário saiu em
   01/10/2026 junto com as consultas (sem finalidade, a LGPD manda não guardar). O único upload é a
-  **foto de perfil** (imagem JPG/PNG/WEBP até 2 MB, por `App\Support\FotoDePerfil`).
+  **foto de perfil** (imagem JPG/PNG/WEBP até 2 MB, por `App\Support\FotoDePerfil`), guardada
+  **no banco** (tabela `fotos`, 07/10/2026) porque o Render apaga arquivo enviado a cada deploy.
 - **Não emite parecer clínico** de nenhum tipo (ver §3).
 - **Não é produto em produção**: TCC, roda localmente, dados fictícios. Entrega 20/10/2026.
 
@@ -127,7 +128,8 @@ intenção de quem escreveu a tela.
 **E-mail**
 
 - O PointMed não envia e-mail próprio desde 01/10/2026 (os lembretes de consulta saíram). Só o
-  Breeze manda o e-mail de troca de senha.
+  Breeze manda o e-mail de troca de senha — no Render, pela API do Brevo (`App\Mail\BrevoTransport`,
+  `MAIL_MAILER=brevo` + `BREVO_API_KEY`); sem a chave, cai no log.
 - **Nunca** usar e-mail real de pessoa real nos seeders ou em teste.
 
 **Contas e validação de entrada**
@@ -161,15 +163,14 @@ intenção de quem escreveu a tela.
 - Não mexer no `.htaccess` da raiz sem testar que `/FacilMed/.env` continua dando **403**.
 - Não alterar `.env` nem credenciais. `vendor/` é gerado. `prototipo-antigo/` é só leitura.
 
-### 4.1 Rito para mudanças com side-effect ⚠ (e-mail e arquivos)
+### 4.1 Rito para mudanças com side-effect ⚠ (e-mail)
 
-Desde 01/10/2026 os side-effects são o e-mail de troca de senha (Breeze) e a gravação de fotos em
-`public/uploads/fotos`.
+O side-effect deste projeto é o e-mail de troca de senha (Breeze; no Render, pelo Brevo). As fotos
+ficam no banco desde 07/10/2026 e, nos testes, somem com a transação do `RefreshDatabase`.
 
 1. Desenvolver com `MAIL_MAILER=log` no `.env`. O e-mail cai em `storage/logs/laravel.log`.
    Envio para caixa real **só com aprovação explícita**, e só para e-mail de integrante do grupo.
-2. Nos testes, as fotos vão para `public/uploads/fotos-testes` (apagada no `tearDown`). Nunca
-   escrever teste que grave em `public/uploads/fotos`.
+2. Nos testes, o Brevo é sempre `Http::fake()` — nenhum teste fala com a API de verdade.
 3. Registrar no README §6 o que foi disparado.
 
 ## 5. Restrições de segurança
