@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FacilMed — gráficos dos painéis, em SVG puro (sem biblioteca).
+   PointMed — gráficos dos painéis, em SVG puro (sem biblioteca).
 
    Por que sem biblioteca: o AGENTS.md §3 pede aprovação para dependência
    nova, e dois gráficos simples não justificam Chart.js. São ~120 linhas

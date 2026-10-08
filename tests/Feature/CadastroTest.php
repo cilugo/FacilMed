@@ -40,7 +40,7 @@ class CadastroTest extends TestCase
     }
 
     /**
-     * Pelo XAMPP o sistema roda em http://localhost/FacilMed. O Route::redirect
+     * Pelo XAMPP o sistema roda em http://localhost/PointMed. O Route::redirect
      * do Laravel monta o destino sem essa subpasta e mandava para
      * http://localhost/cadastro, que dá 404 (achado na revisão de 29/09).
      * Um pedido por teste: o cliente de teste só aplica a subpasta no 1º pedido.
@@ -48,25 +48,25 @@ class CadastroTest extends TestCase
     private function destinoPeloXampp(string $endereco): string
     {
         return $this->withServerVariables([
-            'SCRIPT_NAME' => '/FacilMed/index.php', 'PHP_SELF' => '/FacilMed/index.php',
+            'SCRIPT_NAME' => '/PointMed/index.php', 'PHP_SELF' => '/PointMed/index.php',
             'SCRIPT_FILENAME' => base_path('index.php'),
-        ])->get('/FacilMed' . $endereco)->assertRedirect()->headers->get('Location');
+        ])->get('/PointMed' . $endereco)->assertRedirect()->headers->get('Location');
     }
 
     public function test_cadastro_de_medico_antigo_volta_para_a_escolha_dentro_do_xampp(): void
     {
-        $this->assertSame('http://localhost/FacilMed/cadastro', $this->destinoPeloXampp('/cadastro/medico'));
+        $this->assertSame('http://localhost/PointMed/cadastro', $this->destinoPeloXampp('/cadastro/medico'));
     }
 
     public function test_register_volta_para_a_escolha_dentro_do_xampp(): void
     {
-        $this->assertSame('http://localhost/FacilMed/cadastro', $this->destinoPeloXampp('/register'));
+        $this->assertSame('http://localhost/PointMed/cadastro', $this->destinoPeloXampp('/register'));
     }
 
-    public function test_escolha_de_cadastro_tem_so_paciente_e_clinica(): void
+    public function test_escolha_de_cadastro_tem_so_usuario_e_clinica(): void
     {
         $this->get('/cadastro')->assertOk()
-            ->assertSee(route('cadastro.paciente'))
+            ->assertSee(route('cadastro.usuario'))
             ->assertSee(route('cadastro.clinica'))
             ->assertDontSee('/cadastro/medico')
             ->assertDontSee('Sou médico');
@@ -77,14 +77,14 @@ class CadastroTest extends TestCase
     /** Visual da Mariana (29/09): as telas abrem e o erro do servidor volta embaixo do campo. */
     public function test_telas_de_cadastro_no_visual_novo_mostram_o_erro_do_servidor(): void
     {
-        $this->get('/cadastro/paciente')->assertOk()
+        $this->get('/cadastro/usuario')->assertOk()
             ->assertSee('css/cadastro.css')
             ->assertSee('Crie sua conta')
-            ->assertSee('name="consentimento_acessibilidade"', false);
+            ->assertDontSee('name="consentimento_acessibilidade"', false);   // 01/10: saiu com as consultas
 
         // AGENTS §3: a tela diz que o CNPJ é conferido na BASE SIMULADA, nunca "na Receita".
         $this->get('/cadastro/clinica')->assertOk()
-            ->assertSee('Conferido na base simulada do FacilMed.')
+            ->assertSee('Conferido na base simulada do PointMed.')
             ->assertDontSee('Receita Federal')
             ->assertSee('name="unidade_tipo" value="clinica" checked', false);
 
@@ -129,29 +129,18 @@ class CadastroTest extends TestCase
         }
     }
 
-    public function test_paciente_se_cadastra_sem_marcar_acessibilidade(): void
+    public function test_usuario_se_cadastra_com_os_dados_basicos(): void
     {
-        $this->post('/cadastro/paciente', ['name' => 'Paciente Teste', 'email' => 'p@teste.test', 'cpf' => '529.982.247-25'] + self::SENHA)
-            ->assertRedirect(route('paciente.dashboard'));
+        $this->post('/cadastro/usuario', ['name' => 'Usuário Teste', 'email' => 'p@teste.test', 'cpf' => '529.982.247-25'] + self::SENHA)
+            ->assertRedirect(route('usuario.dashboard'));
 
-        $this->assertSame('52998224725', User::where('email', 'p@teste.test')->first()->paciente->cpf);
+        $this->assertSame('52998224725', User::where('email', 'p@teste.test')->first()->usuario->cpf);
     }
 
-    public function test_acessibilidade_exige_consentimento(): void
-    {
-        $dados = ['name' => 'Paciente Teste', 'email' => 'p@teste.test', 'cpf' => '52998224725',
-            'possui_deficiencia' => '1', 'descricao_deficiencia' => 'Uso cadeira de rodas'] + self::SENHA;
-
-        $this->post('/cadastro/paciente', $dados)->assertSessionHasErrors('consentimento_acessibilidade');
-
-        $this->post('/cadastro/paciente', $dados + ['consentimento_acessibilidade' => '1'])
-            ->assertRedirect(route('paciente.dashboard'));
-        $this->assertNotNull(User::where('email', 'p@teste.test')->first()->paciente->acessibilidade);
-    }
 
     public function test_cpf_duplicado_com_ou_sem_mascara_e_recusado(): void
     {
-        $this->post('/cadastro/paciente', ['name' => 'Outra Ana', 'email' => 'x@teste.test', 'cpf' => '80230140130'] + self::SENHA)
+        $this->post('/cadastro/usuario', ['name' => 'Outra Ana', 'email' => 'x@teste.test', 'cpf' => '80230140130'] + self::SENHA)
             ->assertSessionHasErrors('cpf');
     }
 

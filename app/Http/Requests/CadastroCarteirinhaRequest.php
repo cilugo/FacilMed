@@ -9,11 +9,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * Paciente cadastra a carteirinha do plano.
+ * Usuário cadastra a carteirinha do plano.
  *
  * CONFERÊNCIA AUTOMÁTICA NA BASE SIMULADA (decisão do grupo, 24/09/2026):
  * o número precisa existir na tabela base_carteirinhas, no plano
- * escolhido, no CPF do paciente logado, ativa e dentro da validade.
+ * escolhido, no CPF do usuário logado, ativa e dentro da validade.
  * Bateu → o controller grava como 'ativa'. Não bateu → erro na hora.
  *
  * A conferência roda no after(), depois das regras simples: não adianta
@@ -26,7 +26,7 @@ class CadastroCarteirinhaRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->ehPaciente() ?? false;
+        return $this->user()?->ehUsuario() ?? false;
     }
 
     protected function prepareForValidation(): void
@@ -38,7 +38,7 @@ class CadastroCarteirinhaRequest extends FormRequest
 
     public function rules(): array
     {
-        $pacienteId = $this->user()->paciente->id;
+        $usuarioId = $this->user()->usuario->id;
 
         return [
             // Só plano ativo de convênio ativo.
@@ -49,10 +49,10 @@ class CadastroCarteirinhaRequest extends FormRequest
             ],
             'numero_carteirinha' => [
                 'required', 'digits_between:6,20',
-                // A mesma carteirinha não entra duas vezes para o mesmo paciente.
-                Rule::unique('paciente_planos', 'numero_carteirinha')
+                // A mesma carteirinha não entra duas vezes para o mesmo usuário.
+                Rule::unique('usuario_planos', 'numero_carteirinha')
                     ->where('plano_id', $this->input('plano_id'))
-                    ->where('paciente_id', $pacienteId),
+                    ->where('usuario_id', $usuarioId),
             ],
         ];
     }
@@ -68,7 +68,7 @@ class CadastroCarteirinhaRequest extends FormRequest
                 [$erro, $registro] = app(BaseSimulada::class)->conferirCarteirinha(
                     (int) $this->input('plano_id'),
                     $this->input('numero_carteirinha'),
-                    $this->user()->paciente->cpf,
+                    $this->user()->usuario->cpf,
                 );
 
                 if ($erro) {

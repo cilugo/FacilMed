@@ -18,7 +18,7 @@ class ConvenioSeeder extends Seeder
      *
      * Hierarquia: Convênio → Planos. Cada convênio tem um plano de cada
      * tipo (individual, familiar, empresarial), que é o jeito como o
-     * paciente reconhece o próprio plano: "SpSaúde Família".
+     * usuário reconhece o próprio plano: "SpSaúde Família".
      *
      * "Vale Saúde" entra DESATIVADO de propósito: serve para mostrar na
      * banca que convênio desativado some do agendamento, mas continua na

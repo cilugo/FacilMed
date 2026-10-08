@@ -1,4 +1,4 @@
-# AGENTS.md — FacilMed
+# AGENTS.md — PointMed
 
 > Regras para **qualquer agente de IA** que trabalhar neste projeto (Claude Code, Codex, Cursor…).
 > Fica na raiz porque as ferramentas procuram este arquivo aqui.
@@ -7,7 +7,18 @@
 > telas — está no `README.md`.** Leia o README (principalmente §4, §5 e §6) antes de editar.
 > Se algo aqui conflitar com outro arquivo, **este vence**.
 >
-> Última revisão: 01/10/2026 (plano novo do grupo: "rastreador de clínicas perto do paciente").
+> Última revisão: 05/10/2026 (notas do Lucas): o projeto se chama **PointMed** (era FacilMed);
+> quem busca clínicas é o **usuário** (não "paciente"); a faixa de preço é escolhida pela clínica em
+> cada unidade; o comentário das avaliações é público. Antes, em 01/10/2026: o projeto deixou de
+> agendar consultas e o médico deixou de ter conta.
+>
+> **Nome PointMed (05/10/2026).** Todo texto de tela, e-mail, logo e documento diz **PointMed**. Os
+> nomes internos ficam de propósito: pasta `FacilMed`, URL `localhost/FacilMed`, banco `facilmed`,
+> e-mails `@facilmed.test` e comandos `facilmed:` — trocar quebraria a máquina de todo o grupo.
+>
+> **"Usuário" × "users" (05/10/2026).** `users` é a CONTA de acesso de todo mundo (usuário, clínica,
+> admin). `usuarios` (model `Usuario`) é o PERFIL de quem busca clínicas. Em tela e código novo,
+> nunca "paciente". Os nomes antigos de índice (ex.: `uq_avaliacao_paciente_local`) ficaram.
 
 ## 1. Escopo — o que este projeto NÃO é
 
@@ -15,7 +26,12 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
 
 - **Não é prontuário eletrônico**: nada de evolução clínica, diagnóstico, receita, atestado, exame.
 - **Não é telemedicina**, **não processa pagamento**, **não integra com o SUS**.
-- **Não armazena documento médico** (nenhum upload de laudo). Acessibilidade é texto declarado pelo paciente.
+- **Não agenda consultas** (desde 01/10/2026). Mostra locais, médicos, convênios, faixa de preço e
+  avaliações. Agenda, horários do médico e lembretes por e-mail **não** voltam sem decisão do grupo.
+- **Não armazena documento médico** (nenhum upload de laudo). A acessibilidade do usuário saiu em
+  01/10/2026 junto com as consultas (sem finalidade, a LGPD manda não guardar). O único upload é a
+  **foto de perfil** (imagem JPG/PNG/WEBP até 2 MB, por `App\Support\FotoDePerfil`), guardada
+  **no banco** (tabela `fotos`, 07/10/2026) porque o Render apaga arquivo enviado a cada deploy.
 - **Não emite parecer clínico** de nenhum tipo (ver §3).
 - **Não é produto em produção**: TCC, roda localmente, dados fictícios. Entrega 20/10/2026.
 
@@ -28,10 +44,8 @@ Ampliar o escopo por conta própria é errado, mesmo que a funcionalidade apare�
   `http://localhost/FacilMed`. Fuso `America/Sao_Paulo`.
 - **Não instalar dependência nova** (Composer ou npm) sem registrar a decisão no README §6 e ter aprovação.
 - "Estado bom": `php artisan migrate:fresh --seed` roda limpo **e** `php artisan test` passa
-  (207 testes, banco `facilmed_testes` — nunca o `facilmed`).
-- **Teste não fala com a internet**: o `phpunit.xml` desliga a busca de CEP/endereço
-  (`LOCALIZACAO_EXTERNA=false`) e o e-mail é `array`. Teste que precisa de serviço externo usa
-  `Http::fake()` (ViaCEP, Nominatim, Brevo).
+  (116 testes, banco `facilmed_testes` — nunca o `facilmed`; os de foto precisam da extensão GD
+  ligada no `php.ini` do XAMPP).
 
 ## 3. Regras invioláveis de negócio e de dados
 
@@ -43,12 +57,17 @@ intenção de quem escreveu a tela.
 
 - **Nunca** exibir em busca, listagem ou perfil público um médico cujo `status_verificacao`
   não seja `verificado`.
+- **Médico não tem conta (01/10/2026).** É um PERFIL cadastrado e mantido pela clínica/hospital
+  onde atende. `users.tipo` só aceita `usuario`, `clinica` e `admin` (o ENUM garante). Quem edita
+  o perfil: clínica com vínculo ativo com ele (`MedicoPolicy`). Nome, CRM e UF não mudam por tela
+  (foram conferidos na base simulada). **Nunca** recriar login, senha ou área de médico.
 - **BASES SIMULADAS (decisão do grupo, 24/09/2026 — substitui a conferência humana de 18/09).**
   CRM, CNPJ e carteirinha são conferidos **automaticamente, na hora do cadastro**, nas tabelas
   `base_crms`, `base_cnpjs` e `base_carteirinhas` (`App\Services\BaseSimulada`). Bateu →
   aprovado (médico `verificado`, carteirinha `ativa`). Não bateu → recusado com o motivo.
+  O admin acompanha o CNPJ das clínicas em **Verificar CNPJ** (só leitura, situação atual na base).
 - **Nunca** afirmar, em tela, e-mail ou texto, que algo foi "validado junto ao CFM", "à Receita"
-  ou "à operadora". O texto correto é **"conferido na base simulada do FacilMed"**. Nenhuma
+  ou "à operadora". O texto correto é **"conferido na base simulada do PointMed"**. Nenhuma
   integração real existe (API do CFM é paga; COMPROVA/TISS não permitem consulta por terceiro).
 - **Nunca** escrever nas bases simuladas por tela ou controller. Só o `BaseSimuladaSeeder`
   preenche — senão qualquer um "validaria" o próprio dado.
@@ -57,83 +76,61 @@ intenção de quem escreveu a tela.
   opcional. **Nunca** usar nome, CNPJ ou logo de operadora real num convênio, e **sempre**
   deixar claro na tela e no texto do TCC que a plataforma não tem contrato com nenhuma operadora.
 - **Nunca** apagar convênio ou plano: desativar (`ativo = false`). Apagar leva em cascata os
-  planos e as carteirinhas dos pacientes.
+  planos e as carteirinhas dos usuários.
 
 **Nada de conteúdo clínico**
 
-- **Nunca** exibir, calcular ou gerar avaliação clínica sobre o paciente — incluindo rótulos
+- **Nunca** exibir, calcular ou gerar avaliação clínica sobre o usuário — incluindo rótulos
   como "status de saúde", "estável", "risco", alerta de saúde ou qualquer sugestão de
-  diagnóstico. Um sistema de agendamento não tem dado nem competência para isso, e afirmar
+  diagnóstico. Um guia de clínicas não tem dado nem competência para isso, e afirmar
   isso na tela é a falha mais grave que este projeto pode cometer.
 - **Nunca** implementar receita, atestado, prontuário ou resultado de exame. Ver §2.
 
-**Agendamento**
+**Preço e convênio**
 
-- **Nunca** remover a coluna virtual `horario_ativo` nem o índice
-  `UNIQUE (medico_id, data_consulta, horario_ativo)` da tabela `consultas`. É o que impede
-  duas pessoas marcarem o mesmo horário em requisições simultâneas. Checagem em PHP antes do
-  INSERT **não** substitui isso.
-- **Nunca** oferecer horário que caia dentro de um registro de `bloqueios` do médico.
-- **Nunca** permitir agendamento por convênio que o médico não aceite, nem em local ao qual ele
-  não esteja vinculado. O convênio é aceito **pelo médico** (tabela `convenio_medico`), decidido
-  em 18/09/2026 — e não por endereço. Consequência a mitigar: como o mesmo médico pode, na vida
-  real, não aceitar o plano em um dos endereços, **toda tela de confirmação de consulta por
-  convênio exibe o aviso** "Confirme na recepção se o seu plano é aceito neste endereço."
-  Esse aviso é obrigatório, não decorativo.
-- **Nunca** deixar o mesmo paciente com duas consultas agendadas que se sobrepõem no tempo, mesmo
-  com médicos diferentes (29/09/2026). A regra é `Paciente::consultaNoHorario()`, conferida na
-  confirmação e de novo na gravação, com a linha do paciente travada (`lockForUpdate`).
-- Cancelamento é **sempre permitido**. Abaixo de 24h ele é registrado como cancelamento tardio,
-  mas nunca bloqueado — bloquear só transforma cancelamento em falta.
+- **Nunca** mostrar valor de consulta em reais (decisão do grupo, 01/10/2026). A **Tabela de preços
+  saiu em 05/10/2026**: a **clínica escolhe a faixa** ($ a $$$$) **de cada unidade** em Clínica →
+  Unidades (`locais.faixa_preco`, 1 a 4 ou vazio; CHECK `chk_local_faixa`; Policy `update` do local).
+  O que cada faixa significa (ex.: $$ = R$ 200 a R$ 350) e o símbolo vêm **só** de
+  `App\Support\FaixaDePreco`; para mudar, mude `FaixaDePreco::LIMITES` — nunca uma tela.
+- A especialidade oferecida numa unidade = especialidade **ativa** de um médico com vínculo ativo
+  ali (`Vinculo::scopeOferece`). Não existe mais "médico sem preço" escondido da busca.
+- O convênio é aceito **pelo médico** (tabela `convenio_medico`), decidido em 18/09/2026 — e não
+  por endereço; em cada unidade a clínica liga/desliga `vinculos.aceita_convenio`. Como na vida real
+  o médico pode não aceitar o plano num dos endereços, **toda tela que mostra convênio aceito exibe
+  o aviso** "Confirme na recepção se o seu plano é aceito neste endereço." Obrigatório, não decorativo.
 
-**Quem faz o quê (plano novo, 01/10/2026)**
+**Avaliação (01/10/2026)**
 
-- **O médico só VÊ**: agenda, consultas, avaliações e o perfil (só leitura + trocar senha).
-  Horários, ausências, perfil do médico (bio, especialidades, convênios, foto) e os botões
-  realizada/falta/cancelar são da **clínica** dona da unidade — a Policy pergunta "é o dono do
-  local?" (`Local::donoUserId`). Não devolver rota de escrita para o médico.
-- Nome e CRM do médico **não mudam** depois do cadastro (foram conferidos juntos na base simulada).
-
-**Avaliações**
-
-- Avaliação do **médico**: só de consulta `realizada`, só pelo paciente daquela consulta (abaixo).
-- Avaliação do **local**: qualquer paciente logado, **uma por local** (UNIQUE `paciente_id, local_id`),
-  pode editar ou excluir. A nota do local é a média de `avaliacoes_locais` (`Local::notas`).
+- O usuário logado avalia o **local** ou o **médico** direto, sem consulta. **Uma** avaliação por
+  usuário em cada local e em cada médico — avaliar de novo **edita**. Garantido no banco
+  (`uq_avaliacao_paciente_local`, `uq_avaliacao_paciente_medico`, `chk_avaliacao_um_alvo`,
+  `chk_avaliacao_estrelas`). Clínica e admin não avaliam.
+- A média fica em `media_avaliacoes`/`total_avaliacoes` do local e do médico, recalculada **só**
+  pelo model `Avaliacao` (eventos `saved`/`deleted`). Nunca gravar média à mão.
 
 **Privacidade**
 
-- **Nunca** expor o comentário de uma avaliação (do médico ou do local) para outros pacientes ou em
-  qualquer tela pública. Comentário é visível apenas para quem foi avaliado (médico, clínica dona do
-  local), o admin e **o próprio autor** (histórico "Minhas avaliações" e o quadro de avaliar — 01/10).
-  Nota em estrelas é pública.
-- **Foto de paciente** só o próprio paciente vê (`FotoController`). Foto de local e de médico é pública.
-  Fotos ficam **no banco** (tabela `fotos`), porque o Render grátis apaga arquivo enviado.
-- **Nunca** ler ou exibir `paciente_acessibilidade` fora do contexto de uma consulta agendada
-  com aquele profissional. É dado sensível de saúde (LGPD art. 11). Não entra em listagem,
-  busca, exportação nem log.
-- **Nunca** permitir avaliação de consulta (do médico) cujo `status` não seja `realizada`, nem por
-  quem não é o paciente daquela consulta.
-- **Nunca** salvar a localização do paciente (banco, sessão, log, cache). Ela vai só na URL da busca de
-  locais, arredondada, e serve só para ordenar por distância (29/09/2026). O CEP digitado vira
-  coordenada (ViaCEP + Nominatim) e a tela é **redirecionada** para `?lat=&lng=&cep=` — nada é
-  guardado (01/10/2026).
-- **Nunca** apagar paciente com `delete()` nem fazer um segundo caminho de exclusão de conta: a
-  exclusão pedida pelo paciente (LGPD, 30/09/2026) é **só** por `Paciente::excluirConta()`, que
-  anonimiza (a consulta fica, o dado pessoal some). Conta excluída (`excluida_em` preenchido) nunca
+- **Comentário de avaliação é PÚBLICO (decisão do grupo, 05/10/2026).** Nota e comentário aparecem
+  nas páginas do local e do médico (`publico/parciais/avaliacoes`, as 10 mais recentes). O autor
+  aparece **só** como "Ana L." (`Formatador::nomeCurto`), **sem** foto, nome completo ou e-mail —
+  nunca expor esses três em tela pública. A clínica avaliada (`Avaliacao::daClinica`) e o admin
+  continuam vendo as avaliações nos painéis deles.
+- **Nunca** salvar a localização do usuário (banco, sessão, log). Ela vai só na URL da busca de
+  locais, arredondada, e serve só para ordenar por distância (29/09/2026).
+- **Nunca** apagar usuário com `delete()` nem fazer um segundo caminho de exclusão de conta: a
+  exclusão pedida pelo usuário (LGPD, 30/09/2026) é **só** por `Usuario::excluirConta()`, que
+  anonimiza (a nota fica na média, o dado pessoal, o comentário e a foto somem). Conta excluída (`excluida_em` preenchido) nunca
   volta a `ativo` — o CHECK `chk_users_excluida_inativa` garante no banco. Dado pessoal novo ligado ao
-  paciente (coluna ou tabela) precisa entrar no `excluirConta()`, com teste.
+  usuário (coluna ou tabela) precisa entrar no `excluirConta()`, com teste.
 - **Nunca** apresentar a distância como exata: a coordenada do local é aproximada (bairro ou centro
   da cidade) e a conta é em linha reta. O texto da tela diz "aproximada, em linha reta".
 
 **E-mail**
 
-- **Nunca** enviar e-mail de consulta sem gravar em `notificacoes_enviadas`. O `UNIQUE (consulta_id, tipo)`
-  é o que impede o mesmo lembrete sair 24 vezes quando o scheduler roda de hora em hora. (O link de
-  "Esqueci minha senha" é do próprio Laravel e não passa por ali — ele já tem limite de 1 por minuto.)
-- E-mail de verdade só pelo **Brevo** (`App\Mail\BrevoTransport`, `MAIL_MAILER=brevo` + `BREVO_API_KEY`):
-  o Render grátis bloqueia SMTP. Sem a chave, cai no `log` sozinho.
-- **Nunca** colocar e-mail real no seeder ou no Git. Conta com e-mail real: paciente/clínica pelo
-  próprio site; admin pelas variáveis `ADMIN_EMAIL`/`ADMIN_PASSWORD` do Render (`facilmed:garantir-admin`).
+- O PointMed não envia e-mail próprio desde 01/10/2026 (os lembretes de consulta saíram). Só o
+  Breeze manda o e-mail de troca de senha — no Render, pela API do Brevo (`App\Mail\BrevoTransport`,
+  `MAIL_MAILER=brevo` + `BREVO_API_KEY`); sem a chave, cai no log.
 - **Nunca** usar e-mail real de pessoa real nos seeders ou em teste.
 
 **Contas e validação de entrada**
@@ -162,23 +159,20 @@ intenção de quem escreveu a tela.
 - **Migration já aplicada não se edita** — cria-se uma nova.
 - Regra de negócio mora em Policy, FormRequest, Model ou constraint — **não** em `if` na Blade.
 - **Toda mudança de back-end vem com teste** em `tests/Feature/`. Mudou regra e nenhum teste quebrou? Falta teste.
-- Cancelar consulta **só** por `Consulta::cancelar()`; e-mail **só** por `App\Services\Notificador`.
+- Faixa de preço **só** por `App\Support\FaixaDePreco`; foto **só** por `App\Support\FotoDePerfil`.
 - **Não criar arquivo .md novo na raiz.** Documentação vai no `README.md` (seção certa).
 - Não mexer no `.htaccess` da raiz sem testar que `/FacilMed/.env` continua dando **403**.
 - Não alterar `.env` nem credenciais. `vendor/` é gerado. `prototipo-antigo/` é só leitura.
 
-### 4.1 Rito para mudanças com side-effect ⚠ (envio de e-mail)
+### 4.1 Rito para mudanças com side-effect ⚠ (e-mail)
 
-O único side-effect deste projeto é o disparo de e-mail. Ele sai da máquina e chega na caixa
-de alguém; o Git não desfaz isso.
+O side-effect deste projeto é o e-mail de troca de senha (Breeze; no Render, pelo Brevo). As fotos
+ficam no banco desde 07/10/2026 e, nos testes, somem com a transação do `RefreshDatabase`.
 
 1. Desenvolver com `MAIL_MAILER=log` no `.env`. O e-mail cai em `storage/logs/laravel.log`.
-2. Para conferir o visual, usar `php artisan tinker` com Mailtrap ou o `mail:preview` — nunca
-   disparando para endereço real.
-3. Envio para caixa real **só com aprovação explícita**, e só para e-mail de integrante do grupo.
-4. Depois de qualquer teste de envio, conferir `notificacoes_enviadas` e **limpar as linhas de
-   teste**, senão o lembrete de verdade daquela consulta nunca sai (o UNIQUE bloqueia).
-5. Registrar no README §6 o que foi disparado.
+   Envio para caixa real **só com aprovação explícita**, e só para e-mail de integrante do grupo.
+2. Nos testes, o Brevo é sempre `Http::fake()` — nenhum teste fala com a API de verdade.
+3. Registrar no README §6 o que foi disparado.
 
 ## 5. Restrições de segurança
 
@@ -190,8 +184,8 @@ de alguém; o Git não desfaz isso.
 - Toda query com input do usuário passa por Eloquent ou query bindings. Nunca concatenar string
   em SQL.
 - Toda rota autenticada protegida por middleware **e** por Policy. Middleware diz "está logado";
-  Policy diz "é dono disso". Faltar a segunda é o furo clássico: paciente A abrindo
-  `/consultas/{id}` do paciente B.
+  Policy diz "é dono disso". Faltar a segunda é o furo clássico: a clínica A editando o médico
+  que só atende na clínica B, ou o usuário A apagando a avaliação do usuário B.
 - ⚠ **Um agente por vez** ao tocar o banco compartilhado ou disparar e-mail. Branch isola código,
   não isola banco nem caixa de entrada.
 

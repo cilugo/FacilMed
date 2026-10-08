@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Clinica;
 
 use App\Http\Controllers\Controller;
-use App\Models\Disponibilidade;
+use App\Models\HorarioFuncionamento;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Clinica\SalvarUnidadeRequest;
 use App\Http\Requests\Clinica\HorariosDeFuncionamento;
-use App\Models\Foto;
 use App\Models\Local;
 use Illuminate\Http\Request;
 
@@ -16,8 +15,8 @@ class UnidadeController extends Controller
     public function index()
     {
         return view('clinica.unidades', [
-            'locais' => auth()->user()->clinica->locais()->with('horarios', 'fotos')->withCount(['vinculos' => fn ($q) => $q->where('ativo', true)])->get(),
-            'dias'   => Disponibilidade::DIAS,
+            'locais' => auth()->user()->clinica->locais()->with('horarios')->withCount(['vinculos' => fn ($q) => $q->where('ativo', true)])->get(),
+            'dias'   => HorarioFuncionamento::DIAS,
         ]);
     }
 
@@ -28,7 +27,6 @@ class UnidadeController extends Controller
         $local = DB::transaction(function () use ($request, $dados) {
             $local = Local::create([
                 'clinica_id'  => $request->user()->clinica->id,
-                'medico_id'   => null,
                 'nome'        => $dados['nome'],
                 'tipo'        => $dados['tipo'],
                 'cep'         => $dados['cep'],
@@ -39,7 +37,7 @@ class UnidadeController extends Controller
                 'cidade'      => $dados['cidade'],
                 'uf'          => $dados['uf'],
                 'telefone'    => ($dados['telefone'] ?? '') ?: null,
-                'site'        => ($dados['site'] ?? '') ?: null,
+                'faixa_preco' => $dados['faixa_preco'] ?? null,
                 'ativo'       => true,
             ]);
 
@@ -48,7 +46,8 @@ class UnidadeController extends Controller
             return $local;
         });
 
-        // 01/10/2026: coordenada exata do endereço (Nominatim), fora da transação.
+        // 07/10/2026 (trazido da main): coordenada exata do endereço (Nominatim),
+        // FORA da transação - é um pedido pela internet e não pode segurar o banco.
         // Sem internet, fica a aproximada do bairro/cidade (Local::booted).
         \App\Support\Geocodificador::atualizarLocal($local);
 
@@ -56,9 +55,26 @@ class UnidadeController extends Controller
     }
 
     /**
-     * Horario de FUNCIONAMENTO do lugar - nao confundir com a
-     * disponibilidade do medico. O bloco de agenda de um medico nao
-     * pode cair fora do funcionamento da unidade.
+     * Faixa de preço da consulta particular desta unidade, de $ a $$$$
+     * (05/10/2026: a clínica escolhe; a Tabela de preços saiu). Vazio =
+     * não informar. O usuário vê só os $, nunca valor.
+     */
+    public function salvarFaixa(Request $request, Local $local)
+    {
+        $this->authorize('update', $local);
+
+        $dados = $request->validate(
+            ['faixa_preco' => ['nullable', 'integer', 'between:1,4']],
+            ['faixa_preco.between' => 'Escolha uma faixa de $ a $$$$.'],
+        );
+
+        $local->update(['faixa_preco' => $dados['faixa_preco'] ?? null]);
+
+        return back()->with('sucesso', "Faixa de preço de {$local->nome} salva.");
+    }
+
+    /**
+     * Horario de FUNCIONAMENTO do lugar, mostrado na pagina do local.
      */
     public function salvarHorarios(Request $request, Local $local)
     {
@@ -73,82 +89,8 @@ class UnidadeController extends Controller
 
         DB::transaction(fn () => $local->definirHorarios($horarios));
 
-        // Blocos de médicos que ficaram (em parte) fora do novo horário: a
-        // CalculadoraDeHorarios já não oferece o que cai fora - só avisamos.
-        $foraDoHorario = Disponibilidade::whereIn('vinculo_id', $local->vinculos()->select('id'))
-            ->where('ativo', true)->get()
-            ->filter(function ($d) use ($horarios) {
-                $h = $horarios[$d->dia_semana] ?? null;
-
-                return ! $h || substr($d->hora_inicio, 0, 5) < $h['abre'] || substr($d->hora_fim, 0, 5) > $h['fecha'];
-            })->count();
-
         $msg = "Horário de funcionamento de {$local->nome} salvo.";
-        if ($foraDoHorario > 0) {
-            $msg .= " {$foraDoHorario} " . ($foraDoHorario === 1 ? 'bloco de atendimento de médico ficou' : 'blocos de atendimento de médicos ficaram')
-                . ' fora do novo horário: a parte de fora deixa de ser oferecida aos pacientes.';
-        }
 
         return back()->with('sucesso', $msg);
-    }
-
-    /**
-     * 01/10/2026 (plano novo do grupo): site da unidade (botão "Visitar o
-     * site" na página do local). Só http/https - nada de "javascript:".
-     */
-    public function salvarSite(Request $request, Local $local)
-    {
-        $this->authorize('update', $local);
-
-        $request->merge(['site' => self::normalizarSite($request->input('site'))]);
-        $dados = $request->validate(
-            ['site' => ['nullable', 'url:http,https', 'max:255']],
-            ['site.url' => 'Digite o endereço completo do site, por exemplo https://www.suaclinica.com.br']
-        );
-
-        $local->update(['site' => $dados['site'] ?: null]);
-
-        return back()->with('sucesso', "Site de {$local->nome} salvo.");
-    }
-
-    /**
-     * Fotos da unidade (galeria da página do local), no banco - ver
-     * App\Models\Foto. Até 6 por unidade.
-     */
-    public function salvarFoto(Request $request, Local $local)
-    {
-        $this->authorize('update', $local);
-
-        $request->validate(['foto' => Foto::regras()], Foto::mensagens());
-
-        $total = Foto::where('local_id', $local->id)->count();
-        if ($total >= Foto::MAXIMO_POR_LOCAL) {
-            return back()->with('erro', 'Cada unidade pode ter até ' . Foto::MAXIMO_POR_LOCAL . ' fotos. Remova uma para enviar outra.');
-        }
-
-        Foto::create(['local_id' => $local->id, 'ordem' => $total] + Foto::dadosDoArquivo($request->file('foto')));
-
-        return back()->with('sucesso', "Foto adicionada em {$local->nome}.");
-    }
-
-    public function removerFoto(Foto $foto)
-    {
-        abort_unless($foto->local_id !== null, 404);
-        $this->authorize('update', $foto->local);
-
-        $foto->delete();
-
-        return back()->with('sucesso', 'Foto removida.');
-    }
-
-    /** "www.clinica.com.br" vira "https://www.clinica.com.br"; vazio fica vazio. */
-    public static function normalizarSite(mixed $site): ?string
-    {
-        $site = trim((string) $site);
-        if ($site === '') {
-            return null;
-        }
-
-        return preg_match('#^[a-z][a-z0-9+.-]*://#i', $site) ? $site : 'https://' . $site;
     }
 }

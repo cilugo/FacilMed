@@ -2,34 +2,34 @@
 
 namespace App\Models;
 
+use App\Support\FotoDePerfil;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * Médico = PERFIL, não conta (01/10/2026).
+ *
+ * Quem cadastra e mantém o perfil é a clínica/hospital onde ele atende
+ * (Clinica\MedicoController). O médico não tem login: o usuário vê o
+ * perfil (nome, foto, especialidades, anos de carreira, onde atende e
+ * nota), mas ninguém "entra" como médico.
+ */
 class Medico extends Model
 {
     protected $table = 'medicos';
 
     protected $fillable = [
-        'user_id', 'cpf', 'crm', 'uf', 'status_verificacao',
+        'nome', 'cpf', 'crm', 'uf', 'status_verificacao',
         'verificado_por', 'verificado_em', 'motivo_rejeicao',
         'bio', 'telefone_profissional', 'anos_atuacao', 'foto',
-        'senha_temporaria',
     ];
 
     protected $casts = [
-        'verificado_em'     => 'datetime',
-        'senha_temporaria'  => 'boolean',
-        'media_avaliacoes'  => 'decimal:2',
+        'verificado_em'    => 'datetime',
+        'media_avaliacoes' => 'decimal:2',
     ];
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function especialidades(): BelongsToMany
     {
@@ -47,57 +47,43 @@ class Medico extends Model
         return $this->hasMany(Vinculo::class);
     }
 
-    public function bloqueios(): HasMany
-    {
-        return $this->hasMany(Bloqueio::class);
-    }
-
-    public function consultas(): HasMany
-    {
-        return $this->hasMany(Consulta::class);
-    }
-
     public function avaliacoes(): HasMany
     {
         return $this->hasMany(Avaliacao::class);
     }
 
-    /** 01/10/2026: foto enviada pela clínica (no banco - ver Foto). Sem a imagem pesada. */
-    public function fotoEnviada(): HasOne
-    {
-        return $this->hasOne(Foto::class)->select(Foto::COLUNAS_LEVES);
-    }
-
     /**
-     * Endereço da foto do médico para as telas: a enviada pela clínica ou, se
-     * não houver, a do seeder (public/imgs/medicos/...). Null = mostrar as iniciais.
-     */
-    public function fotoUrl(): ?string
-    {
-        if ($this->fotoEnviada) {
-            return $this->fotoEnviada->url();
-        }
-
-        return $this->foto ? asset($this->foto) : null;
-    }
-
-    /**
-     * REGRA INVIOLAVEL (AGENTS.md secao 6): medico nao verificado
-     * nunca aparece em busca ou listagem publica. Use este scope
-     * em TODA consulta que alimenta tela de paciente.
+     * Pode aparecer em busca, listagem e perfil público? (AGENTS.md §3)
+     * Só com o CRM conferido na base simulada (status 'verificado').
      */
     public function scopeVisivel(Builder $q): Builder
     {
-        return $q->where('status_verificacao', 'verificado')
-                 ->whereHas('user', fn ($u) => $u->where('status', 'ativo'));
+        return $q->where('status_verificacao', 'verificado');
     }
 
-    /** Recalcula o cache de avaliacoes. Chamar ao salvar avaliacao. */
+    /**
+     * A clínica pode editar este perfil? Pode, se ele atende (vínculo
+     * ativo) em alguma unidade dela. Usado pela MedicoPolicy.
+     */
+    public function atendeNaClinica(?int $clinicaId): bool
+    {
+        return $clinicaId !== null && $this->vinculos()
+            ->where('ativo', true)
+            ->whereHas('local', fn ($l) => $l->where('clinica_id', $clinicaId))
+            ->exists();
+    }
+
+    /** Recalcula o cache de avaliações. Chamado pelo model Avaliacao. */
     public function recalcularAvaliacoes(): void
     {
         $this->forceFill([
             'media_avaliacoes' => (float) $this->avaliacoes()->avg('estrelas'),
             'total_avaliacoes' => $this->avaliacoes()->count(),
         ])->save();
+    }
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        return FotoDePerfil::url($this->foto);
     }
 }

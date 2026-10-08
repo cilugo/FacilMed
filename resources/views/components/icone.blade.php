@@ -1,5 +1,5 @@
 {{--
-    Ícones do FacilMed (SVG inline, traço de 1.8px, herdam a cor do texto).
+    Ícones do PointMed (SVG inline, traço de 1.8px, herdam a cor do texto).
 
     Uso:  <x-icone nome="calendar" class="h-5 w-5" />
           <x-icone :nome="$item['icone']" />

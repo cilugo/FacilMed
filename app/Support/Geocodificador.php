@@ -9,7 +9,8 @@ use Throwable;
 
 /**
  * CEP ou endereço → coordenada (01/10/2026, plano novo do grupo: raio de
- * 5/10/20 km a partir do CEP do paciente).
+ * 5/10/20 km a partir do CEP do usuário). Trazido da main para o PointMed
+ * em 07/10/2026.
  *
  * Dois serviços grátis, sem chave (config/localizacao.php):
  *   1. ViaCEP: CEP → rua, bairro, cidade e UF;
@@ -18,7 +19,7 @@ use Throwable;
  * coordenada APROXIMADA do bairro/cidade (Localizacao::coordenadas) - a busca
  * continua funcionando, só fica menos precisa.
  *
- * PRIVACIDADE (AGENTS.md §3): a coordenada do PACIENTE não é guardada em lugar
+ * PRIVACIDADE (AGENTS.md §3): a coordenada do USUÁRIO não é guardada em lugar
  * nenhum - o controller troca o CEP por lat/lng arredondados NA URL e pronto.
  * Só a coordenada do LOCAL (endereço público de clínica) fica no banco.
  */

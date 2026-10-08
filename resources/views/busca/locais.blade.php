@@ -1,32 +1,23 @@
 {{--
-    Clínicas perto de você — a busca principal do plano novo (01/10/2026).
-    Dados: BuscaController@locais. Desenho: "Tela 3 · Resultados" do PDF do grupo.
+    Locais perto de você (29/09/2026, plano do app). Dados: BuscaController@locais.
 
-    Clínicas e hospitais que recebem agendamento, do mais perto para o mais
-    longe. De onde medir: CEP (vira coordenada: ViaCEP + Nominatim), a posição
-    do navegador ou o centro da cidade. Filtros rápidos: raio (5/10/20 km),
-    "Aceita meu plano" (carteirinha do paciente logado) e "Só particular".
-    Distância em linha reta e aproximada — a tela diz isso.
+    Clínicas e hospitais no ar, do mais perto para o mais longe. 01/10: filtro
+    de convênio e faixa de preço ($ a $$$$) no lugar do valor. De onde medir: a posição do navegador (botão "Usar minha
+    localização", public/javas/localizacao.js), o CEP digitado (07/10) ou o centro da cidade escolhida.
+    07/10: raio de 5, 10 ou 20 km.
+    Distância em linha reta e coordenadas aproximadas (config/localizacao.php).
 --}}
 @extends('layouts.site')
 
-@section('titulo', 'Clínicas perto de você')
+@section('titulo', 'Locais perto de você')
 @section('menu', 'locais')
 
 @php
-    $moeda = fn ($v) => 'R$ ' . number_format((float) $v, 2, ',', '.');
+    $temFiltro = collect($filtros)->filter()->isNotEmpty() || $origem;
     $tipos = ['clinica' => 'Clínica', 'hospital' => 'Hospital', 'consultorio' => 'Consultório'];
-    $base = array_filter([
-        'especialidade' => $filtros['especialidade'],
-        'raio'          => $filtros['raio'],
-        'plano'         => $filtros['plano'] ? 1 : null,
-        'particular'    => $filtros['particular'] ? 1 : null,
-        'convenio'      => $filtros['convenio'],
-    ]) + ($origem['params'] ?? []);
-    // Link que troca um filtro e mantém o resto.
-    $com = fn (array $troca) => route('busca.locais', array_filter(array_merge($base, $troca), fn ($v) => $v !== null && $v !== ''));
     // Leva a especialidade e a origem para a página do local.
     $paramsLink = array_filter(['especialidade' => $filtros['especialidade']]) + ($origem['params'] ?? []);
+    $convenioEscolhido = $convenios->firstWhere('id', (int) $filtros['convenio']);
 @endphp
 
 @push('scripts')
@@ -37,135 +28,149 @@
 
     <section class="pagina-topo">
         <div class="container">
-            <h1>{{ $escolhida ? $escolhida->nome : 'Clínicas e hospitais' }} perto de você</h1>
-            <p>Diga o que procura e onde está. A lista vai do mais perto ao mais longe.</p>
+            <h1>Locais perto de você</h1>
+            <p>Clínicas e hospitais, do mais perto para o mais longe.</p>
 
-            @include('busca._onde', ['origem' => $origem, 'filtros' => $filtros])
+            <form method="GET" action="{{ route('busca.locais') }}" class="busca-caixa busca-caixa--local" role="search">
+                <div class="busca-campo">
+                    <label for="l-especialidade">Especialidade</label>
+                    <select id="l-especialidade" name="especialidade">
+                        <option value="">Todas</option>
+                        @foreach ($especialidades as $esp)
+                            <option value="{{ $esp->slug }}" @selected($filtros['especialidade'] === $esp->slug)>{{ $esp->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="busca-campo">
+                    <label for="l-cidade">Perto de qual cidade?</label>
+                    <select id="l-cidade" name="cidade">
+                        <option value="">{{ ($origem['params']['lat'] ?? null) !== null ? 'Minha localização' : 'Escolha a cidade' }}</option>
+                        @foreach ($cidades as $c)
+                            <option value="{{ $c->cidade }}" @selected($filtros['cidade'] === $c->cidade)>{{ $c->cidade }} - {{ $c->uf }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                {{-- 07/10: CEP (RF03). Fica vazio: o CEP atual vai escondido em cep_origem,
+                     para trocar um filtro não consultar o CEP de novo. --}}
+                <div class="busca-campo">
+                    <label for="l-cep">Ou digite o CEP</label>
+                    <input id="l-cep" name="cep" type="text" inputmode="numeric" maxlength="9" autocomplete="postal-code"
+                           placeholder="{{ ($origem['params']['cep_origem'] ?? null) ? \App\Support\Localizacao::formatarCep($origem['params']['cep_origem']) : '00000-000' }}">
+                </div>
+                <div class="busca-campo">
+                    <label for="l-raio">Distância</label>
+                    <select id="l-raio" name="raio">
+                        <option value="">Qualquer distância</option>
+                        @foreach (\App\Support\Localizacao::RAIOS as $km)
+                            <option value="{{ $km }}" @selected($filtros['raio'] === $km)>Até {{ $km }} km</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="busca-campo">
+                    <label for="l-convenio">Convênio</label>
+                    <select id="l-convenio" name="convenio">
+                        <option value="">Qualquer um / particular</option>
+                        @foreach ($convenios as $conv)
+                            <option value="{{ $conv->id }}" @selected((string) $filtros['convenio'] === (string) $conv->id)>{{ $conv->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="button" class="btn btn-outline btn-grande" data-localizacao="{{ route('busca.locais') }}">
+                    <x-icone nome="localizar" /> Usar minha localização
+                </button>
+                <button type="submit" class="btn btn-primary btn-grande"><x-icone nome="search" /> Buscar</button>
 
-            @if ($aviso)
-                <p class="site-aviso site-aviso--erro" role="alert">{{ $aviso }}</p>
-            @endif
+                {{-- Preenchidos pelo botão de localização. Escolher uma cidade tem prioridade. --}}
+                <input type="hidden" name="lat" value="{{ $origem['params']['lat'] ?? '' }}">
+                <input type="hidden" name="lng" value="{{ $origem['params']['lng'] ?? '' }}">
+                <input type="hidden" name="cep_origem" value="{{ $origem['params']['cep_origem'] ?? '' }}">
+
+                <p class="localizacao-aviso" data-localizacao-status>
+                    Ao usar sua localização, o navegador pergunta se você permite o acesso a ela. Ela só serve para
+                    ordenar os locais por distância e não fica salva.
+                </p>
+            </form>
         </div>
     </section>
 
     <div class="container">
-        {{-- Filtros rápidos (desenho: "Mais próximos", "Aceita meu plano", "Só particular") --}}
-        <nav class="filtros-rapidos" aria-label="Filtros rápidos">
-            @if ($origem)
-                @foreach (\App\Support\Localizacao::RAIOS as $km)
-                    <a href="{{ $com(['raio' => $km]) }}" class="filtro {{ $filtros['raio'] === $km ? 'is-ativo' : '' }}">Até {{ $km }} km</a>
-                @endforeach
-                <a href="{{ $com(['raio' => null]) }}" class="filtro {{ $filtros['raio'] ? '' : 'is-ativo' }}">Mais próximos</a>
-            @endif
-
-            @if ($ehPaciente && $temCarteirinha)
-                <a href="{{ $com(['plano' => $filtros['plano'] ? null : 1, 'convenio' => null]) }}" class="filtro {{ $filtros['plano'] ? 'is-ativo' : '' }}">
-                    <x-icone nome="card" /> Aceita meu plano
-                </a>
-            @elseif ($ehPaciente)
-                <a href="{{ route('paciente.planos') }}" class="filtro" title="Cadastre a sua carteirinha para filtrar pelo seu plano">
-                    <x-icone nome="card" /> Aceita meu plano
-                </a>
-            @endif
-
-            <a href="{{ $com(['particular' => $filtros['particular'] ? null : 1]) }}" class="filtro {{ $filtros['particular'] ? 'is-ativo' : '' }}">Só particular</a>
-
-            {{-- Sem carteirinha (ou sem login): escolher o convênio na lista. --}}
-            @unless ($ehPaciente && $temCarteirinha && $filtros['plano'])
-                <form method="GET" action="{{ route('busca.locais') }}" class="filtro-convenio">
-                    @foreach (array_diff_key($base, ['convenio' => 1, 'plano' => 1]) as $k => $v)
-                        <input type="hidden" name="{{ $k }}" value="{{ $v }}">
-                    @endforeach
-                    <label for="f-convenio" class="sr-only">Convênio</label>
-                    <select id="f-convenio" name="convenio" onchange="this.form.submit()">
-                        <option value="">Qualquer convênio</option>
-                        @foreach ($convenios as $c)
-                            <option value="{{ $c->id }}" @selected($filtros['convenio'] === $c->id)>{{ $c->nome }}</option>
-                        @endforeach
-                    </select>
-                    <noscript><button type="submit" class="btn btn-outline">Filtrar</button></noscript>
-                </form>
-            @endunless
-        </nav>
+        @if ($aviso)
+            <p class="localizacao-aviso localizacao-aviso--erro" role="alert" style="margin-top: 20px;">{{ $aviso }}</p>
+        @endif
 
         <div class="resultado-info">
             <span>
                 <strong>{{ $resultados->count() }}</strong>
                 {{ $resultados->count() === 1 ? 'local encontrado' : 'locais encontrados' }}
+                @if ($convenioEscolhido)
+                    · aceitando {{ $convenioEscolhido->nome }}
+                @endif
                 @if ($origem)
-                    {{ $filtros['raio'] ? 'até ' . $filtros['raio'] . ' km' : '' }}
+                    @if ($filtros['raio'])
+                        · até {{ $filtros['raio'] }} km
+                    @endif
                     · distância aproximada, em linha reta, {{ $origem['descricao'] }}
                 @else
-                    · em ordem alfabética. Use sua localização ou digite o CEP para ver a distância.
+                    · em ordem alfabética. Use sua localização, digite o CEP ou escolha a cidade para ver a distância.
                 @endif
             </span>
             <span style="display: flex; gap: 14px; align-items: center;">
                 <a href="{{ route('busca.index', array_filter(['especialidade' => $filtros['especialidade']])) }}" class="limpar-filtros">Buscar por médico</a>
-                @if (array_filter($filtros) || $origem)
+                @if ($temFiltro)
                     <a href="{{ route('busca.locais') }}" class="limpar-filtros">Limpar filtros</a>
                 @endif
             </span>
         </div>
 
+        {{-- 07/10: quantos ficaram fora do raio, com o atalho para ver todos. --}}
+        @if ($foraDoRaio > 0)
+            <p class="texto-pequeno" style="margin-bottom: 14px;">
+                {{ $foraDoRaio }} {{ $foraDoRaio === 1 ? 'local fica' : 'locais ficam' }} fora dos {{ $filtros['raio'] }} km.
+                <a href="{{ route('busca.locais', array_filter(['especialidade' => $filtros['especialidade'], 'convenio' => $filtros['convenio']]) + ($origem['params'] ?? [])) }}" class="limpar-filtros">Ver todos</a>
+            </p>
+        @endif
+
         @if ($resultados->isEmpty())
             <div class="vazio">
                 <h2>Nenhum local com esses filtros</h2>
-                @if ($origem && $filtros['raio'] && $foraDoRaio > 0)
-                    <p>Há {{ $foraDoRaio }} {{ $foraDoRaio === 1 ? 'local' : 'locais' }} mais longe que {{ $filtros['raio'] }} km.</p>
-                    <p style="margin-top: 12px;">
-                        @foreach (\App\Support\Localizacao::RAIOS as $km)
-                            @if ($km > $filtros['raio'])
-                                <a href="{{ $com(['raio' => $km]) }}" class="btn btn-outline">Ver até {{ $km }} km</a>
-                            @endif
-                        @endforeach
-                        <a href="{{ $com(['raio' => null]) }}" class="btn btn-primary">Qualquer distância</a>
-                    </p>
-                @else
-                    <p>Tente outra especialidade ou tire um filtro.</p>
-                @endif
+                <p>Tente outra especialidade{{ $convenioEscolhido ? ' ou tire o filtro de convênio' : '' }}{{ $foraDoRaio > 0 ? ' ou aumente a distância' : '' }}.</p>
             </div>
         @else
-            <div class="lista-locais">
+            <div class="lista-medicos">
                 @foreach ($resultados as $r)
                     @php
                         $local = $r->local;
-                        // Já vêm só os vínculos que servem para esta busca.
+                        // Já vêm só os vínculos públicos (que oferecem a especialidade e aceitam o convênio filtrados).
                         $vinculos = $local->vinculos;
                         $especialidadesAqui = $vinculos->flatMap->especialidadesOferecidas()->unique('id')->sortBy('nome');
-                        $menorPreco = $vinculos->where('aceita_particular', true)->flatMap->precosOferecidos()->min('valor');
+                        // 05/10: a faixa é da unidade, escolhida pela clínica.
+                        $faixa = $vinculos->contains('aceita_particular', true) ? $local->faixa_preco : null;
                         $aceitaConvenio = $vinculos->contains('aceita_convenio', true);
                         $link = route('publico.local', ['local' => $local] + $paramsLink);
-                        $foto = $local->fotos->first();
                     @endphp
-                    <article class="card-local">
-                        <a href="{{ $link }}" class="card-local__foto" tabindex="-1" aria-hidden="true">
-                            @if ($foto)
-                                <img src="{{ $foto->url() }}" alt="" loading="lazy">
-                            @else
-                                <x-icone :nome="$local->tipo === 'hospital' ? 'hospital' : 'building'" />
-                            @endif
-                        </a>
+                    <article class="card-medico">
+                        <div class="avatar" style="background-color: #183e9f;">
+                            <x-icone :nome="$local->tipo === 'hospital' ? 'hospital' : 'building'" style="width: 30px; height: 30px;" />
+                        </div>
 
-                        <div class="card-local__info">
-                            <div class="card-local__topo">
-                                <span class="card-local__tipo">{{ $tipos[$local->tipo] ?? $local->tipo }}</span>
-                                @if ($r->distancia !== null)
-                                    <span class="card-local__distancia"><x-icone nome="localizar" /> {{ \App\Support\Localizacao::formatar($r->distancia) }}</span>
-                                @elseif ($origem)
-                                    <span class="texto-pequeno">Distância indisponível</span>
-                                @endif
-                            </div>
+                        <div>
                             <h2><a href="{{ $link }}">{{ $local->nome }}</a></h2>
-                            <p class="card-local__endereco">{{ $local->endereco_completo }}</p>
-                            <p class="local-nota">
-                                @if ($r->nota)
-                                    <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $r->nota->media, 1, ',', '') }}</span>
-                                    <span class="texto-pequeno">({{ $r->nota->total }} {{ (int) $r->nota->total === 1 ? 'avaliação' : 'avaliações' }})</span>
-                                @else
-                                    <span class="texto-pequeno">Ainda sem avaliações</span>
+                            <span class="crm">
+                                {{ $tipos[$local->tipo] ?? $local->tipo }}
+                                @if ($local->clinica)
+                                    · {{ $local->clinica->nome_fantasia }}
                                 @endif
-                                <span class="texto-pequeno">· {{ $vinculos->count() }} {{ $vinculos->count() === 1 ? 'médico disponível' : 'médicos disponíveis' }}</span>
-                            </p>
+                            </span>
+                            @if ($local->total_avaliacoes > 0)
+                                · <span class="medico-nota"><x-icone nome="star" /> {{ number_format((float) $local->media_avaliacoes, 1, ',', '') }}
+                                    <span style="font-weight: 400; color: #666;">({{ $local->total_avaliacoes }})</span></span>
+                            @endif
+
+                            <div class="locais-resumo" style="margin-top: 8px;">
+                                <div><x-icone nome="pin" /><span>{{ $local->endereco_completo }}</span></div>
+                                <div><x-icone nome="doctors" /><span>{{ $vinculos->count() }} {{ $vinculos->count() === 1 ? 'médico disponível' : 'médicos disponíveis' }}</span></div>
+                            </div>
+
                             <div class="chips">
                                 @foreach ($especialidadesAqui as $esp)
                                     <span class="chip">{{ $esp->nome }}</span>
@@ -174,8 +179,13 @@
                         </div>
 
                         <div class="card-medico__lado">
-                            @if ($menorPreco !== null)
-                                <span class="preco-a-partir">Particular a partir de <strong>{{ $moeda($menorPreco) }}</strong></span>
+                            @if ($r->distancia !== null)
+                                <span class="distancia"><x-icone nome="localizar" /> {{ \App\Support\Localizacao::formatar($r->distancia) }}</span>
+                            @elseif ($origem)
+                                <span class="texto-pequeno">Distância indisponível</span>
+                            @endif
+                            @if ($faixa)
+                                <span class="preco-a-partir">Particular <x-faixa-preco :nivel="$faixa" /></span>
                             @endif
                             @if ($aceitaConvenio)
                                 <span class="chip chip--verde"><x-icone nome="shield" /> Aceita convênio</span>

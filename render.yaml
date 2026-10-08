@@ -41,7 +41,7 @@ services:
 
       # --- Fixas ---
       - key: APP_NAME
-        value: FacilMed
+        value: PointMed
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -65,4 +65,4 @@ services:
       - key: MAIL_MAILER
         value: brevo         # só envia com BREVO_API_KEY; sem ela, volta para "log"
       - key: MAIL_FROM_NAME
-        value: FacilMed
+        value: PointMed

@@ -24,6 +24,19 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# 4a. (07/10/2026, decisão do grupo — README §6) Troca de linha: o banco do
+#     Render estava no formato da versão COM agendamento, e as migrations do
+#     PointMed não foram escritas para ele. Se a tabela "consultas" ainda
+#     existe (só existe na versão antiga), o banco é zerado e recriado com os
+#     dados de demonstração. Acontece UMA vez: depois disso "consultas" não
+#     existe mais e este passo não faz nada. Os dados são fictícios; contas
+#     criadas direto no site antigo precisam ser criadas de novo.
+VERSAO_ANTIGA=$(php artisan tinker --execute='echo \Illuminate\Support\Facades\Schema::hasTable("consultas") ? "sim" : "nao";' 2>/dev/null | tail -n 1)
+if [ "$VERSAO_ANTIGA" = "sim" ]; then
+    echo "PointMed: banco na versão antiga (com agendamento). Recriando com migrate:fresh --seed."
+    php artisan migrate:fresh --seed --force
+fi
+
 # 4. Cria/atualiza as tabelas. Só aplica migrations novas; não apaga nada.
 php artisan migrate --force
 
@@ -36,11 +49,7 @@ else
     echo "FacilMed: banco já tem dados ($USUARIOS usuários), seeder não roda."
 fi
 
-# 6. (01/10/2026) Fotos das unidades de demonstração que ainda não têm foto
-#    (não mexe nas que uma clínica enviou). Pode rodar a cada boot.
-php artisan db:seed --class=FotosDemonstracaoSeeder --force || true
-
-# 7. (01/10/2026) Administrador com e-mail de verdade, se ADMIN_EMAIL e
+# 6. (01/10/2026) Administrador com e-mail de verdade, se ADMIN_EMAIL e
 #    ADMIN_PASSWORD estiverem no Render. Já existe? Não mexe. Nunca derruba o boot.
 php artisan facilmed:garantir-admin || true
 

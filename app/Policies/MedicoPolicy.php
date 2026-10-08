@@ -6,23 +6,17 @@ use App\Models\Medico;
 use App\Models\User;
 
 /**
- * 01/10/2026 (plano novo do grupo): o medico so ve a agenda; quem cuida do
- * perfil dele (bio, especialidades, convenios, foto) e a clinica.
+ * Quem pode editar o perfil de um médico (01/10/2026).
  *
- * Qual clinica? Qualquer uma onde ele atende HOJE (vinculo ativo numa
- * unidade dela). Se o mesmo medico atende em duas clinicas, as duas podem
- * editar - o perfil e um so, vale para todos os lugares (como antes, quando
- * era o proprio medico que editava). Clinica sem vinculo com ele: 403.
+ * O médico não tem conta: quem mantém o perfil é a clínica/hospital onde
+ * ele atende. Se ele atende em mais de uma clínica (ex.: Dra. Helena na
+ * Vida Plena e no Santa Clara), qualquer uma delas pode editar — as duas
+ * mostram o mesmo médico. Clínica sem vínculo ativo com ele não edita.
  */
 class MedicoPolicy
 {
-    public function gerenciar(User $user, Medico $medico): bool
+    public function update(User $user, Medico $medico): bool
     {
-        $clinicaId = $user->ehClinica() ? $user->clinica?->id : null;
-
-        return $clinicaId !== null && $medico->vinculos()
-            ->where('ativo', true)
-            ->whereHas('local', fn ($l) => $l->where('clinica_id', $clinicaId))
-            ->exists();
+        return $user->ehClinica() && $medico->atendeNaClinica($user->clinica?->id);
     }
 }

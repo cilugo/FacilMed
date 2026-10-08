@@ -3,27 +3,22 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\GarantirContaAtiva;
-use App\Mail\AvisoDeConsulta;
 use App\Models\Avaliacao;
-use App\Models\Consulta;
-use App\Models\NotificacaoEnviada;
-use App\Models\PacientePlano;
+use App\Models\UsuarioPlano;
 use App\Models\Plano;
 use App\Models\User;
 use App\Models\Vinculo;
-use App\Services\CalculadoraDeHorarios;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 /**
- * 30/09/2026 — o paciente exclui a própria conta (LGPD, plano do app).
+ * 30/09/2026 — o usuário exclui a própria conta (LGPD, plano do app).
  *
- * Não é um DELETE de verdade: consultas.paciente_id é restrictOnDelete, e a
- * agenda e as notas dos médicos dependem dessas consultas. Então a conta é
- * ANONIMIZADA — o dado pessoal some e a consulta fica, sem ninguém ligado a ela.
+ * Não é um DELETE de verdade: as notas que o usuário deu entram na média dos
+ * locais e médicos. Então a conta é ANONIMIZADA — o dado pessoal some e a
+ * nota fica, sem ninguém ligado a ela (revisto em 01/10/2026, sem consultas).
  */
 class ExclusaoDeContaTest extends TestCase
 {
@@ -36,34 +31,7 @@ class ExclusaoDeContaTest extends TestCase
 
     private function excluir(array $dados = self::CONFIRMA, string $email = 'ana@facilmed.test')
     {
-        return $this->comoPaciente($email)->from('/paciente/perfil')->delete('/paciente/perfil', $dados);
-    }
-
-    /**
-     * O ConsultaSeeder SORTEIA o paciente de cada consulta (o status é fixo). Para
-     * o teste não depender da sorte, pega uma consulta pelo status e a passa para
-     * a Ana — junto com a avaliação dela, se tiver.
-     */
-    private function consultaDaAna(string $status): Consulta
-    {
-        $pacienteId = $this->ana()->paciente->id;
-        $consulta = Consulta::where('status', $status)->firstOrFail();
-        $consulta->update(['paciente_id' => $pacienteId]);
-        $consulta->avaliacao?->update(['paciente_id' => $pacienteId]);
-
-        return $consulta->fresh();
-    }
-
-    /** Marca uma consulta futura para a Ana com a Dra. Helena (vínculo 1). */
-    private function agendarFutura(): void
-    {
-        $dias = app(CalculadoraDeHorarios::class)->proximosDias(Vinculo::findOrFail(1), 3);
-        $data = array_keys($dias)[0];
-
-        $this->comoPaciente()->post('/agendar', [
-            'vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data,
-            'horario' => end($dias[$data]), 'forma_pagamento' => 'particular',
-        ])->assertSessionHasNoErrors();
+        return $this->comoUsuarioFinal($email)->from('/usuario/perfil')->delete('/usuario/perfil', $dados);
     }
 
     public function test_dados_pessoais_somem_e_a_pessoa_sai_do_sistema(): void
@@ -81,80 +49,10 @@ class ExclusaoDeContaTest extends TestCase
         $this->assertNotNull($user->excluida_em);
         $this->assertFalse(Hash::check('facilmed2026', $user->password), 'a senha antiga não pode mais funcionar');
 
-        $paciente = $user->paciente;
-        $this->assertNull($paciente->cpf);
-        $this->assertNull($paciente->data_nascimento);
-        $this->assertNull($paciente->sexo);
-    }
-
-    public function test_consultas_futuras_sao_canceladas_e_o_medico_e_avisado(): void
-    {
-        Mail::fake();
-        $this->consultaDaAna('realizada');
-        $this->agendarFutura();
-
-        $paciente = $this->ana()->paciente;
-        $futuras = $this->ana()->consultasFuturasAfetadas()->pluck('id');
-        $passadas = $paciente->consultas()->where('status', 'realizada')->count();
-        $this->assertNotEmpty($futuras);
-
-        $this->excluir()->assertSessionHasNoErrors();
-
-        foreach (Consulta::whereKey($futuras)->get() as $c) {
-            $this->assertSame('cancelada', $c->status);
-            $this->assertSame($paciente->user_id, $c->cancelada_por);
-        }
-        $this->assertSame($passadas, $paciente->consultas()->where('status', 'realizada')->count(), 'o histórico fica');
-
-        Mail::assertSent(AvisoDeConsulta::class, fn ($m) => $m->tipo === 'cancelamento' && $m->para === 'medico');
-    }
-
-    public function test_acessibilidade_some_e_carteirinha_usada_fica_sem_numero(): void
-    {
-        $paciente = $this->ana()->paciente;
-        $paciente->acessibilidade()->updateOrCreate([], [
-            'possui_deficiencia' => true, 'descricao' => 'Uso cadeira de rodas',
-            'consentimento_em' => now(), 'consentimento_versao' => '1.0',
-        ]);
-
-        // Uma carteirinha usada numa consulta e outra que nunca foi usada.
-        $usada = $paciente->planos()->firstOrFail();
-        $consulta = $this->consultaDaAna('realizada');
-        $consulta->update(['paciente_plano_id' => $usada->id]);
-        $nuncaUsada = PacientePlano::create([
-            'paciente_id' => $paciente->id, 'plano_id' => Plano::whereKeyNot($usada->plano_id)->value('id'),
-            'numero_carteirinha' => '999000111', 'titular_nome' => 'Ana Beatriz Lima', 'status' => 'ativa',
-        ]);
-
-        $this->excluir();
-
-        $this->assertNull($paciente->acessibilidade()->first());
-        $this->assertNull(PacientePlano::find($nuncaUsada->id), 'a que nunca foi usada sai');
-
-        $usada->refresh();
-        $this->assertSame("excluida-{$usada->id}", $usada->numero_carteirinha);
-        $this->assertNull($usada->titular_nome);
-        $this->assertSame($usada->id, $consulta->fresh()->paciente_plano_id, 'a consulta continua sabendo o convênio');
-    }
-
-    public function test_texto_livre_do_paciente_nas_consultas_some(): void
-    {
-        $user = $this->ana();
-        $paciente = $user->paciente;
-        $this->consultaDaAna('realizada')->update(['observacoes' => 'Tenho dor no joelho, meu nome é Ana']);
-        $canceladaPorEla = $this->consultaDaAna('cancelada');
-        $canceladaPorEla->forceFill(['cancelada_por' => $user->id, 'motivo_cancelamento' => 'Viagem com a família'])->save();
-        $this->agendarFutura();
-
-        $this->excluir();
-
-        $this->assertSame(0, $paciente->consultas()->whereNotNull('observacoes')->count());
-        $this->assertNull($canceladaPorEla->fresh()->motivo_cancelamento);
-        $this->assertSame(
-            'O paciente excluiu a conta no FacilMed',
-            $paciente->consultas()->latest('id')->first()->motivo_cancelamento,
-            'o motivo novo, da exclusão, fica'
-        );
+        $usuario = $user->usuario;
+        $this->assertNull($usuario->cpf);
+        $this->assertNull($usuario->data_nascimento);
+        $this->assertNull($usuario->sexo);
     }
 
     public function test_sessoes_e_pedidos_de_troca_de_senha_somem(): void
@@ -182,50 +80,22 @@ class ExclusaoDeContaTest extends TestCase
         DB::table('users')->where('id', $user->id)->update(['status' => 'ativo']);
     }
 
-    public function test_agendamento_que_chega_depois_da_exclusao_e_recusado(): void
-    {
-        // Simula o pedido que passou pelo middleware um instante ANTES da exclusão
-        // (duas abas): sem o middleware, quem barra é a conferência depois da trava.
-        $user = $this->ana();
-        $this->excluir();
-        $antes = Consulta::count();
-
-        $dias = app(CalculadoraDeHorarios::class)->proximosDias(Vinculo::findOrFail(1), 3);
-        $data = array_keys($dias)[0];
-
-        $this->withoutMiddleware(GarantirContaAtiva::class)->actingAs($user->fresh())->post('/agendar', [
-            'vinculo_id' => 1, 'especialidade_id' => 1, 'data_consulta' => $data,
-            'horario' => $dias[$data][0], 'forma_pagamento' => 'particular',
-        ])->assertForbidden();
-
-        $this->assertSame($antes, Consulta::count());
-    }
-
     public function test_a_nota_fica_e_o_comentario_sai(): void
     {
-        $paciente = $this->ana()->paciente;
-        $avaliacao = $this->consultaDaAna('realizada')->avaliacao;
+        $usuario = $this->ana()->usuario;
+        // 01/10/2026: avaliação direto no médico (seed: Ana avaliou a Dra. Helena).
+        $avaliacao = Avaliacao::where('usuario_id', $usuario->id)->whereNotNull('medico_id')->firstOrFail();
         $avaliacao->update(['comentario' => 'Comentário que vai sumir']);
         $medico = $avaliacao->medico;
         [$media, $total] = [$medico->media_avaliacoes, $medico->total_avaliacoes];
 
         $this->excluir();
 
-        $this->assertSame(0, Avaliacao::where('paciente_id', $paciente->id)->whereNotNull('comentario')->count());
+        $this->assertSame(0, Avaliacao::where('usuario_id', $usuario->id)->whereNotNull('comentario')->count());
         $this->assertSame($avaliacao->estrelas, $avaliacao->fresh()->estrelas);
         $medico->refresh();
         $this->assertEquals($media, $medico->media_avaliacoes, 'a nota do médico não muda');
         $this->assertSame($total, $medico->total_avaliacoes);
-    }
-
-    public function test_e_mail_antigo_sai_do_registro_de_avisos(): void
-    {
-        $this->agendarFutura();   // gera a confirmação para ana@facilmed.test
-        $this->assertTrue(NotificacaoEnviada::where('destinatario', 'ana@facilmed.test')->exists());
-
-        $this->excluir();
-
-        $this->assertFalse(NotificacaoEnviada::where('destinatario', 'ana@facilmed.test')->exists());
     }
 
     public function test_precisa_da_senha_certa_e_da_confirmacao(): void
@@ -239,7 +109,7 @@ class ExclusaoDeContaTest extends TestCase
         $user = $this->ana()->fresh();
         $this->assertSame('ativo', $user->status);
         $this->assertSame('Ana Beatriz Lima', $user->name);
-        $this->assertNotNull($user->paciente->cpf);
+        $this->assertNotNull($user->usuario->cpf);
     }
 
     public function test_conta_excluida_nao_entra_mais(): void
@@ -252,23 +122,23 @@ class ExclusaoDeContaTest extends TestCase
         $this->assertGuest();
 
         // Uma sessão que tenha ficado aberta em outro aparelho cai na próxima página.
-        $this->actingAs($user->fresh())->get('/paciente')->assertRedirect(route('login'));
+        $this->actingAs($user->fresh())->get('/usuario')->assertRedirect(route('login'));
     }
 
     public function test_mesmo_e_mail_e_cpf_podem_se_cadastrar_de_novo(): void
     {
         $this->excluir();
 
-        $this->post('/cadastro/paciente', [
+        $this->post('/cadastro/usuario', [
             'name' => 'Ana Beatriz Lima', 'email' => 'ana@facilmed.test', 'cpf' => '802.301.401-30',
             'password' => 'SenhaForte2026', 'password_confirmation' => 'SenhaForte2026',
-        ])->assertSessionHasNoErrors()->assertRedirect(route('paciente.dashboard'));
+        ])->assertSessionHasNoErrors()->assertRedirect(route('usuario.dashboard'));
     }
 
-    public function test_so_paciente_exclui_por_aqui(): void
+    public function test_so_usuario_exclui_por_aqui(): void
     {
-        $this->comoMedico()->delete('/paciente/perfil', self::CONFIRMA)->assertForbidden();
-        $this->assertSame('ativo', User::where('email', 'helena@facilmed.test')->first()->status);
+        $this->comoClinica()->delete('/usuario/perfil', self::CONFIRMA)->assertForbidden();
+        $this->assertSame('ativo', User::where('email', 'contato@vidaplena.test')->first()->status);
     }
 
     public function test_admin_nao_reativa_conta_excluida(): void
@@ -281,17 +151,15 @@ class ExclusaoDeContaTest extends TestCase
             ->assertStatus(422);
         $this->assertSame('inativo', $user->fresh()->status);
 
-        $this->comoAdmin()->get('/admin/usuarios/excluidas')->assertOk()
-            ->assertSee('Excluída pelo próprio paciente')
+        $this->comoAdmin()->get('/admin/usuarios?status=inativo')->assertOk()
+            ->assertSee('Excluída pelo próprio usuário')
             ->assertDontSee('ana@facilmed.test');
-        // E não aparece entre as ativas.
-        $this->comoAdmin()->get('/admin/usuarios')->assertOk()->assertDontSee('excluida-' . $user->id);
     }
 
     public function test_dashboard_do_admin_nao_conta_conta_excluida(): void
     {
         $contar = fn () => collect($this->comoAdmin()->get('/admin')->assertOk()->viewData('cartoes'))
-            ->firstWhere('rotulo', 'Pacientes cadastrados')['valor'];
+            ->firstWhere('rotulo', 'Usuários cadastrados')['valor'];
 
         $antes = $contar();
         $this->excluir();
@@ -301,7 +169,7 @@ class ExclusaoDeContaTest extends TestCase
 
     public function test_perfil_mostra_o_bloco_de_exclusao(): void
     {
-        $this->comoPaciente()->get('/paciente/perfil')->assertOk()
+        $this->comoUsuarioFinal()->get('/usuario/perfil')->assertOk()
             ->assertSee('Excluir minha conta')
             ->assertSee('id="excluir_senha" name="current_password"', false)
             ->assertSee('name="confirmacao"', false);

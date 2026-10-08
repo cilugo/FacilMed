@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Avaliacao;
 use App\Models\Clinica;
 use App\Models\Local;
 use App\Models\Vinculo;
@@ -10,7 +11,7 @@ use Tests\TestCase;
 
 /**
  * 29/09/2026 — plano do app: "Locais perto de você" (/locais) e a página do
- * local (/local/{id}). Distância sem serviço externo: a posição do paciente vem
+ * local (/local/{id}). Distância sem serviço externo: a posição do usuário vem
  * do navegador (ou do centro da cidade escolhida) e a de cada local, das
  * coordenadas aproximadas de config/localizacao.php.
  *
@@ -104,26 +105,20 @@ class LocaisTest extends TestCase
 
     // --- /local/{id} --------------------------------------------------
 
-    public function test_pagina_do_local_mostra_endereco_medicos_e_nota_sem_comentario(): void
+    public function test_pagina_do_local_mostra_endereco_medicos_nota_e_comentarios(): void
     {
         $local = $this->local('Vida Plena - Centro');
-        $vinculo = Vinculo::where('local_id', $local->id)->firstOrFail();
-        // 01/10/2026: a nota do local sai das avaliações DO LOCAL.
-        $media = \App\Models\AvaliacaoLocal::where('local_id', $local->id)->avg('estrelas');
-
+        // 01/10/2026: avaliação direto no local (AvaliacaoSeeder: Ana 5 e Marcos 4).
+        $media = Avaliacao::where('local_id', $local->id)->avg('estrelas');
         $this->assertNotNull($media, 'O seed deveria ter avaliação na Vida Plena.');
 
         $this->get("/local/{$local->id}")->assertOk()
             ->assertSee('Rua Quinze de Novembro')
-            ->assertSee(route('publico.local.medicos', $local), false)
-            ->assertSee(number_format((float) $media, 1, ',', ''))
-            ->assertDontSee('Atendimento pontual')    // comentário é privado (AGENTS §3)
-            ->assertDontSee('Clínica pequena e tranquila');
-
-        // Os médicos ficam na página "Médicos disponíveis", com "Ver horários".
-        $this->get("/local/{$local->id}/medicos")->assertOk()
             ->assertSee('Dra. Helena Navarro')
-            ->assertSee(route('agendamento.horario', $vinculo), false);
+            ->assertSee(route('publico.medico', 1), false)
+            ->assertDontSee('/agendar/', false)                              // sem agendamento
+            ->assertSee(number_format((float) $media, 1, ',', ''))
+            ->assertSee('Recepção atenciosa');   // 05/10: comentário público
     }
 
     public function test_pagina_do_local_repete_o_aviso_do_convenio(): void
@@ -138,8 +133,8 @@ class LocaisTest extends TestCase
     {
         $local = $this->local('Vida Plena - Centro');
 
-        $this->get("/local/{$local->id}/medicos?especialidade=cardiologia")->assertOk()->assertSee('Dra. Helena Navarro');
-        $this->get("/local/{$local->id}/medicos?especialidade=pediatria")->assertOk()
+        $this->get("/local/{$local->id}?especialidade=cardiologia")->assertOk()->assertSee('Dra. Helena Navarro');
+        $this->get("/local/{$local->id}?especialidade=pediatria")->assertOk()
             ->assertDontSee('Dra. Helena Navarro')->assertSee('Nenhum médico');
     }
 

@@ -11,7 +11,7 @@
         <div class="form-group">
             <label for="email">E-mail</label>
             <input class="input @error('email') input--erro @enderror" type="email" id="email" name="email"
-                   value="{{ old('email') }}" placeholder="exemplo@exemplo.com" autocomplete="email" required autofocus>
+                   value="{{ old('email') }}" placeholder="exemplo@dominio.com" autocomplete="email" required autofocus>
             @error('email') <span class="campo-erro">{{ $message }}</span> @enderror
         </div>
 

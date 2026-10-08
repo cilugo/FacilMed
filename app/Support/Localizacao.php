@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
  *
  * - Onde fica um local: coordenada APROXIMADA do bairro ou do centro da cidade,
  *   tirada de config/localizacao.php (Local::booted chama coordenadas()).
- * - Onde está o paciente: o navegador informa (botão "Usar minha localização")
+ * - Onde está o usuário: o navegador informa (botão "Usar minha localização")
  *   ou ele escolhe a cidade e a conta parte do centro dela.
  * - Distância: fórmula de Haversine, em linha reta. Não é o caminho de carro —
  *   a tela diz "em linha reta" para não prometer o que não calcula.
@@ -106,7 +106,7 @@ final class Localizacao
 
     /**
      * De onde medir a distância, a partir da URL: ?cidade= (o centro dela) ou
-     * ?lat=&lng= (a posição que o navegador do paciente deu). Sem nenhum dos
+     * ?lat=&lng= (a posição que o navegador do usuário deu). Sem nenhum dos
      * dois: null, e a tela lista sem distância.
      *
      * A cidade vem primeiro: se a pessoa usou a localização e depois escolheu
@@ -129,12 +129,13 @@ final class Localizacao
         $lng = self::lerCoordenada($lng, 180);
 
         if ($lat !== null && $lng !== null) {
-            // 01/10/2026: posição que veio de um CEP (o controller trocou o CEP
-            // por lat/lng na URL) - a tela mostra "do CEP 12245-000".
+            // 07/10/2026 (trazido da main): posição que veio de um CEP - o
+            // BuscaController trocou o CEP por lat/lng na URL - e a tela mostra
+            // "do CEP 12245-000" em vez de "de você".
             $cep = preg_replace('/\D/', '', (string) $cep);
             if (strlen($cep) === 8) {
                 return ['lat' => $lat, 'lng' => $lng, 'descricao' => 'do CEP ' . self::formatarCep($cep),
-                    'params' => ['lat' => $lat, 'lng' => $lng, 'cep' => $cep]];
+                    'params' => ['lat' => $lat, 'lng' => $lng, 'cep_origem' => $cep]];
             }
 
             return ['lat' => $lat, 'lng' => $lng, 'descricao' => 'de você', 'params' => ['lat' => $lat, 'lng' => $lng]];
@@ -149,7 +150,7 @@ final class Localizacao
         return substr($cep, 0, 5) . '-' . substr($cep, 5, 3);
     }
 
-    /** Raios aceitos na busca (01/10/2026, plano do grupo: 5, 10 ou 20 km). */
+    /** Raios aceitos na busca de locais (plano do grupo: 5, 10 ou 20 km - RN07). */
     public const RAIOS = [5, 10, 20];
 
     private static function comparavel(string $texto): string

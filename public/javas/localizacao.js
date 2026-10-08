@@ -12,7 +12,7 @@
  * arredondada para 3 casas (uns 100 m), o suficiente para ordenar por distância.
  *
  * Os navegadores só liberam a localização em https ou em localhost
- * (XAMPP em http://localhost/FacilMed funciona; pelo IP da rede, não).
+ * (XAMPP em http://localhost/PointMed funciona; pelo IP da rede, não).
  */
 (function () {
     'use strict';
@@ -49,7 +49,7 @@
         var form = botao.closest('form');
 
         if (!('geolocation' in navigator) || !window.isSecureContext) {
-            avisar(form, 'Seu navegador não liberou a localização nesta página. Digite o CEP ou a cidade.', true);
+            avisar(form, 'Seu navegador não liberou a localização nesta página. Escolha a cidade na lista.', true);
             return;
         }
 
@@ -60,16 +60,12 @@
             campo(form, 'lat', posicao.coords.latitude.toFixed(3));
             campo(form, 'lng', posicao.coords.longitude.toFixed(3));
 
-            // 01/10/2026: a posição do navegador passa na frente do que estava
-            // valendo (cidade, CEP ou o que foi digitado em "CEP ou cidade").
-            ['cidade', 'cep', 'onde'].forEach(function (nome) {
-                form.querySelectorAll('[name="' + nome + '"]').forEach(function (elemento) {
-                    if (elemento.type === 'hidden') {
-                        elemento.remove();
-                    } else {
-                        elemento.value = '';
-                    }
-                });
+            // A posição nova vale mais que a cidade e o CEP que estavam no formulário.
+            ['cidade', 'cep', 'cep_origem'].forEach(function (nome) {
+                var outro = form.querySelector('[name="' + nome + '"]');
+                if (outro) {
+                    outro.value = '';
+                }
             });
 
             form.action = botao.getAttribute('data-localizacao');
@@ -77,8 +73,8 @@
         }, function (erro) {
             botao.disabled = false;
             avisar(form, erro.code === 1
-                ? 'Você não permitiu o acesso à localização. Tudo bem: digite o CEP ou a cidade.'
-                : 'Não deu para pegar sua localização agora. Digite o CEP ou a cidade.', true);
+                ? 'Você não permitiu o acesso à localização. Tudo bem: escolha a cidade na lista.'
+                : 'Não deu para pegar sua localização agora. Escolha a cidade na lista.', true);
         }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
     });
 })();

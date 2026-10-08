@@ -31,12 +31,11 @@ class PasswordResetLinkController extends Controller
         ]);
 
         // 01/10/2026: a resposta é a MESMA com ou sem conta para esse e-mail -
-        // senão a tela vira um jeito de descobrir quem tem conta no FacilMed
+        // senão a tela vira um jeito de descobrir quem tem conta no PointMed
         // (o login já faz assim: "E-mail ou senha incorretos"). Só o limite de
         // tentativas (um pedido por minuto por e-mail) aparece como erro.
         // Se o serviço de e-mail falhar (chave do Brevo errada, fora do ar), a
-        // pessoa vê um aviso em vez de erro 500, e o motivo vai para o log -
-        // como no Notificador, que também não derruba a tela por causa do e-mail.
+        // pessoa vê um aviso em vez de erro 500, e o motivo vai para o log.
         try {
             $status = Password::sendResetLink($request->only('email'));
         } catch (\Throwable $e) {
@@ -50,7 +49,7 @@ class PasswordResetLinkController extends Controller
             return back()->withInput($request->only('email'))->withErrors(['email' => __($status)]);
         }
 
-        return back()->with('status', 'Se esse e-mail tiver conta no FacilMed, enviamos agora um link para criar uma senha nova. '
+        return back()->with('status', 'Se esse e-mail tiver conta no PointMed, enviamos agora um link para criar uma senha nova. '
             . 'Confira a caixa de entrada e o spam. O link vale por 60 minutos.');
     }
 }

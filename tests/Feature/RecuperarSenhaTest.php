@@ -62,13 +62,13 @@ class RecuperarSenhaTest extends TestCase
         config(['mail.mailers.brevo.key' => 'chave-de-teste', 'mail.from.address' => 'grupo@facilmed.test']);
         Http::fake([BrevoTransport::URL => Http::response(['messageId' => '<abc@brevo>'], 201)]);
 
-        Mail::mailer('brevo')->raw('Seu link para criar uma senha nova.', fn ($m) => $m->to('ana@facilmed.test', 'Ana')->subject('FacilMed — troca de senha'));
+        Mail::mailer('brevo')->raw('Seu link para criar uma senha nova.', fn ($m) => $m->to('ana@facilmed.test', 'Ana')->subject('PointMed — troca de senha'));
 
         Http::assertSent(fn ($r) => $r->url() === BrevoTransport::URL
             && $r->header('api-key') === ['chave-de-teste']
             && $r['sender']['email'] === 'grupo@facilmed.test'
             && $r['to'] === [['email' => 'ana@facilmed.test', 'name' => 'Ana']]
-            && $r['subject'] === 'FacilMed — troca de senha'
+            && $r['subject'] === 'PointMed — troca de senha'
             && str_contains($r['textContent'], 'senha nova'));
     }
 
@@ -112,7 +112,7 @@ class RecuperarSenhaTest extends TestCase
             // E-mail de conta de outro tipo: não vira admin.
             putenv('ADMIN_EMAIL=ana@facilmed.test');
             $this->artisan('facilmed:garantir-admin')->assertSuccessful();
-            $this->assertSame('paciente', User::where('email', 'ana@facilmed.test')->value('tipo'));
+            $this->assertSame(User::TIPO_USUARIO, User::where('email', 'ana@facilmed.test')->value('tipo'));
         } finally {
             putenv('ADMIN_EMAIL');
             putenv('ADMIN_PASSWORD');

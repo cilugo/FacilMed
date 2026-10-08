@@ -8,18 +8,18 @@
                  Numa tela com vários formulários de horário, só um pode usar old().
 --}}
 @php
-    use App\Models\Disponibilidade;
+    use App\Models\HorarioFuncionamento;
     use App\Support\Formatador;
     $atuais = $atuais ?? [];
     $comOld = $comOld ?? true;
     // Segunda primeiro, domingo por último.
-    $ordemDias = array_merge(array_slice(Disponibilidade::DIAS, 1), [Disponibilidade::DIAS[0]]);
+    $ordemDias = array_merge(array_slice(HorarioFuncionamento::DIAS, 1), [HorarioFuncionamento::DIAS[0]]);
 @endphp
 
 <div class="fm-funcionamento__grade">
     @foreach ($ordemDias as $dia)
         @php
-            $idx  = array_search($dia, Disponibilidade::DIAS, true);
+            $idx  = array_search($dia, HorarioFuncionamento::DIAS, true);
             $abre = $comOld ? old("horarios.$dia.abre", $atuais[$dia]['abre'] ?? '') : ($atuais[$dia]['abre'] ?? '');
             $fecha = $comOld ? old("horarios.$dia.fecha", $atuais[$dia]['fecha'] ?? '') : ($atuais[$dia]['fecha'] ?? '');
             $erro = $comOld ? ($errors->first("horarios.$dia.fecha") ?: $errors->first("horarios.$dia.abre")) : null;

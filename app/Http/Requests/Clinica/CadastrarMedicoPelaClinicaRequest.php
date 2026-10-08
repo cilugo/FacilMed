@@ -13,14 +13,14 @@ use Illuminate\Validation\Validator;
 /**
  * Clínica cadastra (ou só vincula) um médico numa unidade dela.
  *
- * - CRM+UF já existe no FacilMed → não cria outro médico: só o vínculo.
- *   Nome, e-mail e CPF são ignorados.
+ * - CRM+UF já existe no PointMed → não cria outro médico: só o vínculo.
+ *   Nome, CPF e especialidades são ignorados.
  * - CRM novo → precisa passar na base simulada (decisão de 24/09: CRM
- *   ativo, UF certa e nome igual ao do CRM) e aí name, email, cpf e
- *   especialidades são obrigatórios. A conta nasce com senha temporária.
+ *   ativo, UF certa e nome igual ao do CRM) e aí name, cpf e
+ *   especialidades são obrigatórios.
  *
- * Desde 29/09 é o ÚNICO jeito de um médico entrar no FacilMed: o
- * autocadastro (/cadastro/medico) saiu.
+ * Desde 29/09 é o ÚNICO jeito de um médico entrar no PointMed. Desde 01/10
+ * o médico é só um PERFIL: não tem e-mail de login nem senha.
  */
 class CadastrarMedicoPelaClinicaRequest extends FormRequest
 {
@@ -35,7 +35,6 @@ class CadastrarMedicoPelaClinicaRequest extends FormRequest
             'crm'   => preg_replace('/\D/', '', (string) $this->input('crm')),
             'uf'    => mb_strtoupper(trim((string) $this->input('uf'))),
             'cpf'   => preg_replace('/\D/', '', (string) $this->input('cpf')),
-            'email' => trim(mb_strtolower((string) $this->input('email'))),
         ]);
     }
 
@@ -60,7 +59,6 @@ class CadastrarMedicoPelaClinicaRequest extends FormRequest
         if ($novo) {
             $regras += [
                 'name'  => ['required', 'string', 'min:3', 'max:255'],
-                'email' => ['required', 'email:rfc', 'max:255', Rule::unique('users', 'email')],
                 'cpf'   => ['required', new Cpf, Rule::unique('medicos', 'cpf')],
                 'especialidades'   => ['required', 'array', 'min:1'],
                 'especialidades.*' => ['integer', Rule::exists('especialidades', 'id')->where('ativo', true)],
@@ -89,7 +87,6 @@ class CadastrarMedicoPelaClinicaRequest extends FormRequest
     {
         return [
             'local_id.exists'  => 'Escolha uma unidade ativa da sua clínica.',
-            'email.unique'     => 'Já existe uma conta com esse e-mail.',
             'cpf.unique'       => 'Já existe um médico com esse CPF.',
             'especialidades.required' => 'Escolha pelo menos uma especialidade.',
         ];

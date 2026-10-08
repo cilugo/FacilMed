@@ -2,23 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\FotoDePerfil;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * Conta de acesso. Desde 01/10/2026 só três tipos têm conta: usuário,
+ * clínica/hospital e admin. O médico virou perfil cadastrado pela clínica
+ * (tabela medicos, sem login) — o ENUM de users.tipo nem aceita mais 'medico'.
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    public const TIPO_PACIENTE = 'paciente';
-    public const TIPO_MEDICO   = 'medico';
+    public const TIPO_USUARIO = 'usuario';
     public const TIPO_CLINICA  = 'clinica';
     public const TIPO_ADMIN    = 'admin';
 
     protected $fillable = [
-        'name', 'email', 'password', 'tipo', 'telefone', 'status',
+        'name', 'email', 'password', 'tipo', 'telefone', 'status', 'foto',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -29,7 +33,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'bloqueado_em'      => 'datetime',
-            'excluida_em'       => 'datetime',   // 30/09: o paciente excluiu a conta (Paciente::excluirConta)
+            'excluida_em'       => 'datetime',   // 30/09: o usuário excluiu a conta (Usuario::excluirConta)
         ];
     }
 
@@ -37,14 +41,9 @@ class User extends Authenticatable
     // Perfis (1:1). Apenas um deles existe, conforme o tipo.
     // ---------------------------------------------------------------
 
-    public function paciente(): HasOne
+    public function usuario(): HasOne
     {
-        return $this->hasOne(Paciente::class);
-    }
-
-    public function medico(): HasOne
-    {
-        return $this->hasOne(Medico::class);
+        return $this->hasOne(Usuario::class);
     }
 
     public function clinica(): HasOne
@@ -52,12 +51,10 @@ class User extends Authenticatable
         return $this->hasOne(Clinica::class);
     }
 
-    /** Retorna o perfil correspondente ao tipo, seja ele qual for. */
     public function perfil(): ?object
     {
         return match ($this->tipo) {
-            self::TIPO_PACIENTE => $this->paciente,
-            self::TIPO_MEDICO   => $this->medico,
+            self::TIPO_USUARIO => $this->usuario,
             self::TIPO_CLINICA  => $this->clinica,
             default             => null,
         };
@@ -67,8 +64,7 @@ class User extends Authenticatable
     // Papéis
     // ---------------------------------------------------------------
 
-    public function ehPaciente(): bool { return $this->tipo === self::TIPO_PACIENTE; }
-    public function ehMedico(): bool   { return $this->tipo === self::TIPO_MEDICO; }
+    public function ehUsuario(): bool { return $this->tipo === self::TIPO_USUARIO; }
     public function ehClinica(): bool  { return $this->tipo === self::TIPO_CLINICA; }
     public function ehAdmin(): bool    { return $this->tipo === self::TIPO_ADMIN; }
 
@@ -81,39 +77,22 @@ class User extends Authenticatable
         return $this->status === 'ativo';
     }
 
-    /**
-     * Conta bloqueada é barrada no middleware de autenticação,
-     * não escondida na interface (AGENTS.md §6). A mensagem ao
-     * usuário diz que está bloqueada, sem detalhar o motivo.
-     */
     public function estaBloqueado(): bool
     {
         return $this->status === 'bloqueado';
     }
 
-    /** 30/09: conta que o próprio paciente excluiu (ficou anonimizada). */
     public function foiExcluida(): bool
     {
         return $this->excluida_em !== null;
     }
 
     /**
-     * Consultas AGENDADAS daqui para frente que dependem desta conta (24/09):
-     * do paciente, do médico, ou nas unidades da clínica. Usado ao bloquear
-     * a conta ou rejeitar o CRM.
+     * Endereço da foto de perfil, ou null (a tela mostra as iniciais).
+     * 01/10: usuário, clínica e admin têm foto (documento de modificações).
      */
-    public function consultasFuturasAfetadas(): \Illuminate\Database\Eloquent\Builder
+    public function getFotoUrlAttribute(): ?string
     {
-        $q = Consulta::query()->where('status', 'agendada');
-
-        $q = match ($this->tipo) {
-            self::TIPO_PACIENTE => $q->where('paciente_id', $this->paciente?->id ?? 0),
-            self::TIPO_MEDICO   => $q->where('medico_id', $this->medico?->id ?? 0),
-            self::TIPO_CLINICA  => $q->whereIn('vinculo_id', Vinculo::whereIn('local_id',
-                Local::where('clinica_id', $this->clinica?->id ?? 0)->select('id'))->select('id')),
-            default             => $q->whereRaw('1 = 0'),
-        };
-
-        return \App\Services\EstatisticasDeConsultas::aPartirDeAgora($q);
+        return FotoDePerfil::url($this->foto);
     }
 }

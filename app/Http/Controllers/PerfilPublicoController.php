@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AvaliacaoLocal;
+use App\Models\Avaliacao;
 use App\Models\Clinica;
 use App\Models\Especialidade;
 use App\Models\Local;
@@ -13,183 +13,136 @@ use Illuminate\Http\Request;
 class PerfilPublicoController extends Controller
 {
     /**
-     * Pagina publica do medico: bio, especialidades, onde atende,
-     * precos, convenios aceitos e a MEDIA das avaliacoes.
+     * Página pública do médico: bio, foto, especialidades, anos de carreira,
+     * onde atende (com a faixa de preço), convênios aceitos e a MÉDIA das
+     * avaliações. 01/10: o usuário logado avalia o médico aqui mesmo.
      *
-     * NUNCA carregue o comentario das avaliacoes aqui. O publico ve
-     * apenas a nota (AGENTS.md secao 6). O campo ja esta em $hidden
-     * no model, mas nao confie so nisso: nao selecione a coluna.
+     * 05/10/2026: comentários públicos (decisão do grupo), com o nome
+     * encurtado de quem escreveu (avaliacoesPublicas).
      */
-    public function medico(Medico $medico)
+    public function medico(Request $request, Medico $medico)
     {
         abort_unless($medico->status_verificacao === 'verificado', 404);
-        abort_unless($medico->user->estaAtivo(), 404);
 
-        // 28/09 (3ª revisão): só os lugares que recebem agendamento e só
-        // especialidade ativa. Antes aparecia "Agendar aqui" em clínica
-        // bloqueada (o paciente caía numa página 404) e o preço de
-        // especialidade desativada pelo admin.
+        // Só os lugares públicos e só especialidade ativa.
         $medico->load([
-            'user',
             'especialidades' => fn ($e) => $e->where('ativo', true),
-            'convenios',
-            'vinculos' => fn ($v) => $v->agendaveis(),
+            'convenios' => fn ($c) => $c->where('ativo', true),
+            'vinculos' => fn ($v) => $v->publicos(),
             'vinculos.local.horarios',
-            'vinculos.precos.especialidade',
+            'vinculos.medico.especialidades',
         ]);
 
         return view('publico.medico', [
             'medico' => $medico,
-            // So a distribuicao de notas, sem comentario.
+            // Só a distribuição de notas, sem comentário.
             'notas'  => $medico->avaliacoes()
                 ->selectRaw('estrelas, COUNT(*) as total')
                 ->groupBy('estrelas')
                 ->pluck('total', 'estrelas'),
+            'minhaAvaliacao' => $this->minhaAvaliacao($request, ['medico_id' => $medico->id]),
+            'avaliacoes'     => $this->avaliacoesPublicas(['medico_id' => $medico->id]),
         ]);
     }
 
     /**
-     * Pagina publica da clinica: descricao, unidades, horario de
-     * funcionamento e as especialidades atendidas.
-     *
-     * Aqui o paciente escolhe a ESPECIALIDADE, nao o medico - o
-     * sistema aloca depois e mostra o nome antes de confirmar.
+     * Página pública da clínica/hospital: descrição, unidades, horário de
+     * funcionamento, especialidades e os médicos que atendem lá.
      */
     public function clinica(Clinica $clinica)
     {
         abort_unless($clinica->user->estaAtivo(), 404);
 
-        $clinica->load(['locais.horarios']);
+        $clinica->load(['user', 'locais' => fn ($l) => $l->where('ativo', true), 'locais.horarios']);
 
         return view('publico.clinica', [
             'clinica'        => $clinica,
             'especialidades' => $clinica->especialidades()->orderBy('nome')->get(),
-            // 28/09: só médico VISÍVEL (CRM verificado + conta ativa) com vínculo
-            // ativo numa unidade ativa. Antes a lista só olhava o CRM, e médico
-            // com a conta bloqueada continuava aparecendo aqui.
+            // Só médico VISÍVEL (CRM verificado) com vínculo ativo numa
+            // unidade ativa desta clínica.
             'medicos' => Medico::visivel()
                 ->whereHas('vinculos', fn ($v) => $v->where('ativo', true)
                     ->whereHas('local', fn ($l) => $l->where('clinica_id', $clinica->id)->where('ativo', true)))
-                ->with('user', 'especialidades')
-                ->get()
-                ->sortBy(fn ($m) => $m->user->name)
-                ->values(),
+                ->with(['especialidades' => fn ($e) => $e->where('ativo', true)])
+                ->orderBy('nome')
+                ->get(),
         ]);
     }
 
     /**
-     * Página do local (29/09/2026; refeita em 01/10/2026 com o plano novo do
-     * grupo - "Tela 4" do PDF): galeria de fotos, tipo, nome, nota, distância,
-     * endereço/telefone/site, planos aceitos ("também atende particular"),
-     * "Ver médicos disponíveis (N)", horários, especialidades com preço e o
-     * quadro "Avalie este local".
+     * Página do local (29/09/2026, plano do app, tela 4): uma unidade de
+     * clínica ou um hospital. Endereço, telefone, horários, nota média,
+     * convênios aceitos, especialidades com a FAIXA de preço (01/10) e os
+     * médicos disponíveis. O usuário logado avalia o local aqui (01/10).
      *
-     * ?especialidade=slug vem da busca (conta só os médicos dela).
-     * ?lat=&lng=(&cep=) ou ?cidade= mostram a distância (Localizacao::origem).
+     * ?especialidade=slug filtra os médicos (vem da busca de locais).
+     * ?lat=&lng= ou ?cidade= mostram a distância (Localizacao::origem).
      *
-     * A nota do local sai de avaliacoes_locais (qualquer paciente logado
-     * avalia, uma vez). Comentário NUNCA aparece para o público (AGENTS.md
-     * §3) - só o paciente vê o que ELE escreveu, no próprio quadro.
+     * Comentários públicos desde 05/10/2026 (avaliacoesPublicas).
      */
     public function local(Request $request, Local $local)
     {
         abort_unless($local->estaPublico(), 404);
 
-        [$slug, $origem] = $this->buscaDaUrl($request);
+        $slug = is_string($s = $request->query('especialidade')) && $s !== '' ? $s : null;
+        $cidade = is_string($c = $request->query('cidade')) && $c !== '' ? $c : null;
+        $cep = is_string($c = $request->query('cep_origem')) ? $c : null;   // 07/10: veio de uma busca por CEP
+        $origem = Localizacao::origem($request->query('lat'), $request->query('lng'), $cidade, $cep);
 
-        $local->load(['horarios', 'clinica', 'medico.user', 'fotos']);
-        $vinculos = $this->vinculosDoLocal($local);
+        $local->load(['horarios', 'clinica.user']);
 
-        // Cada especialidade uma vez, com o menor preço particular daqui.
-        $especialidades = $vinculos
-            ->flatMap(fn ($v) => $v->precosOferecidos()->map(fn ($p) => ['preco' => $p, 'particular' => $v->aceita_particular]))
-            ->groupBy(fn ($item) => $item['preco']->especialidade_id)
-            ->map(fn ($itens) => (object) [
-                'especialidade' => $itens->first()['preco']->especialidade,
-                'aPartirDe'     => $itens->where('particular', true)->min(fn ($item) => (float) $item['preco']->valor),
+        // Mesma regra da busca: só vínculo público de médico com alguma
+        // especialidade ativa.
+        $vinculos = $local->vinculos()->publicos()->oferece()
+            ->with([
+                'medico.especialidades' => fn ($e) => $e->where('ativo', true),
+                'medico.convenios' => fn ($c) => $c->where('ativo', true),
             ])
-            ->sortBy(fn ($e) => $e->especialidade->nome)
+            ->get()
+            ->sortBy(fn ($v) => $v->medico->nome)
             ->values();
 
-        $paciente = $request->user()?->ehPaciente() ? $request->user()->paciente : null;
-        $minha = $paciente
-            ? AvaliacaoLocal::where('local_id', $local->id)->where('paciente_id', $paciente->id)->first()?->makeVisible('comentario')
-            : null;
+        // Cada especialidade uma vez. 05/10: a faixa de preço é a da unidade
+        // (locais.faixa_preco), escolhida pela clínica.
+        $especialidades = $vinculos->flatMap->especialidadesOferecidas()->unique('id')->sortBy('nome')->values();
 
         return view('publico.local', [
             'local'          => $local,
-            'nota'           => Local::notas([$local->id])->get($local->id),
-            'distribuicao'   => AvaliacaoLocal::where('local_id', $local->id)
-                ->selectRaw('estrelas, COUNT(*) as total')->groupBy('estrelas')->pluck('total', 'estrelas'),
             'especialidades' => $especialidades,
             'escolhida'      => $slug ? Especialidade::where('slug', $slug)->first() : null,
             'slug'           => $slug,
-            'totalMedicos'   => $slug
-                ? $vinculos->filter(fn ($v) => $v->especialidadesOferecidas()->contains('slug', $slug))->count()
-                : $vinculos->count(),
+            'medicos'        => $slug
+                ? $vinculos->filter(fn ($v) => $v->especialidadesOferecidas()->contains('slug', $slug))->values()
+                : $vinculos,
             'particular'     => $vinculos->contains('aceita_particular', true),
             'convenios'      => $vinculos->where('aceita_convenio', true)
                 ->flatMap(fn ($v) => $v->medico->convenios)->unique('id')->sortBy('nome')->values(),
             'distancia'      => $origem ? $local->distanciaAte($origem['lat'], $origem['lng']) : null,
             'origem'         => $origem,
-            'minha'          => $minha,
-            'podeAvaliar'    => $paciente !== null,
+            'minhaAvaliacao' => $this->minhaAvaliacao($request, ['local_id' => $local->id]),
+            'avaliacoes'     => $this->avaliacoesPublicas(['local_id' => $local->id]),
         ]);
     }
 
     /**
-     * Médicos disponíveis no local (01/10/2026, "Tela 5" do PDF): foto ou
-     * iniciais, nome, nota, especialidades/preço e as informações do médico,
-     * cada um com "Ver horários" (o agendamento de sempre). Com
-     * ?especialidade=, só os médicos dela.
+     * As avaliações mais recentes, COM comentário (05/10/2026: decisão do
+     * grupo — comentário público). Quem escreveu aparece só com o primeiro
+     * nome e a inicial do sobrenome (Formatador::nomeCurto); sem foto.
      */
-    public function medicosDoLocal(Request $request, Local $local)
+    private function avaliacoesPublicas(array $alvo): \Illuminate\Support\Collection
     {
-        abort_unless($local->estaPublico(), 404);
-
-        [$slug, $origem] = $this->buscaDaUrl($request);
-        $local->load('clinica');
-        $vinculos = $this->vinculosDoLocal($local);
-
-        return view('publico.local-medicos', [
-            'local'          => $local,
-            'slug'           => $slug,
-            'escolhida'      => $slug ? Especialidade::where('slug', $slug)->first() : null,
-            'especialidades' => $vinculos->flatMap->especialidadesOferecidas()->unique('id')->sortBy('nome')->values(),
-            'medicos'        => $slug
-                ? $vinculos->filter(fn ($v) => $v->especialidadesOferecidas()->contains('slug', $slug))->values()
-                : $vinculos,
-            'origem'         => $origem,
-        ]);
-    }
-
-    /** Especialidade e origem (distância) que vieram da busca, pela URL. */
-    private function buscaDaUrl(Request $request): array
-    {
-        $texto = fn (string $campo) => is_string($v = $request->query($campo)) && $v !== '' ? $v : null;
-
-        return [
-            $texto('especialidade'),
-            Localizacao::origem($request->query('lat'), $request->query('lng'), $texto('cidade'), $texto('cep')),
-        ];
+        return Avaliacao::where($alvo)->with('usuario.user:id,name')
+            ->latest('updated_at')->limit(10)->get();
     }
 
     /**
-     * Mesma regra da busca: só vínculo que recebe agendamento e oferece alguma
-     * especialidade (preço ativo de especialidade ativa).
+     * A avaliação que o PRÓPRIO usuário logado já deu (para o formulário
+     * vir preenchido e virar edição). Só a dele — com o comentário dele.
      */
-    private function vinculosDoLocal(Local $local)
+    private function minhaAvaliacao(Request $request, array $alvo): ?Avaliacao
     {
-        return $local->vinculos()->agendaveis()->oferece()
-            ->with([
-                'medico.user',
-                'medico.fotoEnviada',
-                'medico.especialidades' => fn ($e) => $e->where('ativo', true),
-                'medico.convenios' => fn ($c) => $c->where('ativo', true),
-                'precos.especialidade',
-            ])
-            ->get()
-            ->sortBy(fn ($v) => $v->medico->user->name)
-            ->values();
+        $usuario = $request->user()?->ehUsuario() ? $request->user()->usuario : null;
+
+        return $usuario ? Avaliacao::where('usuario_id', $usuario->id)->where($alvo)->first() : null;
     }
 }

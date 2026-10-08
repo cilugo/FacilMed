@@ -9,6 +9,23 @@ use App\Models\Medico;
 class HomeController extends Controller
 {
     /**
+     * 07/10/2026: imagem de cada local na vitrine "Hospitais e Clínicas" da
+     * home, pelo NOME do local (o mesmo de DadosFicticios::ESTABELECIMENTOS).
+     * Arquivos em public/imgs/inst/. Local sem imagem aqui (ex.: uma unidade
+     * nova cadastrada pela clínica) aparece com o ícone de prédio/hospital.
+     * Para pôr imagem num local novo: salve o arquivo em imgs/inst e acrescente
+     * a linha aqui.
+     */
+    public const IMAGENS_DA_VITRINE = [
+        'Santa Clara - Taubaté'     => 'imgs/inst/santaclara.png',
+        'Vida Plena - Centro'       => 'imgs/inst/vidaplena.png',
+        'SpSaúde - Jardim Satélite' => 'imgs/inst/spsaude.png',
+        'Aurora - Vila Ema'         => 'imgs/inst/aurora.png',
+        'São Lucas - Jacareí'       => 'imgs/inst/saolucas.png',
+        'Esperança - Caçapava'      => 'imgs/inst/esperanca.png',
+    ];
+
+    /**
      * Home publica.
      *
      * Os cards de especialidade vem do banco (campo `destaque`), nunca
@@ -27,23 +44,20 @@ class HomeController extends Controller
                 ->orderBy('nome')
                 ->get(),
 
-            // 01/10/2026: conta só clínica/hospital que aparece na busca (a
-            // sugestão do README §6: antes contava todo local ativo, até de
-            // clínica bloqueada).
             'totais' => [
                 'medicos'  => Medico::visivel()->count(),
-                'unidades' => Local::agendaveis()->count(),
-                'cidades'  => Local::agendaveis()->distinct()->count('cidade'),
+                'unidades' => Local::where('ativo', true)->count(),
+                'cidades'  => Local::where('ativo', true)->distinct()->count('cidade'),
             ],
 
-            // 01/10/2026: "Hospitais e Clínicas" vem do BANCO (antes era uma
-            // lista fixa no Blade, com um hospital que não existia e endereços
-            // diferentes dos cadastrados - README §6, "Para o grupo olhar").
-            'locaisDestaque' => $this->locaisDestaque(),
-
             // So medico verificado. O scope ja aplica a regra.
+            // 05/10: com o comentário mais recente de cada um (comentário é público).
             'medicosDestaque' => Medico::visivel()
-                ->with('user', 'especialidades', 'fotoEnviada')
+                ->with([
+                    'especialidades',
+                    'avaliacoes' => fn ($a) => $a->whereNotNull('comentario')->latest('updated_at')->limit(1),
+                    'avaliacoes.usuario.user:id,name',
+                ])
                 ->orderByDesc('media_avaliacoes')
                 ->orderByDesc('total_avaliacoes')
                 ->limit(6)
@@ -54,19 +68,28 @@ class HomeController extends Controller
                 ->distinct()
                 ->orderBy('cidade')
                 ->get(),
+
+            // 07/10/2026: "Hospitais e Clínicas" vem do BANCO (antes era uma lista
+            // fixa no Blade, com o "Hospital Vale Sereno", que não existe, e
+            // endereços diferentes dos cadastrados - README §6).
+            'locaisDestaque' => $this->locaisDestaque(),
         ]);
     }
 
-    /** Até 8 locais que recebem agendamento, os mais bem avaliados primeiro, com foto e nota. */
+    /**
+     * Até 8 locais públicos (Local::publicos: ativos e com médico visível), os
+     * mais bem avaliados primeiro, cada um com a imagem da vitrine (ou null).
+     */
     private function locaisDestaque()
     {
-        $locais = Local::agendaveis()->with('fotos', 'clinica')->get();
-        $notas = Local::notas($locais->pluck('id'));
-
-        return $locais
-            ->map(fn (Local $l) => (object) ['local' => $l, 'nota' => $notas->get($l->id)])
-            ->sortByDesc(fn ($x) => [(float) ($x->nota->media ?? 0), (int) ($x->nota->total ?? 0)])
-            ->take(8)
-            ->values();
+        return Local::publicos()
+            ->orderByDesc('media_avaliacoes')
+            ->orderByDesc('total_avaliacoes')
+            ->orderBy('nome')
+            ->limit(8)
+            ->get()
+            ->each(fn (Local $l) => $l->imagem_vitrine = isset(self::IMAGENS_DA_VITRINE[$l->nome])
+                ? asset(self::IMAGENS_DA_VITRINE[$l->nome])
+                : null);
     }
 }

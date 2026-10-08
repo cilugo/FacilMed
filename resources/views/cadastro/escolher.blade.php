@@ -1,8 +1,6 @@
 {{--
-    Escolha do tipo de cadastro. 29/09/2026: só paciente e clínica/hospital -
+    Escolha do tipo de cadastro. 29/09/2026: só usuário e clínica/hospital -
     o médico é cadastrado pela clínica.
-    01/10/2026: botões "Conta Pessoal" (paciente) e "Conta Empresarial"
-    (clínica/hospital), como a Mari deixou no protótipo (commit e87d8a2).
     Visual: o do grupo (style1.css de 29/09), com as medidas da tela de login.
     As regras ficam em public/css/cadastro.css, bloco ".pagina--escolha".
 --}}
@@ -20,8 +18,8 @@
         @include('cadastro._avisos')
 
         <nav class="opcoes" aria-label="Tipo de cadastro">
-            <a class="botao" href="{{ route('cadastro.paciente') }}">Conta Pessoal</a>
-            <a class="botao" href="{{ route('cadastro.clinica') }}">Conta Empresarial</a>
+            <a class="botao" href="{{ route('cadastro.usuario') }}">Sou Usuário</a>
+            <a class="botao" href="{{ route('cadastro.clinica') }}">Sou Clínica/Hospital</a>
         </nav>
 
         <p class="entrar">Já tem uma conta? <a href="{{ route('login') }}">Entre</a></p>

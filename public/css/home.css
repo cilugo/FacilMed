@@ -685,3 +685,6 @@ input {
         height: 180px;
     }
 }
+
+/* 05/10/2026: comentário mais recente no card de "Médicos bem avaliados". */
+.home-review { display: block; margin-top: 6px; font-size: 12px; line-height: 1.35; color: #5b6461; font-style: italic; white-space: normal; }

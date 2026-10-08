@@ -1,24 +1,23 @@
 {{--
-    Dashboard da clínica. Dados prontos de
-    App\Http\Controllers\Clinica\DashboardController.
+    Dashboard da clínica/hospital. Dados: Clinica\DashboardController@index.
 
-    Sem "Ligações", sem "Financeiro" e sem teleconsulta: não existem no
-    sistema (AGENTS.md §2). Ver o comentário do controller.
-
-    Os gráficos de linha e de rosca são desenhados por public/js/graficos.js
-    a partir dos atributos data-fm-linha e data-fm-donut. Barras e colunas
-    são só CSS.
+    01/10/2026: sem agendamento. Saíram gráfico de consultas, agenda do dia e
+    consultas por convênio. Ficou: médicos, unidades (com a nota), médicos por
+    especialidade, o que falta para um médico aparecer na busca e as últimas
+    avaliações (com comentário: a clínica é uma das telas autorizadas).
 --}}
 @extends('layouts.painel')
 
 @section('titulo', 'Início')
 
+@php use App\Support\Formatador; @endphp
+
 @section('conteudo')
 
     <div class="fm-pagina-topo">
         <div>
-            <h1 class="fm-titulo">Olá, {{ $saudacao }}!</h1>
-            <p class="fm-subtitulo">Bem-vinda ao painel de {{ $nomeClinica }}.</p>
+            <h1 class="fm-titulo">{{ $saudacao }}</h1>
+            <p class="fm-subtitulo">Como a sua clínica aparece para quem busca no site.</p>
         </div>
 
         <div class="fm-data">
@@ -27,106 +26,59 @@
         </div>
     </div>
 
-    {{-- Indicadores --}}
-    <div class="fm-grade fm-grade--cartoes">
+    {{-- Uma coluna por cartão: sem buraco à direita (notas do Lucas, 05/10). --}}
+    <div class="fm-grade fm-grade--cartoes" style="--fm-cartoes: {{ count($cartoes) }}">
         @foreach ($cartoes as $c)
             @include('painel.parciais.cartao', ['c' => $c])
         @endforeach
     </div>
 
-    {{-- Consultas realizadas ao longo do tempo --}}
-    <section class="fm-painel">
-        <header class="fm-painel__topo">
-            <h2 class="fm-painel__titulo">
-                <x-icone nome="chart" />
-                Consultas realizadas
-            </h2>
-
-            <nav class="fm-abas" aria-label="Período do gráfico">
-                @foreach ($grafico['abas'] as $aba)
-                    <a
-                        href="{{ $aba['url'] }}"
-                        class="fm-aba {{ $aba['ativo'] ? 'is-ativa' : '' }}"
-                        @if ($aba['ativo']) aria-current="true" @endif
-                    >{{ $aba['rotulo'] }}</a>
+    @if ($semFaixa->isNotEmpty())
+        <section class="fm-painel fm-painel--destaque">
+            <header class="fm-painel__topo">
+                <h2 class="fm-painel__titulo"><x-icone nome="alert" /> Unidades sem faixa de preço</h2>
+                <a href="{{ route('clinica.unidades') }}" class="fm-pilula fm-pilula--pequena">Unidades <x-icone nome="chevron-right" /></a>
+            </header>
+            <p class="fm-campo__ajuda">Escolha de $ a $$$$ em Unidades. Sem faixa, a busca não mostra o preço.</p>
+            <ul class="fm-lista">
+                @foreach ($semFaixa as $u)
+                    <li class="fm-linha"><div class="fm-linha__info"><strong>{{ $u->nome }}</strong></div></li>
                 @endforeach
-            </nav>
-        </header>
+            </ul>
+        </section>
+    @endif
 
-        <div class="fm-grafico-bloco">
-            <div
-                class="fm-grafico"
-                data-fm-linha='@json($grafico['serie'])'
-                role="img"
-                aria-label="Gráfico de linha com as consultas realizadas no período"
-            ></div>
+    <div class="fm-duas">
+        <section class="fm-painel">
+            <header class="fm-painel__topo">
+                <h2 class="fm-painel__titulo"><x-icone nome="building" /> Unidades</h2>
+                <a href="{{ route('clinica.unidades') }}" class="fm-pilula fm-pilula--pequena">Gerenciar <x-icone nome="chevron-right" /></a>
+            </header>
 
-            <aside class="fm-resumo">
-                <span class="fm-resumo__rotulo">Total no período</span>
-                <strong class="fm-resumo__valor">{{ $grafico['total'] }}</strong>
-                <span class="fm-resumo__legenda">{{ $grafico['rotulo'] }}</span>
-
-                <ul class="fm-resumo__lista">
-                    @foreach ($grafico['formas'] as $f)
-                        <li>
-                            <span class="fm-legenda__ponto" style="background: {{ $f['cor'] }}"></span>
-                            <span class="fm-resumo__nome">{{ $f['nome'] }}</span>
-                            <strong>{{ $f['total'] }}</strong>
-                            <span class="fm-resumo__pct">({{ $f['pct'] }}%)</span>
+            @if ($unidades->isNotEmpty())
+                <ul class="fm-lista">
+                    @foreach ($unidades as $u)
+                        <li class="fm-linha fm-linha--nota">
+                            <div class="fm-linha__info">
+                                <strong><a href="{{ route('publico.local', $u) }}" target="_blank" rel="noopener">{{ $u->nome }}</a></strong>
+                                <span>{{ $u->cidade }}/{{ $u->uf }} · {{ $u->total_avaliacoes }} {{ $u->total_avaliacoes === 1 ? 'avaliação' : 'avaliações' }}</span>
+                            </div>
+                            @if ($u->total_avaliacoes > 0)
+                                <span class="fm-etiqueta fm-etiqueta--ambar">★ {{ Formatador::numero((float) $u->media_avaliacoes, 1) }}</span>
+                            @else
+                                <span class="fm-etiqueta fm-etiqueta--cinza">sem nota</span>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
-            </aside>
-        </div>
-    </section>
-
-    <div class="fm-duas">
-
-        {{-- Médicos ativos por especialidade --}}
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo">
-                    <x-icone nome="doctors" />
-                    Médicos ativos
-                </h2>
-                <a href="{{ $medicosAtivos['url'] }}" class="fm-pilula fm-pilula--pequena">
-                    Ver todos
-                    <x-icone nome="chevron-right" />
-                </a>
-            </header>
-
-            @if (count($medicosAtivos['itens']) > 0)
-                <div class="fm-donut-bloco">
-                    <div
-                        class="fm-donut"
-                        data-fm-donut='@json($medicosAtivos['donut'])'
-                        role="img"
-                        aria-label="Médicos ativos por especialidade"
-                    ></div>
-
-                    <ul class="fm-legenda">
-                        @foreach ($medicosAtivos['itens'] as $i)
-                            <li>
-                                <span class="fm-legenda__ponto" style="background: {{ $i['cor'] }}"></span>
-                                <span class="fm-legenda__nome">{{ $i['nome'] }}</span>
-                                <span class="fm-legenda__valor">{{ $i['total_fmt'] }} <small>({{ $i['pct'] }}%)</small></span>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
             @else
-                <p class="fm-vazio">Nenhum médico vinculado às suas unidades ainda.</p>
+                <p class="fm-vazio">Nenhuma unidade ativa. Cadastre uma em Unidades.</p>
             @endif
         </section>
 
-        {{-- Consultas por especialidade --}}
         <section class="fm-painel">
             <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo">
-                    <x-icone nome="chart" />
-                    Consultas por especialidade
-                </h2>
-                <span class="fm-painel__periodo">últimos 30 dias</span>
+                <h2 class="fm-painel__titulo"><x-icone nome="doctors" /> Médicos por especialidade</h2>
             </header>
 
             @if (count($porEspecialidade) > 0)
@@ -135,7 +87,7 @@
                         <li>
                             <div class="fm-barras__texto">
                                 <span>{{ $e['nome'] }}</span>
-                                <strong>{{ $e['pct'] }}%</strong>
+                                <strong>{{ $e['total'] }}</strong>
                             </div>
                             <div class="fm-barras__trilho">
                                 <div class="fm-barras__preenchido" style="width: {{ $e['largura'] }}%"></div>
@@ -144,137 +96,33 @@
                     @endforeach
                 </ul>
             @else
-                <p class="fm-vazio">Sem consultas realizadas nos últimos 30 dias.</p>
+                <p class="fm-vazio">Nenhum médico vinculado ainda.</p>
             @endif
         </section>
     </div>
 
-    <div class="fm-duas">
+    <section class="fm-painel">
+        <header class="fm-painel__topo">
+            <h2 class="fm-painel__titulo"><x-icone nome="star" /> Últimas avaliações</h2>
+            <a href="{{ route('clinica.avaliacoes') }}" class="fm-pilula fm-pilula--pequena">Ver todas <x-icone nome="chevron-right" /></a>
+        </header>
 
-        {{-- Agenda dos médicos hoje --}}
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo">
-                    <x-icone nome="calendar" />
-                    Agenda dos médicos hoje
-                </h2>
-                <a href="{{ $agendaUrl }}" class="fm-pilula fm-pilula--pequena">
-                    Ver todos
-                    <x-icone nome="chevron-right" />
-                </a>
-            </header>
-
-            @if (count($agendaMedicos) > 0)
-                <ul class="fm-lista">
-                    @foreach ($agendaMedicos as $m)
-                        <li class="fm-pessoa">
-                            <span class="fm-avatar fm-avatar--grande">{{ $m['iniciais'] }}</span>
-                            <div class="fm-pessoa__info">
-                                <strong>{{ $m['nome'] }}</strong>
-                                <span>{{ $m['especialidade'] }}</span>
-                            </div>
-                            <div class="fm-pessoa__lado">
-                                <span>{{ $m['janela'] }}</span>
-                                <strong>{{ $m['consultas_fmt'] }}</strong>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            @else
-                <p class="fm-vazio">Nenhum médico atende hoje nas suas unidades.</p>
-            @endif
-        </section>
-
-        {{-- Consultas por convênio (a fatia "Particular" entra na lista) --}}
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo">
-                    <x-icone nome="shield" />
-                    Consultas por convênio
-                </h2>
-                <a href="{{ $convenioUrl }}" class="fm-pilula fm-pilula--pequena">
-                    Ver todos
-                    <x-icone nome="chevron-right" />
-                </a>
-            </header>
-
-            @if (count($porConvenio) > 0)
-                <ul class="fm-lista">
-                    @foreach ($porConvenio as $c)
-                        <li class="fm-pessoa">
-                            <span class="fm-avatar fm-avatar--grande fm-avatar--cor" style="background: {{ $c['cor'] }}">{{ $c['iniciais'] }}</span>
-                            <div class="fm-pessoa__info">
-                                <strong>{{ $c['nome'] }}</strong>
-                                <span>{{ $c['detalhe'] }}</span>
-                            </div>
-                            <div class="fm-pessoa__lado">
-                                <strong>{{ $c['pct'] }}%</strong>
-                                <span>do total</span>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            @else
-                <p class="fm-vazio">Sem consultas realizadas nos últimos 30 dias.</p>
-            @endif
-        </section>
-    </div>
-
-    <div class="fm-duas">
-
-        {{-- Consultas por dia da semana --}}
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo">
-                    <x-icone nome="calendar" />
-                    Consultas por dia da semana
-                </h2>
-                <span class="fm-painel__periodo">últimos 30 dias</span>
-            </header>
-
-            <div class="fm-colunas" role="img" aria-label="Consultas realizadas por dia da semana">
-                @foreach ($diasDaSemana as $d)
-                    <div class="fm-coluna">
-                        <span class="fm-coluna__valor">{{ $d['total'] }}</span>
-                        <div class="fm-coluna__area">
-                            <div class="fm-coluna__barra" style="height: {{ $d['altura'] }}%"></div>
+        @if ($ultimas->isNotEmpty())
+            <ul class="fm-lista">
+                @foreach ($ultimas as $a)
+                    <li class="fm-linha">
+                        <x-avatar :nome="$a->usuario->user->name" :foto="$a->usuario->user->foto_url" />
+                        <div class="fm-linha__info">
+                            <strong>{{ str_repeat('★', $a->estrelas) . str_repeat('☆', 5 - $a->estrelas) }} · {{ $a->alvo_nome }}</strong>
+                            <span>{{ $a->comentario ? '“' . \Illuminate\Support\Str::limit($a->comentario, 90) . '”' : 'Sem comentário' }}</span>
                         </div>
-                        <span class="fm-coluna__rotulo">{{ $d['rotulo'] }}</span>
-                    </div>
+                    </li>
                 @endforeach
-            </div>
-        </section>
+            </ul>
+        @else
+            <p class="fm-vazio">Nenhuma avaliação ainda. Elas aparecem quando um usuário avalia uma unidade ou um médico seu.</p>
+        @endif
+    </section>
 
-        {{-- Últimos agendamentos --}}
-        <section class="fm-painel">
-            <header class="fm-painel__topo">
-                <h2 class="fm-painel__titulo">
-                    <x-icone nome="list" />
-                    Últimos agendamentos
-                </h2>
-                <a href="{{ $agendaUrl }}" class="fm-pilula fm-pilula--pequena">
-                    Ver todos
-                    <x-icone nome="chevron-right" />
-                </a>
-            </header>
-
-            @if (count($ultimos) > 0)
-                <ul class="fm-lista">
-                    @foreach ($ultimos as $u)
-                        <li class="fm-pessoa">
-                            <span class="fm-avatar fm-avatar--grande">{{ $u['iniciais'] }}</span>
-                            <div class="fm-pessoa__info">
-                                <strong>{{ $u['paciente'] }}</strong>
-                                <span>{{ $u['especialidade'] }} · {{ $u['quando'] }}</span>
-                            </div>
-                            <span class="fm-etiqueta fm-etiqueta--{{ $u['tom'] }}">{{ $u['status'] }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            @else
-                <p class="fm-vazio">Nenhum agendamento ainda.</p>
-            @endif
-        </section>
-    </div>
 
 @endsection

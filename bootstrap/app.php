@@ -24,9 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // Conta bloqueada/inativa é deslogada em QUALQUER página, não só nas
         // rotas que lembram de pedir 'ativa' (routes/web.php conta com isto).
         $middleware->appendToGroup('web', \App\Http\Middleware\GarantirContaAtiva::class);
-
-        // Médico com senha temporária (cadastrado pela clínica) troca antes de usar.
-        $middleware->appendToGroup('web', \App\Http\Middleware\ExigirTrocaDeSenha::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Formulário "velho" (419): a página ficou aberta muito tempo, foi

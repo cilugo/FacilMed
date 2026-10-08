@@ -13,7 +13,7 @@ class AdminSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@facilmed.test'],
             [
-                'name'     => 'Administrador FacilMed',
+                'name'     => 'Administrador PointMed',
                 'password' => Hash::make('facilmed2026'),
                 'tipo'     => User::TIPO_ADMIN,
                 'telefone' => '(12) 3200-0000',

@@ -37,9 +37,9 @@
     <p class="fm-dica">
         <x-icone nome="lightbulb" />
         <span>
-            No FacilMed, <strong>quem aceita o convênio é o médico</strong>. Aqui você escolhe, em cada unidade,
-            se o médico atende por convênio. Para mudar <em>quais</em> convênios ele aceita, use "Perfil" em
-            Meus médicos. Os convênios da plataforma são fictícios, criados para demonstração.
+            No PointMed, <strong>quem aceita o convênio é o médico</strong>. Aqui você escolhe, em cada unidade,
+            se o médico atende por convênio. Para mudar <em>quais</em> convênios ele aceita, use
+            <a href="{{ route('clinica.medicos') }}">Meus médicos → Editar perfil</a>. Os convênios da plataforma são fictícios, criados para demonstração.
         </span>
     </p>
 
@@ -125,7 +125,7 @@
                     <tbody>
                         @foreach ($vinculos as $v)
                             <tr>
-                                <td><strong>{{ $v->medico->user->name }}</strong></td>
+                                <td><strong>{{ $v->medico->nome }}</strong></td>
                                 <td>{{ $v->local->nome }}</td>
                                 <td>
                                     @if ($v->medico->convenios->isNotEmpty())
@@ -145,7 +145,7 @@
                                         <input type="hidden" name="aceita_convenio" value="{{ $v->aceita_convenio ? 0 : 1 }}">
                                         <button type="submit" class="fm-switch" role="switch"
                                                 aria-checked="{{ $v->aceita_convenio ? 'true' : 'false' }}"
-                                                aria-label="Atende por convênio: {{ $v->medico->user->name }} em {{ $v->local->nome }}">
+                                                aria-label="Atende por convênio: {{ $v->medico->nome }} em {{ $v->local->nome }}">
                                             <span class="fm-switch__trilho"></span>
                                             {{ $v->aceita_convenio ? 'Sim' : 'Não' }}
                                         </button>

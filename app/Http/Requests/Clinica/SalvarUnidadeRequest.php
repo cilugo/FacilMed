@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Clinica;
 
-use App\Models\Disponibilidade;
+use App\Models\HorarioFuncionamento;
 use App\Support\Uf;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +21,6 @@ class SalvarUnidadeRequest extends FormRequest
             'cep'      => preg_replace('/\D/', '', (string) $this->input('cep')),
             'telefone' => preg_replace('/\D/', '', (string) $this->input('telefone')),
             'uf'       => mb_strtoupper(trim((string) $this->input('uf'))),
-            'site'     => \App\Http\Controllers\Clinica\UnidadeController::normalizarSite($this->input('site')),
         ]);
     }
 
@@ -38,7 +37,7 @@ class SalvarUnidadeRequest extends FormRequest
             'cidade'      => ['required', 'string', 'max:100'],
             'uf'          => ['required', Rule::in(Uf::TODAS)],
             'telefone'    => ['nullable', 'digits_between:10,11'],
-            'site'        => ['nullable', 'url:http,https', 'max:255'],   // 01/10/2026
+            'faixa_preco' => ['nullable', 'integer', 'between:1,4'],   // 05/10: escolhida pela clínica
             'horarios'    => ['nullable', 'array'],
         ];
 
@@ -47,7 +46,6 @@ class SalvarUnidadeRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['cep.digits' => 'O CEP deve ter 8 dígitos.',
-            'site.url' => 'Digite o endereço completo do site, por exemplo https://www.suaclinica.com.br'] + HorariosDeFuncionamento::mensagens();
+        return ['cep.digits' => 'O CEP deve ter 8 dígitos.'] + HorariosDeFuncionamento::mensagens();
     }
 }

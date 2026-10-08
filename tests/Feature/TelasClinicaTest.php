@@ -2,48 +2,23 @@
 
 namespace Tests\Feature;
 
-use App\Models\Consulta;
-use App\Models\PacienteAcessibilidade;
 use App\Models\User;
 use App\Models\Vinculo;
 use Tests\TestCase;
 
 /**
- * As 7 telas internas da clínica (28/09/2026), com as views DE VERDADE.
+ * As telas internas da clínica (28/09/2026; 01/10 sem agenda e com
+ * especialidades e edição de médico), com as views DE VERDADE.
  * A clínica padrão dos testes é a Vida Plena (contato@vidaplena.test).
  */
 class TelasClinicaTest extends TestCase
 {
     public function test_todas_as_telas_da_clinica_abrem(): void
     {
-        foreach (['/clinica/agenda', '/clinica/medicos', '/clinica/medicos/novo', '/clinica/unidades',
-                  '/clinica/precos', '/clinica/avaliacoes', '/clinica/perfil'] as $url) {
+        foreach (['/clinica', '/clinica/medicos', '/clinica/medicos/novo', '/clinica/medicos/1/editar', '/clinica/especialidades',
+                  '/clinica/unidades', '/clinica/convenios', '/clinica/avaliacoes', '/clinica/perfil'] as $url) {
             $this->comoClinica()->get($url)->assertOk();
         }
-    }
-
-    public function test_agenda_mostra_consulta_com_medico_e_sem_acessibilidade(): void
-    {
-        $clinica = User::where('email', 'contato@vidaplena.test')->first()->clinica;
-        $consulta = Consulta::whereIn('vinculo_id', $clinica->vinculos()->select('vinculos.id'))
-            ->where('status', 'agendada')->first();
-        $this->assertNotNull($consulta, 'O seeder deveria ter consulta agendada na Vida Plena.');
-
-        PacienteAcessibilidade::updateOrCreate(
-            ['paciente_id' => $consulta->paciente_id],
-            ['descricao' => 'Uso cadeira de rodas', 'consentimento_em' => now()],
-        );
-
-        $this->comoClinica()
-            ->get('/clinica/agenda?data=' . $consulta->data_consulta->toDateString())
-            ->assertOk()
-            ->assertSee($consulta->paciente->user->name)
-            ->assertSee($consulta->medico->user->name)
-            // 28/09 (3ª revisão): a clínica não lê a acessibilidade — só o médico
-            // da consulta, enquanto ela está agendada (AGENTS.md §3).
-            ->assertDontSee('Uso cadeira de rodas')
-            // 01/10/2026: a clínica é quem cancela (o médico só vê).
-            ->assertSee('/clinica/agenda/' . $consulta->id . '/cancelar', false);
     }
 
     public function test_medicos_lista_e_mostra_confirmacao_de_desvinculo(): void
@@ -51,41 +26,10 @@ class TelasClinicaTest extends TestCase
         $this->comoClinica()->get('/clinica/medicos')
             ->assertOk()
             ->assertSee('Helena')
-            ->assertSee('cancelar_consultas', false);
-    }
-
-    public function test_cadastrar_medico_novo_mostra_senha_provisoria_uma_vez_nos_precos(): void
-    {
-        $clinica = User::where('email', 'contato@vidaplena.test')->first()->clinica;
-        $unidade = $clinica->locais()->first();
-
-        $resposta = $this->comoClinica()->post('/clinica/medicos', [
-            'crm' => '445566', 'uf' => 'SP', 'local_id' => $unidade->id,
-            'aceita_particular' => '1', 'aceita_convenio' => '0',
-            'name' => 'Dr. Paulo Yamada', 'email' => 'teste.novo@facilmed.test', 'cpf' => '529.982.247-25',
-            'especialidades' => [1],
-        ]);
-        $resposta->assertRedirect(route('clinica.precos'))->assertSessionHas('senha_temporaria');
-
-        $senha = session('senha_temporaria');
-        $this->comoClinica()->get('/clinica/precos')->assertOk()->assertSee($senha)->assertSee('Dr. Paulo Yamada');
-
-        // Na próxima visita, a senha não aparece mais.
-        $this->comoClinica()->get('/clinica/precos')->assertOk()->assertDontSee($senha);
-    }
-
-    public function test_grade_de_precos_mostra_com_virgula_e_salva_igual(): void
-    {
-        $clinica = User::where('email', 'contato@vidaplena.test')->first()->clinica;
-        $vinculo = $clinica->vinculos()->where('vinculos.ativo', true)->with('medico.especialidades')->first();
-        $esp = $vinculo->medico->especialidades->first();
-
-        $this->comoClinica()->post('/clinica/precos', [
-            'precos' => [$vinculo->id => [$esp->id => '1.250,00']],
-        ])->assertSessionHasNoErrors();
-
-        $this->assertEquals(1250.00, (float) $vinculo->precos()->where('especialidade_id', $esp->id)->value('valor'));
-        $this->comoClinica()->get('/clinica/precos')->assertSee('value="1.250,00"', false);
+            ->assertSee('Confirmar desvínculo')
+            ->assertSee('/clinica/medicos/1/editar', false)
+            ->assertDontSee('cancelar_consultas', false)
+            ->assertDontSee('/clinica/agenda', false);
     }
 
     public function test_unidades_mostra_horarios_e_formulario(): void
@@ -118,7 +62,7 @@ class TelasClinicaTest extends TestCase
     {
         $this->comoClinica()->get('/clinica/perfil')
             ->assertOk()
-            ->assertSee('base simulada do FacilMed')
+            ->assertSee('base simulada do PointMed')
             ->assertDontSee('name="cnpj"', false)
             ->assertDontSee('validado', false);
     }

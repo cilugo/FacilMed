@@ -66,8 +66,8 @@ return [
     ],
 
     /*
-    | 01/10/2026 (plano novo do grupo): CEP → coordenada pela internet, para o
-    | raio de 5/10/20 km fazer sentido (o centro do bairro é pouco para 5 km).
+    | 07/10/2026 (trazido da main de 01/10): CEP → coordenada pela internet, para
+    | o raio de 5/10/20 km fazer sentido (o centro do bairro é pouco para 5 km).
     |   - ViaCEP (viacep.com.br): CEP → rua, bairro, cidade, UF. Grátis, sem chave.
     |   - Nominatim (OpenStreetMap): endereço → latitude/longitude. Grátis, sem
     |     chave; pede um "User-Agent" que identifique o sistema e no máximo 1
@@ -77,7 +77,7 @@ return [
     | Nos testes fica DESLIGADO (phpunit.xml): teste não fala com a internet.
     */
     'servico_externo' => env('LOCALIZACAO_EXTERNA', true),
-    'user_agent'      => 'FacilMed/1.0 (TCC Etec Ilza Nascimento Pintus; https://facilmed.onrender.com)',
+    'user_agent'      => 'PointMed/1.0 (TCC Etec Ilza Nascimento Pintus; https://facilmed.onrender.com)',
     'timeout'         => 6,
 
 ];

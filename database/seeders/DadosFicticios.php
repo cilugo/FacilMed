@@ -3,13 +3,14 @@
 namespace Database\Seeders;
 
 /**
- * TODOS OS DADOS FICTÍCIOS DO FACILMED EM UM LUGAR SÓ (24/09/2026).
+ * TODOS OS DADOS FICTÍCIOS DO POINTMED EM UM LUGAR SÓ (24/09/2026).
  *
- * Decisão do grupo: 3 médicos, 3 clínicas, 3 hospitais, 2 pacientes,
+ * Decisão do grupo: 3 clínicas, 3 hospitais, 2 usuários e (desde 01/10/2026)
+ * 8 médicos,
  * com CPFs, CNPJs e CRMs que PASSAM nas regras de validação (dígito
  * verificador correto) e que existem nas BASES SIMULADAS.
  *
- * Os seeders (BaseSimulada, Clinica, Medico, Paciente) leem daqui.
+ * Os seeders (BaseSimulada, Clinica, Medico, Usuario) leem daqui.
  * Mudou um dado? Mude AQUI — assim o médico do seed e o registro dele
  * no "CFM simulado" nunca ficam diferentes.
  *
@@ -20,7 +21,7 @@ namespace Database\Seeders;
  * coincidência, pertencer a alguém de verdade. Nunca use estes dados
  * fora do ambiente de desenvolvimento/apresentação.
  *
- * Senha de todas as contas: facilmed2026
+ * Senha de todas as contas: facilmed2026 (médico não tem conta desde 01/10).
  */
 final class DadosFicticios
 {
@@ -54,58 +55,124 @@ final class DadosFicticios
     ];
 
     /**
-     * 3 médicos. Cada um atende em DOIS lugares: de MANHÃ no primeiro,
-     * à TARDE no segundo (a mesma pessoa não pode estar em dois lugares
-     * ao mesmo tempo). Preço por unidade E por especialidade.
+     * 8 médicos (eram 3; 01/10/2026: mais médicos para "Médicos bem
+     * avaliados" na home, que mostra até 6). Médico é PERFIL, sem conta:
+     * não tem e-mail nem senha. Cada um atende em DOIS lugares, com preço
+     * por unidade E por especialidade — o usuário vê a faixa ($ a $$$$).
+     * unidades = [nome da unidade, [especialidade => valor]]
+     * (05/10/2026: o valor não é mais gravado — a Tabela de preços saiu; a
+     * faixa é da unidade, em FAIXAS abaixo. Fica só para dizer onde atende.)
      */
+    /**
+     * 05/10/2026: faixa de preço ($ = 1 a $$$$ = 4) de cada unidade, escolhida
+     * pela clínica (App\Support\FaixaDePreco).
+     */
+    public const FAIXAS = [
+        'SpSaúde - Jardim Satélite' => 2,
+        'Vida Plena - Centro'       => 3,
+        'Aurora - Vila Ema'         => 2,
+        'Santa Clara - Taubaté'     => 3,
+        'São Lucas - Jacareí'       => 4,
+        'Esperança - Caçapava'      => 1,
+    ];
+
     public const MEDICOS = [
         [
-            'nome' => 'Dra. Helena Navarro', 'foto' => 'imgs/medicos/medico3.jpeg', 'email' => 'helena@facilmed.test', 'cpf' => '70120130106',
+            'nome' => 'Dra. Helena Navarro', 'foto' => 'imgs/medicos/medico3.jpeg', 'cpf' => '70120130106',
             'crm' => '112233', 'uf' => 'SP', 'anos' => 14,
             'bio' => 'Cardiologista com atuação em prevenção e acompanhamento de hipertensão.',
             'especialidades' => ['Cardiologia', 'Clínica Geral'],
             'unidades' => [
-                ['Vida Plena - Centro',   'manha', ['Cardiologia' => 380.00, 'Clínica Geral' => 220.00]],
-                ['Santa Clara - Taubaté', 'tarde', ['Cardiologia' => 450.00]],
+                ['Vida Plena - Centro',   ['Cardiologia' => 380.00, 'Clínica Geral' => 220.00]],
+                ['Santa Clara - Taubaté', ['Cardiologia' => 450.00]],
             ],
             'convenios' => ['SpSaúde', 'Horizonte Med'],
         ],
         [
-            'nome' => 'Dr. Rafael Moreira', 'foto' => 'imgs/medicos/medico2.jpeg', 'email' => 'rafael@facilmed.test', 'cpf' => '70120130289',
+            'nome' => 'Dr. Rafael Moreira', 'foto' => 'imgs/medicos/medico2.jpeg', 'cpf' => '70120130289',
             'crm' => '223344', 'uf' => 'SP', 'anos' => 9,
             'bio' => 'Dermatologista e clínico geral, atendimento adulto.',
             'especialidades' => ['Dermatologia', 'Clínica Geral'],
             'unidades' => [
-                ['SpSaúde - Jardim Satélite', 'manha', ['Dermatologia' => 340.00, 'Clínica Geral' => 200.00]],
-                ['São Lucas - Jacareí',       'tarde', ['Dermatologia' => 390.00]],
+                ['SpSaúde - Jardim Satélite', ['Dermatologia' => 340.00, 'Clínica Geral' => 200.00]],
+                ['São Lucas - Jacareí',       ['Dermatologia' => 390.00]],
             ],
             'convenios' => ['SpSaúde', 'Bem Viver Saúde'],
         ],
         [
-            'nome' => 'Dra. Camila Reis', 'foto' => 'imgs/medicos/medico5.jpeg', 'email' => 'camila@facilmed.test', 'cpf' => '70120130360',
+            'nome' => 'Dra. Camila Reis', 'foto' => 'imgs/medicos/medico5.jpeg', 'cpf' => '70120130360',
             'crm' => '334455', 'uf' => 'SP', 'anos' => 18,
             'bio' => 'Pediatra, atendimento de recém-nascidos a adolescentes.',
             'especialidades' => ['Pediatria'],
             'unidades' => [
-                ['Aurora - Vila Ema',    'manha', ['Pediatria' => 300.00]],
-                ['Esperança - Caçapava', 'tarde', ['Pediatria' => 280.00]],
+                ['Aurora - Vila Ema',    ['Pediatria' => 300.00]],
+                ['Esperança - Caçapava', ['Pediatria' => 280.00]],
             ],
             'convenios' => ['Horizonte Med', 'Bem Viver Saúde'],
         ],
-    ];
-
-    /** Turnos: o intervalo 12h-14h fica livre (almoço/deslocamento). */
-    public const TURNOS = [
-        'manha' => ['08:00', '12:00'],
-        'tarde' => ['14:00', '18:00'],
+        [
+            'nome' => 'Dra. Juliana Prado', 'foto' => 'imgs/medicos/medico1.jpeg', 'cpf' => '70120130440',
+            'crm' => '556688', 'uf' => 'SP', 'anos' => 11,
+            'bio' => 'Ginecologista, com foco em saúde da mulher e acompanhamento preventivo.',
+            'especialidades' => ['Ginecologia'],
+            'unidades' => [
+                ['Vida Plena - Centro',  ['Ginecologia' => 320.00]],
+                ['Esperança - Caçapava', ['Ginecologia' => 260.00]],
+            ],
+            'convenios' => ['SpSaúde', 'Bem Viver Saúde'],
+        ],
+        [
+            'nome' => 'Dr. Marcelo Antunes', 'foto' => 'imgs/medicos/medico9.jpeg', 'cpf' => '70120130521',
+            'crm' => '667788', 'uf' => 'SP', 'anos' => 26,
+            'bio' => 'Ortopedista, atende lesões esportivas e dores na coluna.',
+            'especialidades' => ['Ortopedia'],
+            'unidades' => [
+                ['Santa Clara - Taubaté', ['Ortopedia' => 420.00]],
+                ['Aurora - Vila Ema',     ['Ortopedia' => 380.00]],
+            ],
+            'convenios' => ['Horizonte Med'],
+        ],
+        [
+            'nome' => 'Dra. Beatriz Okada', 'foto' => 'imgs/medicos/medico7.jpeg', 'cpf' => '70120130602',
+            'crm' => '778899', 'uf' => 'SP', 'anos' => 7,
+            'bio' => 'Oftalmologista, exames de rotina e acompanhamento de glaucoma.',
+            'especialidades' => ['Oftalmologia'],
+            'unidades' => [
+                ['SpSaúde - Jardim Satélite', ['Oftalmologia' => 260.00]],
+                ['São Lucas - Jacareí',       ['Oftalmologia' => 300.00]],
+            ],
+            'convenios' => ['SpSaúde', 'Horizonte Med'],
+        ],
+        [
+            'nome' => 'Dr. Thiago Nunes', 'foto' => 'imgs/medicos/medico6.jpeg', 'cpf' => '70120130793',
+            'crm' => '889900', 'uf' => 'SP', 'anos' => 6,
+            'bio' => 'Endocrinologista e clínico geral, acompanhamento de diabetes e tireoide.',
+            'especialidades' => ['Endocrinologia', 'Clínica Geral'],
+            'unidades' => [
+                ['Aurora - Vila Ema',     ['Endocrinologia' => 330.00, 'Clínica Geral' => 180.00]],
+                ['Santa Clara - Taubaté', ['Endocrinologia' => 410.00]],
+            ],
+            'convenios' => ['Bem Viver Saúde'],
+        ],
+        [
+            'nome' => 'Dr. Lucas Ferreira', 'foto' => 'imgs/medicos/medico8.jpeg', 'cpf' => '70120130874',
+            'crm' => '990011', 'uf' => 'SP', 'anos' => 15,
+            'bio' => 'Neurologista, atende enxaqueca, epilepsia e distúrbios do sono.',
+            'especialidades' => ['Neurologia'],
+            'unidades' => [
+                ['São Lucas - Jacareí', ['Neurologia' => 520.00]],
+                ['Vida Plena - Centro', ['Neurologia' => 480.00]],
+            ],
+            'convenios' => [],
+        ],
     ];
 
     /**
-     * 2 pacientes. 'carteirinha' = a que JÁ vem cadastrada na conta.
+     * 2 usuários. 'carteirinha' = a que JÁ vem cadastrada na conta.
      * O Marcos entra sem nenhuma, de propósito: é com ele que se testa
      * o cadastro de carteirinha (ver CARTEIRINHAS abaixo).
      */
-    public const PACIENTES = [
+    public const USUARIOS = [
         ['nome' => 'Ana Beatriz Lima', 'email' => 'ana@facilmed.test', 'cpf' => '80230140130',
             'nascimento' => '1992-04-17', 'sexo' => 'Feminino', 'telefone' => '12982001000',
             'carteirinha' => '100000000001'],
@@ -124,6 +191,11 @@ final class DadosFicticios
         ['112233', 'SP', 'Helena Navarro',  'ativo',    'médica do seed'],
         ['223344', 'SP', 'Rafael Moreira',  'ativo',    'médico do seed'],
         ['334455', 'SP', 'Camila Reis',     'ativo',    'médica do seed'],
+        ['556688', 'SP', 'Juliana Prado',   'ativo',    'médica do seed (01/10)'],
+        ['667788', 'SP', 'Marcelo Antunes', 'ativo',    'médico do seed (01/10)'],
+        ['778899', 'SP', 'Beatriz Okada',   'ativo',    'médica do seed (01/10)'],
+        ['889900', 'SP', 'Thiago Nunes',    'ativo',    'médico do seed (01/10)'],
+        ['990011', 'SP', 'Lucas Ferreira',  'ativo',    'médico do seed (01/10)'],
         ['445566', 'SP', 'Paulo Yamada',    'ativo',    'LIVRE: testar cadastro de médico que dá certo'],
         ['998877', 'SP', 'Carlos Menezes',  'cassado',  'testar recusa: CRM cassado'],
         ['556677', 'RJ', 'Beatriz Fontes',  'suspenso', 'testar recusa: CRM suspenso'],
