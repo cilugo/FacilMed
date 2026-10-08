@@ -30,16 +30,26 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // 01/10/2026: a resposta é a MESMA com ou sem conta para esse e-mail -
+        // senão a tela vira um jeito de descobrir quem tem conta no PointMed
+        // (o login já faz assim: "E-mail ou senha incorretos"). Só o limite de
+        // tentativas (um pedido por minuto por e-mail) aparece como erro.
+        // Se o serviço de e-mail falhar (chave do Brevo errada, fora do ar), a
+        // pessoa vê um aviso em vez de erro 500, e o motivo vai para o log.
+        try {
+            $status = Password::sendResetLink($request->only('email'));
+        } catch (\Throwable $e) {
+            report($e);
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos.']);
+        }
+
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withInput($request->only('email'))->withErrors(['email' => __($status)]);
+        }
+
+        return back()->with('status', 'Se esse e-mail tiver conta no PointMed, enviamos agora um link para criar uma senha nova. '
+            . 'Confira a caixa de entrada e o spam. O link vale por 60 minutos.');
     }
 }
